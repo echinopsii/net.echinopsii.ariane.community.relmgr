@@ -1,0 +1,25 @@
+__author__ = 'stanrenia'
+
+class NeoDAOError(Exception):
+    def __repr__(self):
+        return "Unspecified NeoDAO Error has occured"
+
+class NeoDAOAuthError(NeoDAOError):
+    def __repr__(self):
+        return self.args[0] + " is an incorrect Login/Password"
+
+class NeoDAOTypeError(NeoDAOError):
+    def __repr__(self):
+        return self.args[0] + " is a wrong object type. It should be an ArianeNode subclass object"
+
+class NeoDAOPropertyError(NeoDAOError):
+    def __repr__(self):
+        return self.args[0] + " is a wrong property. It should be an existent property in a Neo4j database's node"
+
+class NeoDAOLabelError(NeoDAOError):
+    def __repr__(self):
+        return self.args[0] + " is a wrong Node's label. It should be an existent label of a Neo4j database's node"
+
+class NeoDAOFileNotFound(NeoDAOError):
+    def __repr__(self):
+        return self.args[0] + " file not found"

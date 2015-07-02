@@ -1,0 +1,7 @@
+__pycache__
+neoDAO/__pycache__
+tests/__pycache__
+py_neo4j_db.iml
+.idea
+.DS_Store
+neoDAO/.DS_Store
