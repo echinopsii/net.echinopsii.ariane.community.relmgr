@@ -9,9 +9,33 @@ class NeoDAO(object):
     def __init__(self, graph):
         self.graph = graph
 
-    def delete_data(self):
-        self.graph.cypher.execute("match (p)-[r]->(m) Delete r,p,m")
-        self.graph.cypher.execute("match (m) delete m")
+    def delete_all(self):
+        self.graph.delete_all()
+
+    def save_node(self, node):
+        """
+        Save node in Database. If node doesn't exist, a new one is created. If it does already exist, it is updated.
+        :param node: The node to save. node is an ArianeNode subclass (Distribution, Module, SubModule, Plugin)
+        :return: "created" or "updated" or None.
+        """
+        #TODO
+        # node aura été Get au préalable s'il s'agit d'update. En faisant Get, on récup l'ID du Node et on met à jour self.id
+        # par défaut, self.id = 0. Donc Si id == 0 : create , sinon update.
+
+        if node.id == 0:
+            print("0")
+            max_nid = self.get_max_nid() + 1
+            node.id = max_nid
+            node.update_attr()
+            self.graph.create(node.node)
+        else:
+            print("1")
+            node.update_attr()
+            set = "SET "
+            for key in node.dir.keys():
+                set += "n."+key+" = '"+str(node.dir.get(key))+"',"
+            set = set[:-1]
+            self.graph.cypher.execute("MATCH (n:"+node.node_type+" {nID:"+str(node.id)+"})" + set + "")
 
     def set_node_property(self, nodes, **args):
         """
@@ -20,35 +44,28 @@ class NeoDAO(object):
         :param args: a dict with properties to set
         :return: number of ArianeNodes setted. So returns zero if nothing happened.
         """
-        set = "SET "
         list_node_ret = []
         # To be sure we set an existent property.
-        if "groupId" or "artifactId" or "name" or "version" or "type" or "distribution" in args.keys():
+        for node in nodes:
+            set = "SET "
             for key in args.keys():
-                # To be sure we set an existent property.
-                if "groupId" or "artifactId" or "name" or "version" or "type" or "distribution" == key:
-                    set += "n."+key+" = '"+args.get(key)+"',"
-                    set = set[:-1]
+                    # To be sure we set an existent property.
+                    if node.check_current_property(key) is True:
+                        set += "n."+key+" = '"+args.get(key)+"',"
+                        set = set[:-1]
 
-            for node in nodes:
-                if issubclass(node.__class__, module_cls.ArianeNode):
-                    attr_name = "name"
-                    if node is module_cls.Core:
-                        attr_name = "distribution"
+            if issubclass(node.__class__, module_cls.ArianeNode):
+                statement = """MATCH (n:"""+node.node_type+"""{name:'"""+node.name+"""',
+                version:'"""+node.version+"""'})""" + set + """ RETURN n"""
 
-                    statement = """MATCH (n:"""+node.__class__.__name__+"""{"""+attr_name+""":'"""+node.name+"""',
-                    version:'"""+node.version+"""'})""" + set + """ RETURN n"""
+                cypher_ret_nodes = self.graph.cypher.execute(statement)
 
-                    cypher_ret_nodes = self.graph.cypher.execute(statement)
-
-                    for cypher_node in cypher_ret_nodes:
-                        node_ret = cypher_node.n
-                        if node_ret is not None:
-                            list_node_ret.append(node_ret)
-                else:
-                    raise exceptions.NeoDAOTypeError(str(type(node)))
-        else:
-            raise exceptions.NeoDAOPropertyError(args.get(args.keys()[0]))
+                for cypher_node in cypher_ret_nodes:
+                    node_ret = cypher_node.n
+                    if node_ret is not None:
+                        list_node_ret.append(node_ret)
+            else:
+                raise exceptions.NeoDAOTypeError(str(type(node)))
 
         return list_node_ret.__len__()
 
@@ -60,61 +77,52 @@ class NeoDAO(object):
         :param args: Node properties. Exemple: name="portal", version="0.3.5"
         :return: A list of object of type: Core, Module, SubModule or Plugin (from module_cls) with its properties
         """
-        #TODO CONTINUER
-        ret_node = None
         elements = []
-        keys = args.keys()
-        correct_key = "izi"
-        correct_key = [key for key, value in args.items() if ("groupId" or "artifactId" or "name" or "version" or "type" or "distribution") == key]
-        print("ck = ", correct_key)
-        if correct_key.__len__() > 0:
-            node_type = node_type.lower()
-            node_type = node_type.capitalize()
-            if node_type in ["Core", "Module", "Submodule", "Plugin"]:
-                if node_type == "Submodule":
-                    node_type = "SubModule"
-
+        node_type = module_cls.ArianeNode.format_node_type(node_type)
+        concrete_node = module_cls.ArianeNode.create_subclass(node_type)
+        if concrete_node is not None:
+            if concrete_node.check_properties(**args) is True:
                 statement = ""
-                for key in keys:
-                    statement += ""+key+":'"+args.get(key)+"',"
+                for key in args.keys():
+                    if concrete_node.check_current_property(key) is True:
+                        statement += ""+key+":'"+args.get(key)+"',"
                 statement = statement[:-1]
-
-                ar_node = module_cls.ArianeNode("test", "tmp")
 
                 ret_node = self.graph.cypher.execute("MATCH (n:"+node_type+" {"+statement+"}) RETURN n")
                 for ret in ret_node:
                     node = ret.n
-                    ar_sub_node = ar_node.create_subclass(node_type, **node.properties)
-                    if ar_sub_node is not None:
-                        elements.append(ar_sub_node)
-
+                    ariane_sub_node = module_cls.ArianeNode.create_subclass(node_type, **node.properties)
+                    if ariane_sub_node is not None:
+                        # TODO Ajouter dépendances!
+                        elements.append(ariane_sub_node)
+                    else:
+                        raise exceptions.NeoDAODataFromDbError(**node.properties)
             else:
-                raise exceptions.NeoDAOLabelError(node_type)
+                raise exceptions.NeoDAOPropertyError(next(iter(args.keys())))
         else:
-            raise exceptions.NeoDAOPropertyError(args.get(args.keys()[0]))
+            raise exceptions.NeoDAOTypeError(node_type)
 
-        #print(elements)
+        # print(elements)
         return elements
 
     def create_db_neo(self, filename):
 
-        state = "core"
-        core = None
+        state = "distribution"
+        distribution = None
         list_rel = []
         try:
             with open(filename, 'r') as file:
                 print('Reading file: ')
-
                 for line in file:
-                    #print(line)
+                    # print(line)
                     list_param = line.split()
-                    #print('list : ', list_param)
+                    # print('list : ', list_param)
                     if "#" not in list_param:
-                        #print('list param: ', list_param)
+                        # print('list param: ', list_param)
                         if "dependency:" in list_param:
                             state = "dependency"
-                        elif state == "core" and "core" in list_param:
-                            core = module_cls.Core(list_param[1], list_param[2])
+                        elif state == "distribution" and "distribution" in list_param:
+                            distribution = module_cls.Distribution(list_param[1], list_param[2])
                             state = "module"
 
                         elif state == "module" and "plugin" not in list_param and len(list_param) > 0:
@@ -133,7 +141,7 @@ class NeoDAO(object):
                                     submod_artifactId = submod_groupId + '.' + submod
                                     mod.append(module_cls.SubModule(submod, mod_version, submod_groupId, submod_artifactId))
 
-                            core.append_Module(mod)
+                            distribution.append_Module(mod)
 
                         elif state == "module" and "plugin" in list_param:
                             plugin_name = list_param[1]
@@ -147,45 +155,72 @@ class NeoDAO(object):
                                     submod_artifactId = submod_groupId + '.' + submod
                                     plugin.append((module_cls.SubModule(submod, plugin_version, submod_groupId, submod_artifactId)))
 
-                            core.append_Plugin(plugin)
+                            distribution.append_Plugin(plugin)
 
                         elif state == "dependency":
                             mod_name1 = list_param[0]
                             mod_name2 = list_param[1]
-                            for mod in core.list_module:
+                            for mod in distribution.list_module:
                                 if mod_name1 == mod.name:
                                     mod1 = mod
                                 elif mod_name2 == mod.name:
                                     mod2 = mod
                             vmin = list_param[2]
                             vmax = list_param[3]
-                            list_rel.append(Relationship.cast(mod1.node, ("DEPENDS", {"version_min": vmin, "version_max": vmax}), mod2.node))
+                            list_rel.append(Relationship.cast(
+                                mod1.node, ("DEPENDS", {"version_min": vmin, "version_max": vmax}), mod2.node))
 
         except FileNotFoundError:
             raise exceptions.NeoDAOFileNotFound(filename)
 
-        self.graph.create(core.node)
+        max_nid = self.get_max_nid()
+        max_nid += 1
 
-        for mod in core.list_module:
-            #print("get node is:", mod.get_node()), type(mod.get_node())
+        self.graph.create(distribution.node)
+        self.graph.cypher.execute(
+            "MATCH (d:"+distribution.node_type+" {name:'"+distribution.name+"', version:'"+distribution.version+"'})"
+            " SET d.nID = "+str(max_nid)+"")
+
+        for mod in distribution.list_module:
+            # print("get node is:", mod.get_node()), type(mod.get_node())
+            max_nid += 1
             self.graph.create(mod.node)
+            self.graph.cypher.execute(
+                "MATCH (m:"+mod.node_type+" {name:'"+mod.name+"'}) SET m.nID = "+str(max_nid)+"")
             for submod in mod.list_submod:
+                max_nid += 1
                 self.graph.create(Relationship.cast(mod.node, "COMPOSED OF", submod.node))
+                self.graph.cypher.execute(
+                    "MATCH (m:"+submod.node_type+" {artifactId:'"+submod.artifactId+"'}) SET m.nID = "+str(max_nid)+"")
 
-        for plugin in core.list_plugin:
+        for plugin in distribution.list_plugin:
+            max_nid += 1
             self.graph.create(plugin.node)
+            self.graph.cypher.execute(
+                "MATCH (m:"+plugin.node_type+" {name:'"+plugin.name+"'}) SET m.nID = "+str(max_nid)+"")
             for submod in plugin.list_submod:
+                max_nid += 1
                 self.graph.create(Relationship.cast(plugin.node, "COMPOSED OF", submod.node))
+                self.graph.cypher.execute(
+                    "MATCH (m:"+submod.node_type+" {artifactId:'"+submod.artifactId+"'}) SET m.nID = "+str(max_nid)+"")
 
         for rel in list_rel:
             self.graph.create(rel)
 
         self.graph.cypher.execute("""START c=node(*)
-        MATCH(c:Core), (m:Module) WITH c,collect(m) AS data
+        MATCH(c:Distribution), (m:Module) WITH c,collect(m) AS data
         FOREACH(d in data | CREATE UNIQUE (c)-[:DEPENDS]->(d))""")
 
         self.graph.cypher.execute("""START c=node(*)
-        MATCH(c:Core), (p:Plugin) WITH c,collect(p) AS data
+        MATCH(c:Distribution), (p:Plugin) WITH c,collect(p) AS data
         FOREACH(d in data | CREATE UNIQUE (d)-[:COMPATIBLE]->(c))""")
 
+    def get_max_nid(self):
+        max_nid = 0
+        recordlist = self.graph.cypher.execute("MATCH (n) RETURN max(n.nID) as nID")
+        for record in recordlist:
+            max_nid = record.nID
+            if max_nid is None:
+                max_nid = 0
 
+        return max_nid

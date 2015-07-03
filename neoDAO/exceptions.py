@@ -16,9 +16,9 @@ class NeoDAOPropertyError(NeoDAOError):
     def __repr__(self):
         return self.args[0] + " is a wrong property. It should be an existent property in a Neo4j database's node"
 
-class NeoDAOLabelError(NeoDAOError):
+class NeoDAODataFromDbError(NeoDAOError):
     def __repr__(self):
-        return self.args[0] + " is a wrong Node's label. It should be an existent label of a Neo4j database's node"
+        return self.args[0] + "Data retrieved from database are corrupted. Compare Database's Data with data Model"
 
 class NeoDAOFileNotFound(NeoDAOError):
     def __repr__(self):

@@ -9,11 +9,11 @@ class InitDBTest(unittest.TestCase):
         nodes = neoDAO.get_node_property("Module", **{"version": "0.6.2"})
         self.assertGreater(nodes.__len__(), 0)
 
-        with self.assertRaises(exceptions.NeoDAOLabelError):
+        with self.assertRaises(exceptions.NeoDAOTypeError):
             no_nodes = neoDAO.get_node_property("FakeLabel", **{"fake": "007"})
 
         try:
             no_nodes = neoDAO.get_node_property("FakeLabel", **{"fake": "007"})
-        except exceptions.NeoDAOLabelError as e:
+        except exceptions.NeoDAOTypeError as e:
             print(e.__repr__())
 

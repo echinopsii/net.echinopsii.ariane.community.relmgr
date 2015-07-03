@@ -17,11 +17,11 @@ def connect(login, pwd, host_port):
         else:
             graph = Graph("http://"+host_port+"/db/data/")
 
-    node = Node("TestNodeToRemove", name="Alice", age="23", eyes="blue")
-    try:
-        graph.create(node)
-        graph.delete(node)
-    except Unauthorized:
-        graph = None
+        node = Node("TestNodeToRemove", name="Alice", age="23", eyes="blue")
+        try:
+            graph.create(node)
+            graph.delete(node)
+        except Unauthorized:
+            graph = None
 
     return graph
