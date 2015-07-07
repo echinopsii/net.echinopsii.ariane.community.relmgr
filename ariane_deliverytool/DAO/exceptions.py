@@ -4,6 +4,10 @@ class NeoDAOError(Exception):
     def __repr__(self):
         return "Unspecified NeoDAO Error has occured"
 
+class GraphFabricError(Exception):
+    def __repr__(self):
+        return "Graph fabric has raised an error: Invalid Graph type"
+
 class NeoDAOAuthError(NeoDAOError):
     def __repr__(self):
         return self.args[0] + " is an incorrect Login/Password"

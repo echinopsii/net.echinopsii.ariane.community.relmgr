@@ -1,4 +1,4 @@
-from neoDAO import module_cls, daoFabric
+from ariane_deliverytool import ariane_delivery
 import unittest
 
 __author__ = 'stanrenia'
@@ -6,19 +6,19 @@ __author__ = 'stanrenia'
 class AppTest(unittest.TestCase):
 
     def test_save(self):
-        fabric = daoFabric.DaoFabric("neo4j", "admin")
-        neodao = fabric.get_neodao_instance()
-        neodao.delete_all()
-        sub = module_cls.SubModule("arti", "0.1", "oyo", "oyo.arti")
-        sub2 = module_cls.SubModule("marti", "0.2", "aya", "aya.marti")
-        mod = module_cls.Module("My", "0.2.2", "other")
+        args = {"login": "neo4j", "password":"admin", "type": "neo4j"}
+        ariane = ariane_delivery.ArianeDeliveryService(args)
+        ariane.graph_dao_self.delete_all()
+        sub = ariane_delivery.SubModule("arti", "0.2", "oyo", "oyo.arti")
+        sub2 = ariane_delivery.SubModule("marti", "0.2", "aya", "aya.marti")
+        mod = ariane_delivery.Module("My", "0.2.2", "other")
         mod.add_submodule(sub)
         mod.add_submodule(sub2)
-        mod2 = module_cls.Module("idm", "0.3.2", "core")
-        plugin = module_cls.Plugin("RabbitMQ", "0.2.2")
-        sub3 = module_cls.SubModule("rab", "0.3", "rabitt", "rab.rabitt")
+        mod2 = ariane_delivery.Module("idm", "0.3.2", "core")
+        plugin = ariane_delivery.Plugin("RabbitMQ", "0.2.2")
+        sub3 = ariane_delivery.SubModule("rab", "0.3", "rabitt", "rab.rabitt")
         plugin.add_submodule(sub3)
-        distrib = module_cls.Distribution("community", "0.6.1")
+        distrib = ariane_delivery.Distribution("community", "0.6.1")
         distrib.add_Module(mod)
         distrib.add_Module(mod2)
         distrib.add_Plugin(plugin)
@@ -28,8 +28,30 @@ class AppTest(unittest.TestCase):
         mod.version = "newmew"
         mod.save()
         mod.add_dependency(**{"module": mod2, "version_min": "0.3.0", "version_max": "0.4.0"})
-        neodao.get_node(** distrib.get_node())
-        # sub4 = module_cls.SubModule("blob", "0.46", "car", "blabla.car")
+
+        listsubmod = ariane.submodule_service.get_all(mod)
+        print("list submod: ", listsubmod)
+        listfound = ariane.submodule_service.find({"name": "marti"})
+        print("list found: ", listfound)
+        listfound = ariane.submodule_service.find({"name": "rab", "version": "0.3", "groupId": "rabitt",
+                                                   "artifactId": "rab.rabitt", "nID": 5})
+        print("list found: ", listfound)
+        listfound = ariane.submodule_service.find(sub2)
+        print("list found: ", listfound)
+        listfound = ariane.submodule_service.find([sub, sub2, sub3])
+        print("list found: ", listfound)
+        listfound = ariane.submodule_service.find({"version": "0.2"})
+        print("list found: ", listfound)
+
+        unique = ariane.submodule_service.get_unique({"name": "rab"})
+        print("unique: ", unique)
+        unique = ariane.submodule_service.get_unique({"name": "bob"})
+        print("unique: ", unique)
+        unique = ariane.submodule_service.get_unique({"version": "0.2"})
+        print("unique: ", unique)
+        # print("list submod: ", listsubmod)
+        #.get_node(** distrib.get_node())
+        # sub4 = ariane_delivery.SubModule("blob", "0.46", "car", "blabla.car")
         # mod2.append(sub4)
         # mod.delete()
         # mod2.delete()
@@ -44,7 +66,7 @@ class AppTest(unittest.TestCase):
     #     neoDao = daoFabric.DaoFabric.new_neo_dao("neo4j", "admin")
     #     neoDao.delete_all()
     #
-    #     node = module_cls.Module("waza", "0.7", "blum")
+    #     node = ariane_delivery.Module("waza", "0.7", "blum")
     #     neoDao.save_node(node)
     #
     #     listnode = neoDao.get_node_property("Module", **{"name": "waza"})
