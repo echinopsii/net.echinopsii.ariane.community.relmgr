@@ -91,14 +91,19 @@ class NeoGraph(object):
         list_endnodes = []
         start_node = None
         label = args["label"]
+        reverse = args["reverse"]
         args.pop("label")
+        args.pop("reverse")
         # Handle nID key separately because it is an integer
         properties = "nID: "+str(args.get("nID"))+","
         args.pop("nID")
         for key in args.keys():
             properties += ""+str(key)+": '"+str(args.get(key))+"',"
         properties = properties[:-1]
-        match = "MATCH (s:"+label+" {"+properties+"})-[r]->(e) RETURN s,r,e"
+        if reverse is False:
+            match = "MATCH (s:"+label+" {"+properties+"})-[r]->(e) RETURN s,r,e"
+        else:
+            match = "MATCH (s:"+label+" {"+properties+"})<-[r]-(e) RETURN s,r,e"
 
         listrecord = self.graph.cypher.execute(match)
         print("MATCH : ", match)

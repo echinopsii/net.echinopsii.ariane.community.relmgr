@@ -49,6 +49,11 @@ class AppTest(unittest.TestCase):
         print("unique: ", unique)
         unique = ariane.submodule_service.get_unique({"version": "0.2"})
         print("unique: ", unique)
+
+        related_nodes = ariane.submodule_service.get_related_nodes(sub)
+        print("test_related_nodes:", related_nodes)
+        related_nodes = ariane.submodule_service.get_related_nodes([sub, sub2])
+        print("test_related_nodes:", related_nodes)
         # print("list submod: ", listsubmod)
         #.get_node(** distrib.get_node())
         # sub4 = ariane_delivery.SubModule("blob", "0.46", "car", "blabla.car")

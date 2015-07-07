@@ -23,6 +23,11 @@ class ArianeDeliveryService(object):
     def get_unique(self, args):
         pass
 
+class ModuleService(ArianeDeliveryService):
+    @staticmethod
+    def cast_from_neo(args):
+        return Module(args["name"], args["version"], args["type"], args["nID"])
+
 class SubModuleService(ArianeDeliveryService):
     def __init__(self):
         pass
@@ -37,39 +42,57 @@ class SubModuleService(ArianeDeliveryService):
         args = {"label": self.get_label(), "node": module.node, "relation": "COMPOSED OF"}
         list_relation = ArianeDeliveryService.graph_dao.get_all(args)
         for rel in list_relation:
-            sub = self.cast_from_neo(rel.end_node.properties)
+            sub = SubModuleService.cast_from_neo(rel.end_node.properties)
             list_submod.append(sub)
         return list_submod
 
     def get_related_nodes(self, args):
         related_nodes = None
         label = self.get_label()
+        reverse = True
         if type(args) is dict:
-            if self.check_dict_properties() is True:
-                args["label"] = label
-                related_nodes = ArianeDeliveryService.graph_dao.get_related_nodes(args)
+            if self.check_dict_properties(args) is True:
+                related_nodes = self._search_related_nodes(args, label, reverse)
         elif type(args) is SubModule:
             args = args.get_dir()
-            args["label"] = label
-            related_nodes = ArianeDeliveryService.graph_dao.get_related_nodes(args)
+            related_nodes = self._search_related_nodes(args, label, reverse)
         elif type(args) is list:
             if self.check_list_type(args) is True:
                 related_nodes = []
                 for arg in args:
                     param = arg.get_dir()
-                    param["label"] = label
-                    f = ArianeDeliveryService.graph_dao.get_related_nodes(param)
-                    if f is not None:
-                        related_nodes.append(f)
+                    r = self._search_related_nodes(param, label, reverse)
+                    if r is not None:
+                        related_nodes.append(r)
                 if len(related_nodes) == 0:
                     related_nodes = None
+        return related_nodes
 
+    def _search_related_nodes(self, args, label, reverse):
+        args["label"] = label
+        args["reverse"] = reverse
+        related_nodes = ArianeDeliveryService.graph_dao.get_related_nodes(args)
         if related_nodes is not None:
-            # TODO cast pour chaque key
+            related_nodes = self._cast_related_nodes(related_nodes)
+        return related_nodes
+
+    def _cast_related_nodes(self, related_nodes):
+        if related_nodes is not None:
+            # TODO cast pour Relation
             # boucler pour la list des dict
             if type(related_nodes) is dict:
-                pass
-        return related_nodes
+                start_node = related_nodes["start"]
+                start_node = SubModuleService.cast_from_neo(start_node.properties)
+                end_nodes = related_nodes["related_nodes"]
+                relations = related_nodes["relations"]
+                related_nodes["start"] = start_node
+                related_nodes["related_nodes"] = []
+                for i, rel in enumerate(relations):
+                    mod = end_nodes[i]
+                    mod = ModuleService.cast_from_neo(mod.properties)
+                    start_node.add_related_node(rel, mod.remove_related_node)
+                    related_nodes["related_nodes"].append(mod)
+                return related_nodes
 
     def find(self, args):
         found = None
@@ -97,7 +120,7 @@ class SubModuleService(ArianeDeliveryService):
             found_copy = found.copy()
             found = []
             for fo in found_copy:
-                found.append(self.cast_from_neo(fo.properties))
+                found.append(SubModuleService.cast_from_neo(fo.properties))
 
         return found
 
@@ -113,12 +136,13 @@ class SubModuleService(ArianeDeliveryService):
             args["label"] = self.get_label()
             node = ArianeDeliveryService.graph_dao.get_unique(args)
             if (node is not None) and (type(node) is not int):
-                    node = self.cast_from_neo(node.properties)
+                    node = SubModuleService.cast_from_neo(node.properties)
             return node
         else:
             return None
 
-    def cast_from_neo(self, args):
+    @staticmethod
+    def cast_from_neo(args):
         return SubModule(args["name"], args["version"], args["groupId"], args["artifactId"], args["nID"])
 
     def check_list_type(self, args):
@@ -271,8 +295,9 @@ class Distribution(ArianeNode):
 
 class Module(ArianeNode):
 
-    def __init__(self, name, version, type="none"):
+    def __init__(self, name, version, type="none", id=0):
         super().__init__(name, version)
+        self.id = id
         self.node_type = self.__class__.__name__
         self.type = type
         self.list_submod = []
