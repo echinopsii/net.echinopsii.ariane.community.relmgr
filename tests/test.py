@@ -1,4 +1,4 @@
-from ariane_deliverytool import ariane_delivery
+from ariane_deliverytool.DAO import ariane_delivery
 import unittest
 
 __author__ = 'stanrenia'
