@@ -17,14 +17,16 @@ class DaoFabric(object):
             if args["type"] == "neo4j":
                 args.pop("type")
                 dao = DaoFabric.new_neo_dao(args)
+                type = "neo4j"
             elif args["type"] == "orientdb":
                 dao = DaoFabric.new_orientdb_dao(args)
+                type = "orientdb"
             else:
                 raise exceptions.GraphFabricError()
         else:
             raise exceptions.GraphFabricError()
 
-        return dao
+        return type, dao
 
     @staticmethod
     def new_neo_dao(args):

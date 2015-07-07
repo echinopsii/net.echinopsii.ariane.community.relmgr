@@ -24,7 +24,6 @@ class AppTest(unittest.TestCase):
         distrib.add_Plugin(plugin)
         distrib.save()
 
-        # TODO : get Node
         mod.version = "newmew"
         mod.save()
         mod.add_dependency(**{"module": mod2, "version_min": "0.3.0", "version_max": "0.4.0"})

@@ -126,7 +126,8 @@ class NeoGraph(object):
             label = args["label"]
             relation = args["relation"]
             listrecord = self.graph.match(node, relation)
-            return listrecord
+            listnode = [node.end_node for node in listrecord]
+            return listnode
 
         else:
             raise exceptions.NeoDAOTypeError()
