@@ -170,6 +170,12 @@ class ArianeNode(object):
         self.version = version
         self.id = 0
 
+    def is_saved(self):
+        if self.id == 0:
+            return False
+        else:
+            return True
+
     def check_properties(self, args):
         for arg_key in args.keys():
             if arg_key in self.dir.keys():
@@ -216,8 +222,9 @@ class ArianeNode(object):
 
 class Distribution(ArianeNode):
 
-    def __init__(self, name, version):
+    def __init__(self, name, version, id=0):
         super().__init__(name, version)
+        self.id = id
         self.node_type = self.__class__.__name__
         self.list_module = []
         self.list_plugin = []
@@ -227,20 +234,9 @@ class Distribution(ArianeNode):
         self.node = Node.cast(self.dir)
         self.node.labels.add(self.node_type)
 
-    def add_Module(self, module):
-        self.list_module.append(module)
-
-    def add_Plugin(self, plugin):
-        self.list_plugin.append(plugin)
-
     def get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "nID": self.id}
         return self.dir
-
-    def get_node(self):
-        dir = self.get_dir()
-        dir["label"] = self.node_type
-        return  dir
 
     def save(self):
         if self.id == 0:
@@ -252,16 +248,10 @@ class Distribution(ArianeNode):
 
             self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self.get_dir())
             for plugin in self.list_plugin:
-                link_args = {"node": plugin.node, "relation": "COMPATIBLE WITH", "linked_node": self.node}
-                rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
-                self.list_relation.append(rel)
-                plugin.add_related_node(rel, self.remove_related_node)
+                self.create_relation(plugin, "COMPATIBLE WITH")
 
             for mod in self.list_module:
-                link_args = {"node": self.node, "relation": "DEPENDS ON", "linked_node": mod.node}
-                rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
-                self.list_relation.append(rel)
-                mod.add_related_node(rel, self.remove_related_node)
+                self.create_relation(mod, "DEPENDS ON")
 
         else:
             dir = self.get_dir()
@@ -277,17 +267,28 @@ class Distribution(ArianeNode):
             ArianeDeliveryService.graph_dao.delete(rel)
         ArianeDeliveryService.graph_dao.delete(self.node)
 
+    def add_Module(self, module):
+        self.list_module.append(module)
+        if self.is_saved():
+            self.create_relation(module, "DEPENDS ON")
+
+    def add_Plugin(self, plugin):
+        self.list_plugin.append(plugin)
+        if self.is_saved():
+            self.create_relation(plugin, "COMPATIBLE WITH")
+
+    def create_relation(self, mod_plug, relation):
+        link_args = {"node": mod_plug.node, "relation": relation, "linked_node": self.node}
+        rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
+        self.list_relation.append(rel)
+        mod_plug.add_related_node(rel, self.remove_related_node)
+
     def remove_related_node(self, rel, node):
         self.list_relation.remove(rel)
         if node.node_type == "Module":
             self.list_module.remove(node)
         else:
             self.list_plugin.remove(node)
-
-    def update_attr(self):
-        self.dir = {"name": self.name, "version": self.version, "nID": self.id}
-        self.node = Node.cast(self.dir)
-        self.node.labels.add(self.node_type)
 
     def __repr__(self):
         out = "Distribution( name = "+self.name+", version = "+self.version+", nID = "+str(self.id)+")"
@@ -308,20 +309,9 @@ class Module(ArianeNode):
         self.node = Node.cast(self.dir)
         self.node.labels.add(self.node_type)
 
-    def add_submodule(self, submod):
-        self.list_submod.append(submod)
-        if self.is_saved():
-            self.create_relation(submod)
-
     def get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "type": self.type, "nID": self.id}
         return self.dir
-
-    def is_saved(self):
-        if self.id == 0:
-            return False
-        else:
-            return True
 
     def save(self):
         if self.is_saved() is False:
@@ -354,6 +344,39 @@ class Module(ArianeNode):
         for rel, node_remove_function in self.list_related_node:
             node_remove_function(rel, self)
 
+    def add_submodule(self, submod):
+        self.list_submod.append(submod)
+        if self.is_saved():
+            self.create_relation(submod)
+
+    def create_relation(self, submod):
+        """
+        Create a relation in database between self and a SubModule object.
+        Update self relations list and the submodule's related node list
+        :param submod: SubModule object
+        :return: Nothing
+        """
+        link_args = {"node": self.node, "relation": "COMPOSED OF", "linked_node": submod.node}
+        rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
+        self.list_relation.append(rel)
+        # Send "remove_related_node" function as argument
+        submod.add_related_node(rel, self.remove_related_node)
+
+    def add_dependency(self, **mod_args):
+        """
+        Add Module to Module dependency.
+        :param mod_args: dict with the following keys: "module": Module object, "version_min": str, "version_max": str
+        :return: Nothing
+        """
+        properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"]}
+        module = mod_args["module"]
+        link_args = {"node": self.node, "relation": "DEPENDS ON", "linked_node": module.node, "properties": properties}
+        rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
+        self.list_module_dependency.append(module)
+        self.add_related_node(rel, module.remove_related_node)
+        module.list_module_dependency.append(self)
+        module.add_related_node(rel, self.remove_related_node)
+
     def add_related_node(self, rel, node_remove_function):
         """
         Update list: Add rel in list_relation. Add (rel,node_remove_function) tuple in list_related_node.
@@ -378,34 +401,6 @@ class Module(ArianeNode):
             self.list_module_dependency.remove(node)
         else:
             self.list_submod.remove(node)
-
-    def add_dependency(self, **mod_args):
-        """
-        Add Module to Module dependency.
-        :param mod_args: dict with the following keys: "module": Module object, "version_min": str, "version_max": str
-        :return: Nothing
-        """
-        properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"]}
-        module = mod_args["module"]
-        link_args = {"node": self.node, "relation": "DEPENDS ON", "linked_node": module.node, "properties": properties}
-        rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
-        self.list_module_dependency.append(module)
-        self.add_related_node(rel, module.remove_related_node)
-        module.list_module_dependency.append(self)
-        module.add_related_node(rel, self.remove_related_node)
-
-    def create_relation(self, submod):
-        """
-        Create a relation in database between self and a SubModule object.
-        Update self relations list and the submodule's related node list
-        :param submod: SubModule object
-        :return: Nothing
-        """
-        link_args = {"node": self.node, "relation": "COMPOSED OF", "linked_node": submod.node}
-        rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
-        self.list_relation.append(rel)
-        # Send "remove_related_node" function as argument
-        submod.add_related_node(rel, self.remove_related_node)
 
     def __repr__(self):
         out = "Module( name = "+self.name+", version = "+self.version+", type = "+self.type+", nID = "+str(self.id)+")"
@@ -457,12 +452,6 @@ class SubModule(ArianeNode):
         for rel, node_remove_function in self.list_related_node:
             node_remove_function(rel, self)
 
-    def update_attr(self):
-        self.dir = {"name": self.artifactId_name, "version": self.version, "groupId": self.groupId,
-                    "artifactId": self.artifactId, "nID": self.id}
-        self.node = Node.cast(self.dir)
-        self.node.labels.add(self.node_type)
-
     def __repr__(self):
         out = "SubModule(name = "+self.artifactId_name+", groupId = "+self.groupId+", artifactId = "+self.artifactId+"," \
             " nID = "+str(self.id)+")"
@@ -481,9 +470,6 @@ class Plugin(ArianeNode):
         self.node = Node.cast(self.dir)
         self.node.labels.add(self.node_type)
 
-    def add_submodule(self,submod):
-        self.list_submod.append(submod)
-
     def get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "nID": self.id}
         return self.dir
@@ -496,11 +482,7 @@ class Plugin(ArianeNode):
             self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self.get_dir())
 
             for submod in self.list_submod:
-                link_args = {"node": self.node, "relation": "COMPOSED OF", "linked_node": submod.node}
-                rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
-                self.list_relation.append(rel)
-                # Send "remove_related_node" function as argument
-                submod.add_related_node(rel, self.remove_related_node)
+                self.create_relation(submod)
         else:
             dir = self.get_dir()
             dir["label"] = self.node_type
@@ -521,6 +503,18 @@ class Plugin(ArianeNode):
         for rel, node_remove_function in self.list_related_node:
             node_remove_function(rel, self)
 
+    def add_submodule(self,submod):
+        self.list_submod.append(submod)
+        if self.is_saved():
+            self.create_relation(submod)
+
+    def create_relation(self, submod):
+        link_args = {"node": self.node, "relation": "COMPOSED OF", "linked_node": submod.node}
+        rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
+        self.list_relation.append(rel)
+        # Send "remove_related_node" function as argument
+        submod.add_related_node(rel, self.remove_related_node)
+
     def add_related_node(self, rel, node_remove_function):
         self.list_relation.append(rel)
         self.list_related_node.append((rel, node_remove_function))
@@ -528,11 +522,6 @@ class Plugin(ArianeNode):
     def remove_related_node(self, rel, submod):
         self.list_relation.remove(rel)
         self.list_submod.remove(submod)
-
-    def update_attr(self):
-        self.dir = {"name": self.name, "version": self.version, "nID": self.id}
-        self.node = Node.cast(self.dir)
-        self.node.labels.add(self.node_type)
 
     def __repr__(self):
         out = "Plugin( name = "+self.name+", version = "+self.version+", nID = "+str(self.id)+")"
