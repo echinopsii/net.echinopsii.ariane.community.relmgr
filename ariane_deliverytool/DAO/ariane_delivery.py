@@ -153,16 +153,22 @@ class ArianeDeliveryService(object):
         return self._cast_related_nodes(list_relation)
 
     def _cast_related_nodes(self, related_nodes_list):
+        """
+        Check dao_type
+        :param related_nodes_list:
+        :return:
+        """
         if related_nodes_list is not None:
             if type(related_nodes_list) is list:
                 relation_list = []
                 for rel in related_nodes_list:
-                    start_node = rel.start_node
-                    label = [label for label in start_node.labels][0]
-                    start_node = ArianeDeliveryService.cast_node_from_label(start_node, label)
-                    mod = rel.end_node
-                    label = [label for label in mod.labels][0]
-                    mod = ArianeDeliveryService.cast_node_from_label(mod, label)
+                    if ArianeDeliveryService.dao_type == ArianeDeliveryService.neo4j:
+                        start_node = rel.start_node
+                        label_s = [label for label in start_node.labels][0]
+                        mod = rel.end_node
+                        label_m = [label for label in mod.labels][0]
+                        start_node = ArianeDeliveryService.cast_node_from_label(start_node, label_s)
+                        mod = ArianeDeliveryService.cast_node_from_label(mod, label_m)
                     if (type(start_node) is not Distribution) and (type(mod) is not SubModule):
                         start_node.add_related_node(rel, mod.remove_related_node)
                     relation_list.append(ArianeDeliveryService.cast_relation(rel.type, start_node, mod))
