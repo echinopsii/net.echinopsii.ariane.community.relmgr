@@ -43,7 +43,7 @@ class NeoGraph(object):
         # par défaut, self.id = 0. Donc Si id == 0 : create , sinon update.
         set = "SET "
         for key in args.keys():
-            if key != ("nID" and "label"):
+            if (key != "nID") and (key != "label"):
                 set += "n."+key+" = '"+str(args.get(key))+"',"
         set = set[:-1]
         match = "MATCH (n:"+args["label"]+" {nID:"+str(args["nID"])+"})"
@@ -56,7 +56,7 @@ class NeoGraph(object):
             ret_node = record.n
         if ret_node != "":
             for key in args.keys():
-                if key != ("nID" and "label"):
+                if (key != "nID") and (key != "label"):
                     ret_node.properties[key] = args.get(key)
         return ret_node
 
@@ -78,8 +78,19 @@ class NeoGraph(object):
         # print(relation)
         # self.graph.create(Relationship.cast(node, (relation, properties), linked_node))
 
+    def get_new_related(self, args):
+        listrel = []
+        for rel in args["relation"]:
+            listrecord = self.graph.match(args["node"], rel, bidirectional=True)
+            for record in listrecord:
+                listrel.append(record)
+        if listrel.__len__() == 0:
+            return None
+        else:
+            return listrel
+
     def get_related_nodes(self, args):
-        """
+        """print("")
         get all relation and end nodes base on the following model : (start_node)-[relation]->(end_node) or (s)-[r]->(e)
         :param args: properties describing the start_node
         :return: a dictionary with keys "start": unique node, "relations": list of py2neo.RelationShip object
@@ -106,7 +117,7 @@ class NeoGraph(object):
             match = "MATCH (s:"+label+" {"+properties+"})<-[r]-(e) RETURN s,r,e"
 
         listrecord = self.graph.cypher.execute(match)
-        print("MATCH : ", match)
+        # print("MATCH : ", match)
         for record in listrecord:
             if start_node is None:
                 start_node = record.s
@@ -120,13 +131,22 @@ class NeoGraph(object):
             return related_nodes
 
     def get_all(self, args):
-        print(args)
+        # print(args)
         if args.keys().__len__() == 3:
             node = args["node"]
-            label = args["label"]
-            relation = args["relation"]
-            listrecord = self.graph.match(node, relation)
-            listnode = [node.end_node for node in listrecord]
+            if node == "Distribution":
+                listrecord = self.graph.cypher.execute("MATCH (n:Distribution) RETURN n")
+                listnode = [record.n for record in listrecord]
+            else:
+                reverse = args["reverse"]
+                relation = args["relation"]
+                if reverse is False:
+                    listrecord = self.graph.match(node, relation)
+                    listnode = [n.end_node for n in listrecord]
+                else:
+                    listrecord = self.graph.match(node, relation, bidirectional=True)
+                    listnode = [n.start_node for n in listrecord]
+
             return listnode
 
         else:

@@ -28,6 +28,13 @@ class AppTest(unittest.TestCase):
         mod.save()
         mod.add_dependency(**{"module": mod2, "version_min": "0.3.0", "version_max": "0.4.0"})
 
+        distrib2 = ariane_delivery.Distribution("echinopsii", "0.7.0")
+        distrib2.save()
+        listdistrib = ariane.distribution_service.get_all()
+        print("list distrib: ", listdistrib)
+
+        sub2.groupId = "groupy"
+        sub2.save()
         listsubmod = ariane.submodule_service.get_all(mod)
         print("list submod: ", listsubmod)
         listfound = ariane.submodule_service.find({"name": "marti"})
@@ -49,34 +56,113 @@ class AppTest(unittest.TestCase):
         unique = ariane.submodule_service.get_unique({"version": "0.2"})
         print("unique: ", unique)
 
-        related_nodes = ariane.submodule_service.get_related_nodes(sub)
+        related_nodes = ariane.submodule_service.get_relations(sub)
         print("test_related_nodes:", related_nodes)
-        related_nodes = ariane.submodule_service.get_related_nodes([sub, sub2])
+        related_nodes = ariane.submodule_service.get_relations([sub, sub2])
         print("test_related_nodes:", related_nodes)
-        # print("list submod: ", listsubmod)
-        #.get_node(** distrib.get_node())
-        # sub4 = ariane_delivery.SubModule("blob", "0.46", "car", "blabla.car")
-        # mod2.append(sub4)
-        # mod.delete()
-        # mod2.delete()
 
+        print("")
+        # ModuleService():
+        print("ModuleService: ")
+        listmod = ariane.module_service.get_all(distrib)
+        print("listmodule: ", listmod)
+
+        listfound = ariane.module_service.find({"name": "idm"})
+        print("list found: ", listfound)
+        listfound = ariane.module_service.find({"name": "My", "version": "newmew", "type": "other"})
+        print("list found: ", listfound)
+        listfound = ariane.module_service.find(mod)
+        print("list found: ", listfound)
+        listfound = ariane.module_service.find(mod2)
+        print("list found: ", listfound)
+        listfound = ariane.module_service.find([mod, mod2])
+        print("list found: ", listfound)
+        mod3 = ariane_delivery.Module("portal", "0.3.2", "core")
+        distrib.add_Module(mod3)
+        listfound = ariane.module_service.find({"version": "0.3.2"})
+        print("list found: ", listfound)
+        listfound = ariane.module_service.find(mod3)
+        print("list found: ", listfound)
+
+        listmod = ariane.module_service.get_all(distrib)
+        print("listmodule: ", listmod)
+
+        unique = ariane.module_service.get_unique({"name": "idm"})
+        print("unique: ", unique)
+        unique = ariane.module_service.get_unique({"name": "bob"})
+        print("unique: ", unique)
+
+        unique = ariane.module_service.get_unique({"version": "0.3.2"})
+        print("unique: ", unique)
+
+        related_nodes = ariane.module_service.get_relations(mod)
+        print("related: ", related_nodes)
+
+        print("")
+        # PluginService():
+        print("PluginService: ")
+        listplug = ariane.plugin_service.get_all(distrib)
+        print("listmodule: ", listplug)
+
+        listfound = ariane.plugin_service.find({"name": "RabbitMQ"})
+        print("list found: ", listfound)
+        listfound = ariane.plugin_service.find({"name": "RabbitMQ", "version": "0.2.2"})
+        print("list found: ", listfound)
+        listfound = ariane.plugin_service.find(plugin)
+        print("list found: ", listfound)
+        plugin2 = ariane_delivery.Plugin("Daffy", "Duck")
+        distrib.add_Plugin(plugin2)
+        listfound = ariane.plugin_service.find([plugin, plugin2])
+        print("list found: ", listfound)
+        listfound = ariane.plugin_service.find({"version": "0.2.2"})
+        print("list found: ", listfound)
+
+        listplug = ariane.plugin_service.get_all(distrib)
+        print("listplug: ", listplug)
+
+        plugin3 = ariane_delivery.Plugin("Buggz", "Duck")
+        distrib.add_Plugin(plugin3)
+        unique = ariane.plugin_service.get_unique({"name": "Daffy"})
+        print("unique: ", unique)
+        unique = ariane.plugin_service.get_unique({"name": "bob"})
+        print("unique: ", unique)
+        unique = ariane.plugin_service.get_unique({"version": "Duck"})
+        print("unique: ", unique)
+        plugin2.version = "Ducker"
+        plugin2.save()
+        listplug = ariane.plugin_service.get_all(distrib)
+        print("listmodule: ", listplug)
+        related_nodes = ariane.plugin_service.get_relations(plugin)
+        print("related: ", related_nodes)
+
+    # def test_ariane_node(self):
+    #     args = {"login": "neo4j", "password":"admin", "type": "neo4j"}
+    #     ariane = ariane_deliveryArianeDeliveryService(args)
+    #     ariane.graph_dao_self.delete_all()
+    #     sub = ariane_delivery.SubModule("arti", "0.2", "oyo", "oyo.arti")
+    #     sub2 = ariane_delivery.SubModule("marti", "0.2", "aya", "aya.marti")
+    #     mod = ariane_delivery.Module("My", "0.2.2", "other")
+    #     mod.add_submodule(sub)
+    #     mod.add_submodule(sub2)
+    #     mod2 = ariane_delivery.Module("idm", "0.3.2", "core")
+    #     plugin = ariane_delivery.Plugin("RabbitMQ", "0.2.2")
+    #     sub3 = ariane_delivery.SubModule("rab", "0.3", "rabitt", "rab.rabitt")
+    #     plugin.add_submodule(sub3)
+    #     distrib = ariane_delivery.Distribution("community", "0.6.1")
+    #     distrib.add_Module(mod)
+    #     distrib.add_Module(mod2)
+    #     distrib.add_Plugin(plugin)
+    #     distrib.save()
+    #
+    #     sub4 = ariane_delivery.SubModule("blob", "0.46", "car", "blabla.car")
+    #     mod2.append(sub4)
+    #     mod.delete()
+        # mod2.delete()
         # print(distrib.list_plugin, distrib.list_relation)
         # sub3.delete()
         # sub2.delete()
         # print(distrib.list_plugin, distrib.list_relation)
-        # mod.delete()
         # distrib.delete()
-    # def test_save_node(self):
-    #     neoDao = daoFabric.DaoFabric.new_neo_dao("neo4j", "admin")
-    #     neoDao.delete_all()
-    #
-    #     node = ariane_delivery.Module("waza", "0.7", "blum")
-    #     neoDao.save_node(node)
-    #
-    #     listnode = neoDao.get_node_property("Module", **{"name": "waza"})
-    #     node = listnode[0]
-    #     node.name = "newname"
-    #     neoDao.save_node(node)
 
     # def test_create_db(self):
     #     neoDao = daoFabric.DaoFabric.new_neo_dao("neo4j", "admin")
