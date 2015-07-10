@@ -9,6 +9,24 @@ class NeoGraph(object):
     def __init__(self, graph):
         self.graph = graph
 
+    def get_node_properties(self, node):
+        return node.properties
+
+    def get_node_label(self, node):
+        for l in node.labels:
+            label = l
+            break
+        return label
+
+    def get_relation_data(self, relation):
+        start = relation.start_node
+        end = relation.end_node
+        relation_dict = {"start": start, "start_properties": start.properties,
+                         "start_label": self.get_node_label(start), "end": end, "end_properties": end.properties,
+                         "end_label": self.get_node_label(end), "relation": relation.type,
+                         "rel_properties": relation.properties}
+        return relation_dict
+
     def get_max_nid(self):
         max_nid = 0
         recordlist = self.graph.cypher.execute("MATCH (n) RETURN max(n.nID) as nID")
@@ -23,6 +41,11 @@ class NeoGraph(object):
 
     def delete(self, node):
         self.graph.delete(node)
+
+    def init_node(self, label, args):
+        node = Node.cast(args)
+        node.labels.add(label)
+        return node
 
     def create_node(self, node_label, node_dict):
         cur_nid = self.get_max_nid() + 1
@@ -65,6 +88,10 @@ class NeoGraph(object):
         node = args["node"]
         linked_node = args["linked_node"]
         relation = args["relation"]
+        nid = None
+        if node.properties["nID"] == 0:
+            node.properties["nID"] = self.get_max_nid() + 1
+            nid = node.properties["nID"]
 
         if "properties" in args.keys():
             properties = args["properties"]  # another dict
@@ -74,11 +101,11 @@ class NeoGraph(object):
             rel = Relationship.cast(node, relation, linked_node)
             self.graph.create(rel)
 
-        return rel
+        return nid, rel
         # print(relation)
         # self.graph.create(Relationship.cast(node, (relation, properties), linked_node))
 
-    def get_new_related(self, args):
+    def get_relations(self, args):
         listrel = []
         for rel in args["relation"]:
             listrecord = self.graph.match(args["node"], rel, bidirectional=True)
@@ -88,47 +115,6 @@ class NeoGraph(object):
             return None
         else:
             return listrel
-
-    def get_related_nodes(self, args):
-        """print("")
-        get all relation and end nodes base on the following model : (start_node)-[relation]->(end_node) or (s)-[r]->(e)
-        :param args: properties describing the start_node
-        :return: a dictionary with keys "start": unique node, "relations": list of py2neo.RelationShip object
-                "related_nodes": list of py2neo.Node object.
-                returns None if no related nodes and relations were find except start_node
-        """
-        # TODO
-        list_relation = []
-        list_endnodes = []
-        start_node = None
-        label = args["label"]
-        reverse = args["reverse"]
-        args.pop("label")
-        args.pop("reverse")
-        # Handle nID key separately because it is an integer
-        properties = "nID: "+str(args.get("nID"))+","
-        args.pop("nID")
-        for key in args.keys():
-            properties += ""+str(key)+": '"+str(args.get(key))+"',"
-        properties = properties[:-1]
-        if reverse is False:
-            match = "MATCH (s:"+label+" {"+properties+"})-[r]->(e) RETURN s,r,e"
-        else:
-            match = "MATCH (s:"+label+" {"+properties+"})<-[r]-(e) RETURN s,r,e"
-
-        listrecord = self.graph.cypher.execute(match)
-        # print("MATCH : ", match)
-        for record in listrecord:
-            if start_node is None:
-                start_node = record.s
-            list_relation.append(record.r)
-            list_endnodes.append(record.e)
-
-        if (len(list_relation) == 0) and (len(list_endnodes)) == 0:
-            return None
-        else:
-            related_nodes = {"start": start_node, "relations": list_relation, "related_nodes": list_endnodes}
-            return related_nodes
 
     def get_all(self, args):
         # print(args)

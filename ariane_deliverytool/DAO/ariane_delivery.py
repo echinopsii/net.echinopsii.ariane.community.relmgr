@@ -1,26 +1,35 @@
-from py2neo import Node
 from ariane_deliverytool.DAO import graphFabric
+
 __author__ = 'stanrenia'
 # TODO: good tests
 
 class ArianeDeliveryService(object):
     graph_dao = None
     dao_type = None
-    neo4j = "neo4j"
-    orientdb = "orientdb"
 
     def __init__(self, graph_dao_args):
         ArianeDeliveryService.dao_type, ArianeDeliveryService.graph_dao = graphFabric.DaoFabric.make(graph_dao_args)
-        self.graph_dao_self = ArianeDeliveryService.graph_dao
         self.submodule_service = SubModuleService()
         self.module_service = ModuleService()
         self.plugin_service = PluginService()
         self.distribution_service = DistributionService()
 
     def get_all(self, args):
+        """ This method is defined in each ArianeDeliveryService subclasses
+        Get all objects (of the same type as the corresponding service) related to the given node.
+        Ex: submodule_service.get_all(module) gets all SubModule object related to module, a Module object
+        :param args: ArianeNode subclass object. See each ArianeDeliveryService sublcasses for more details.
+        :return: A list of ArianeNode sublass objects matching the request
+        """
         pass
 
     def get_relations(self, args):
+        """ This method is defined in ArianeDeliveryService subclasses
+        Get all relations of an ArianeNode object. A relation is composed of: start_node, relation, end_node
+        :param args: list of ArianeNode objects, a single Ariane object or a dictionary matching an existing node in
+                    database
+        :return: A list of ArianeRelation objects, or a list containing lists of ArianeRelation if args was list or dict
+        """
         pass
 
     def find(self, args):
@@ -30,14 +39,14 @@ class ArianeDeliveryService(object):
             args.update(dir)
             found = ArianeDeliveryService.graph_dao.find(args)
         elif type(args) in ArianeNode.__subclasses__():
-            args = args.get_dir()
+            args = args._get_dir()
             args.update(dir)
             found = ArianeDeliveryService.graph_dao.find(args)
         elif type(args) is list:
             if self._check_list_type(args) is True:
                 found = []
                 for arg in args:
-                    param = arg.get_dir()
+                    param = arg._get_dir()
                     param.update(dir)
                     f = ArianeDeliveryService.graph_dao.find(param)
                     if f is not None:
@@ -49,14 +58,14 @@ class ArianeDeliveryService(object):
             found_copy = found.copy()
             found = []
             for fo in found_copy:
-                found.append(self.cast(fo))
+                found.append(self._create_ariane_node(fo))
         return found
 
     def get_unique(self, args):
         """
        get a unique node from graph database.
        :param args: dict which contains unique node identifiers (primary key equivalent, ex: id, name+version, ...)
-       :return: the unique node found in graph database (py2neo.Node object).
+       :return: the unique node found in graph database (ArianeNode object).
                If no node matches, return None
                If multiple nodes matches, return 0
        """
@@ -64,67 +73,7 @@ class ArianeDeliveryService(object):
             args["label"] = self._get_label()
             node = ArianeDeliveryService.graph_dao.get_unique(args)
             if (node is not None) and (type(node) is not int):
-                node = self.cast(node)
-            return node
-        else:
-            return None
-
-    def cast(self, node):
-        """ Create an ArianeNode object child from a graph node object, with same properties
-            Note: cast_from_neo is not implemented here, but it is in
-        :param node: Graph node object (ex: py2neo.Node)
-        :return: an ArianeNode object child (Module,Plugin, etc.)
-        """
-        if ArianeDeliveryService.dao_type == ArianeDeliveryService.neo4j:
-            return self.cast_from_neo(node.properties)
-        elif ArianeDeliveryService.dao_type == ArianeDeliveryService.orientdb:
-            return None
-        else:
-            return None
-
-    @staticmethod
-    def cast_node_from_label(node, label):
-        if label == "SubModule":
-            return SubModuleService().cast(node)
-        elif label == "Module":
-            return ModuleService().cast(node)
-        elif label == "Distribution":
-            return DistributionService().cast(node)
-        elif label == "Plugin":
-            return PluginService().cast(node)
-
-    @staticmethod
-    def cast_relation(relation, start=None, end=None):
-        """ Create an ArianeRelation object, from a graph relation object (ex: py2neo.RelationShip).
-            ArianeRelation object uses 2 ArianeNode Object children and a str object. In order to create 2 ArianeNode
-            Object, we need to get both node labels contained the graph relation object.
-        :param relation: graph database relation object (ex: py2neo.RelationShip for a neo4j relation)
-        :return: an ArianeRelation object
-        """
-        if ArianeDeliveryService.dao_type == ArianeDeliveryService.neo4j:
-            if (start is None) and (end is None):
-                """Get node label and create ArianeNode sublcass (child) with it, for start and end node"""
-                for l in relation.start_node.labels:
-                    label = l
-                    break
-                start_node = ArianeNode.create_subclass(label, relation.start_node.properties)
-                for l in relation.end_node.labels:
-                    label = l
-                    break
-                end_node = ArianeNode.create_subclass(label, relation.end_node.properties)
-                return ArianeRelation(start_node, relation.type, end_node)
-            else:
-                return ArianeRelation(start, relation, end)
-        elif ArianeDeliveryService.dao_type == ArianeDeliveryService.orientdb:
-            return None
-        else:
-            return None
-
-    @staticmethod
-    def create_graph_node(label, args):
-        if ArianeDeliveryService.dao_type == ArianeDeliveryService.neo4j:
-            node = Node.cast(args)
-            node.labels.add(label)
+                node = self._create_ariane_node(node)
             return node
         else:
             return None
@@ -133,28 +82,27 @@ class ArianeDeliveryService(object):
         ret = []
         if type(args) is list:
             for arg in args:
-                if isinstance(arg, type(self.ariane_node)):
-                    ret.append(self._search_related_nodes(arg, relations))
+                if isinstance(arg, type(self._ariane_node)):
+                    ret.append(self.__search_related_nodes(arg, relations))
         elif type(args) is dict:
             found = self.find(args)
             if found is not None:
                 for f in found:
-                    ret.append(self._search_related_nodes(f, relations))
-        elif isinstance(args, type(self.ariane_node)):
-            return self._search_related_nodes(args, relations)
+                    ret.append(self.__search_related_nodes(f, relations))
+        elif isinstance(args, type(self._ariane_node)):
+            return self.__search_related_nodes(args, relations)
 
         if len(ret) == 0:
             return None
         return ret
 
-    def _search_related_nodes(self, args, relations):
+    def __search_related_nodes(self, args, relations):
         args = {"node": args.node, "relation": relations}
-        list_relation = ArianeDeliveryService.graph_dao.get_new_related(args)
-        return self._cast_related_nodes(list_relation)
+        list_relation = ArianeDeliveryService.graph_dao.get_relations(args)
+        return self.__cast_related_nodes(list_relation)
 
-    def _cast_related_nodes(self, related_nodes_list):
+    def __cast_related_nodes(self, related_nodes_list):
         """
-        Check dao_type
         :param related_nodes_list:
         :return:
         """
@@ -162,46 +110,48 @@ class ArianeDeliveryService(object):
             if type(related_nodes_list) is list:
                 relation_list = []
                 for rel in related_nodes_list:
-                    if ArianeDeliveryService.dao_type == ArianeDeliveryService.neo4j:
-                        start_node = rel.start_node
-                        label_s = [label for label in start_node.labels][0]
-                        mod = rel.end_node
-                        label_m = [label for label in mod.labels][0]
-                        start_node = ArianeDeliveryService.cast_node_from_label(start_node, label_s)
-                        mod = ArianeDeliveryService.cast_node_from_label(mod, label_m)
-                    if (type(start_node) is not Distribution) and (type(mod) is not SubModule):
-                        start_node.add_related_node(rel, mod.remove_related_node)
-                    relation_list.append(ArianeDeliveryService.cast_relation(rel.type, start_node, mod))
+                    rel_d = ArianeDeliveryService.graph_dao.get_relation_data(rel)
+                    start_node = ArianeNode.create_subclass(rel_d["start_label"], rel_d["start_properties"])
+                    end_node = ArianeNode.create_subclass(rel_d["end_label"], rel_d["end_properties"])
+                    if (type(start_node) is not Distribution) and (type(end_node) is not SubModule):
+                        start_node._add_node_to_notify(rel, end_node._remove_notifier_node)
+                    else:
+                        start_node, end_node = end_node, start_node
+                        if (type(start_node) is not Distribution) and (type(end_node) is not SubModule):
+                            start_node._add_node_to_notify(rel, end_node._remove_notifier_node)
+                        start_node, end_node = end_node, start_node
+                    relation_list.append(ArianeRelation(start_node, rel_d["relation"], end_node,
+                                                        rel_d["rel_properties"]))
                 return relation_list
         return None
 
     def _check_dict_properties(self, args):
         if type(args) is dict:
-            return self.ariane_node.check_properties(args)
+            return self._ariane_node._check_properties(args)
         else:
             return False
 
     def _check_list_type(self, args):
         if type(args) is list:
             for arg in args:
-                if not isinstance(arg, type(self.ariane_node)):
+                if not isinstance(arg, type(self._ariane_node)):
                     return False
             return True
 
 class DistributionService(ArianeDeliveryService):
     def __init__(self):
-        self.ariane_node = Distribution("model", "model")
+        self._ariane_node = Distribution("model", "model")
 
     def get_all(self, args=None):
-        """ Get all modules from a given distribution
-        :param distribution: Distribution object
-        :return: a list of all Module objects related to the distribution
+        """ Get all distributions existing in database
+        :param args:  None
+        :return: a list of all Distribution objects existing in database
         """
         list_distrib = []
         args = {"reverse": False, "node": "Distribution", "relation": None}
         list_node = ArianeDeliveryService.graph_dao.get_all(args)
         for node in list_node:
-            list_distrib.append(self.cast(node))
+            list_distrib.append(self._create_ariane_node(node))
 
         if len(list_distrib) == 0:
             list_distrib = None
@@ -209,18 +159,19 @@ class DistributionService(ArianeDeliveryService):
         return list_distrib
 
     def get_relations(self, args):
-        self._get_relations(args, ["COMPATIBLE WITH", "DEPENDS ON"])
+        return self._get_relations(args, ["COMPATIBLE WITH", "DEPENDS ON"])
 
     @staticmethod
-    def cast_from_neo(args):
+    def _create_ariane_node(node):
+        args = ArianeDeliveryService.graph_dao.get_node_properties(node)
         return Distribution(args["name"], args["version"], args["nID"])
 
     def _get_label(self):
-        return self.ariane_node.node_type
+        return self._ariane_node.node_type
 
 class ModuleService(ArianeDeliveryService):
     def __init__(self):
-        self.ariane_node = Module("model", "model")
+        self._ariane_node = Module("model", "model")
 
     def get_all(self, args=None):
         """ Get all modules from a given distribution
@@ -233,7 +184,7 @@ class ModuleService(ArianeDeliveryService):
             args = {"reverse": True, "node": args.node, "relation": "DEPENDS ON"}
             list_node = ArianeDeliveryService.graph_dao.get_all(args)
             for node in list_node:
-                list_mod.append(self.cast(node))
+                list_mod.append(self._create_ariane_node(node))
         elif args is None:
             pass
 
@@ -246,27 +197,28 @@ class ModuleService(ArianeDeliveryService):
         return self._get_relations(args, ["COMPOSED OF", "DEPENDS ON"])
 
     @staticmethod
-    def cast_from_neo(args):
+    def _create_ariane_node(node):
+        args = ArianeDeliveryService.graph_dao.get_node_properties(node)
         return Module(args["name"], args["version"], args["type"], args["nID"])
 
     def _get_label(self):
-        return self.ariane_node.node_type
+        return self._ariane_node.node_type
 
 class PluginService(ArianeDeliveryService):
     def __init__(self):
-        self.ariane_node = Plugin("model", "model")
+        self._ariane_node = Plugin("model", "model")
 
     def get_all(self, args=None):
-        """ Get all modules from a given distribution
+        """ Get all plugins from a given distribution
         :param distribution: Distribution object
-        :return: a list of all Module objects related to the distribution
+        :return: a list of all Plugin objects related to the distribution
         """
         list_plugin = []
         if type(args) is Distribution:
             args = {"reverse": True, "node": args.node, "relation": "COMPATIBLE WITH"}
             list_node = ArianeDeliveryService.graph_dao.get_all(args)
             for node in list_node:
-                list_plugin.append(self.cast(node))
+                list_plugin.append(self._create_ariane_node(node))
         elif args is None:
             pass
 
@@ -278,19 +230,20 @@ class PluginService(ArianeDeliveryService):
     def get_relations(self, args):
         return self._get_relations(args, ["COMPOSED OF", "COMPATIBLE WITH"])
 
-    def cast_from_neo(self, args):
+    def _create_ariane_node(self, node):
+        args = ArianeDeliveryService.graph_dao.get_node_properties(node)
         return Plugin(args["name"], args["version"], args["nID"])
 
     def _get_label(self):
-        return self.ariane_node.node_type
+        return self._ariane_node.node_type
 
 class SubModuleService(ArianeDeliveryService):
     def __init__(self):
-        self.ariane_node = SubModule("model", "model")
+        self._ariane_node = SubModule("model", "model")
 
     def get_all(self, module):
         """
-        get all submodules from a given module
+        get all submodules from a given module or plugin
         :param module: Module/Plugin object
         :return: a list of all SubModule object related to the module
         """
@@ -298,27 +251,30 @@ class SubModuleService(ArianeDeliveryService):
         args = {"reverse": False, "node": module.node, "relation": "COMPOSED OF"}
         list_node = ArianeDeliveryService.graph_dao.get_all(args)
         for node in list_node:
-            sub = self.cast(node)
+            sub = self._create_ariane_node(node)
             list_submod.append(sub)
         return list_submod
 
     def get_relations(self, args):
         return self._get_relations(args, ["COMPOSED OF"])
 
-    def cast_from_neo(self, args):
+    def _create_ariane_node(self, node):
+        args = ArianeDeliveryService.graph_dao.get_node_properties(node)
         return SubModule(args["name"], args["version"], args["groupId"], args["artifactId"], args["nID"])
 
     def _get_label(self):
-        return self.ariane_node.node_type
+        return self._ariane_node.node_type
 
 class ArianeRelation(object):
-    def __init__(self, start, relation, end):
+    def __init__(self, start, relation, end, properties):
         self.start = start
         self.relation = relation
         self.end = end
+        self.properties = properties
 
     def __repr__(self):
-        return "Relation: start = "+self.start.__repr__()+", relation name = "+self.relation+", end = "+self.end.__repr__()+""
+        return "Relation: ("+self.start.__repr__()+")-[relation = "+self.relation+" ; "+str(self.properties)+"" \
+            "]->("+self.end.__repr__()+")"
 
 class ArianeNode(object):
 
@@ -327,42 +283,36 @@ class ArianeNode(object):
         self.version = version
         self.id = 0
 
-    def is_saved(self):
+    def _is_saved(self):
         if self.id == 0:
             return False
         else:
             return True
 
-    def check_properties(self, args):
+    def _check_properties(self, args):
         for arg_key in args.keys():
             if arg_key in self.dir.keys():
                 return True
         return False
 
-    def check_current_property(self, p):
+    def _check_current_property(self, p):
         if p in self.dir.keys():
             return True
         else:
             return False
 
     @staticmethod
-    def format_node_type(node_type):
-        node_type = str(node_type)
-        node_type = node_type.lower()
-        node_type = node_type.capitalize()
-        if node_type in ["Distribution", "Module", "Submodule", "Plugin"]:
-            if node_type == "Submodule":
-                node_type = "SubModule"
-        return node_type
-
-    @staticmethod
     def create_subclass(node_type, args):
-        # print("args: ", args)
+        """ create ArianeNode subclass from by giving subclass name and attributes
+        :param node_type: subclass name
+        :param args: dictionary object, containing attribute names as keys and attribute values as values
+        :return: the corresponding ArianeNode sublcass with attributes affected. None if node_type doesn't match
+        """
         if args.__len__() == 0:
             args = {"name": "", "version": "", "type": "", "groupId": "", "artifactId": ""}
 
         if node_type == "Distribution":
-            node = Distribution(args["distribution"], args["version"])
+            node = Distribution(args["name"], args["version"])
         elif node_type == "Module":
             node = Module(args["name"], args["version"], args["type"])
         elif node_type == "Plugin":
@@ -377,6 +327,15 @@ class ArianeNode(object):
 
         return node
 
+    def __eq__(self, other):
+        if type(other) in ArianeNode.__subclasses__():
+            dir = other._get_dir()
+            eq_args = [val for key, val in self._get_dir().items() if (key in dir.keys()) and (val == dir.get(key))]
+            if len(eq_args) == len(self._get_dir()):
+                return True
+        return False
+
+
 class Distribution(ArianeNode):
 
     def __init__(self, name, version, id=0):
@@ -388,9 +347,9 @@ class Distribution(ArianeNode):
         self.list_relation = []
         self.list_related_node = []
         self.dir = {"name": self.name, "version": self.version, "nID": self.id}
-        self.node = ArianeDeliveryService.create_graph_node(self.node_type, self.dir)
+        self.node = ArianeDeliveryService.graph_dao.init_node(self.node_type, self.dir)
 
-    def get_dir(self):
+    def _get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "nID": self.id}
         return self.dir
 
@@ -402,15 +361,15 @@ class Distribution(ArianeNode):
             for plugin in self.list_plugin:
                 plugin.save()
 
-            self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self.get_dir())
+            self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self._get_dir())
             for plugin in self.list_plugin:
-                self.create_relation(plugin, "COMPATIBLE WITH")
+                self.__create_relation(plugin, "COMPATIBLE WITH")
 
             for mod in self.list_module:
-                self.create_relation(mod, "DEPENDS ON")
+                self.__create_relation(mod, "DEPENDS ON")
 
         else:
-            dir = self.get_dir()
+            dir = self._get_dir()
             dir["label"] = self.node_type
             self.node = ArianeDeliveryService.graph_dao.save_node(**dir)
 
@@ -423,23 +382,25 @@ class Distribution(ArianeNode):
             ArianeDeliveryService.graph_dao.delete(rel)
         ArianeDeliveryService.graph_dao.delete(self.node)
 
-    def add_Module(self, module):
+    def add_module(self, module):
         self.list_module.append(module)
-        if self.is_saved():
-            self.create_relation(module, "DEPENDS ON")
+        if self._is_saved():
+            self.__create_relation(module, "DEPENDS ON")
 
-    def add_Plugin(self, plugin):
+    def add_plugin(self, plugin):
         self.list_plugin.append(plugin)
-        if self.is_saved():
-            self.create_relation(plugin, "COMPATIBLE WITH")
+        if self._is_saved():
+            self.__create_relation(plugin, "COMPATIBLE WITH")
 
-    def create_relation(self, mod_plug, relation):
+    def __create_relation(self, mod_plug, relation):
         link_args = {"node": mod_plug.node, "relation": relation, "linked_node": self.node}
-        rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
+        nid, rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
         self.list_relation.append(rel)
-        mod_plug.add_related_node(rel, self.remove_related_node)
+        mod_plug._add_node_to_notify(rel, self._remove_notifier_node)
+        if nid is not None:
+            mod_plug.id = nid
 
-    def remove_related_node(self, rel, node):
+    def _remove_notifier_node(self, rel, node):
         self.list_relation.remove(rel)
         if node.node_type == "Module":
             self.list_module.remove(node)
@@ -462,25 +423,25 @@ class Module(ArianeNode):
         self.list_relation = []
         self.list_related_node = []
         self.dir = {"name": self.name, "version": self.version, "type": self.type, "nID": self.id}
-        self.node = ArianeDeliveryService.create_graph_node(self.node_type, self.dir)
+        self.node = ArianeDeliveryService.graph_dao.init_node(self.node_type, self.dir)
 
-    def get_dir(self):
+    def _get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "type": self.type, "nID": self.id}
         return self.dir
 
     def save(self):
-        if self.is_saved() is False:
+        if self._is_saved() is False:
             for submod in self.list_submod:
                 submod.save()
 
-            self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self.get_dir())
+            self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self._get_dir())
 
             for submod in self.list_submod:
-                self.create_relation(submod)
+                self.__create_relation(submod)
 
         else:
             # update properties in graph database
-            dir = self.get_dir()
+            dir = self._get_dir()
             dir["label"] = self.node_type
             self.node = ArianeDeliveryService.graph_dao.save_node(**dir)
 
@@ -501,10 +462,10 @@ class Module(ArianeNode):
 
     def add_submodule(self, submod):
         self.list_submod.append(submod)
-        if self.is_saved():
-            self.create_relation(submod)
+        if self._is_saved():
+            self.__create_relation(submod)
 
-    def create_relation(self, submod):
+    def __create_relation(self, submod):
         """
         Create a relation in graph database between self and a SubModule object.
         Update self relations list and the submodule's related node list
@@ -512,12 +473,14 @@ class Module(ArianeNode):
         :return: Nothing
         """
         link_args = {"node": self.node, "relation": "COMPOSED OF", "linked_node": submod.node}
-        rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
+        nid, rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
         self.list_relation.append(rel)
-        # Send "remove_related_node" function as argument
-        submod.add_related_node(rel, self.remove_related_node)
+        # Send "_remove_notifier_node" function as argument
+        submod._add_node_to_notify(rel, self._remove_notifier_node)
+        if nid is not None:
+            submod.id = nid
 
-    def add_dependency(self, **mod_args):
+    def add_module_dependency(self, **mod_args):
         """
         Add Module to Module dependency.
         :param mod_args: dict with the following keys: "module": Module object, "version_min": str, "version_max": str
@@ -526,24 +489,26 @@ class Module(ArianeNode):
         properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"]}
         module = mod_args["module"]
         link_args = {"node": self.node, "relation": "DEPENDS ON", "linked_node": module.node, "properties": properties}
-        rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
+        nid, rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
         self.list_module_dependency.append(module)
-        self.add_related_node(rel, module.remove_related_node)
+        self._add_node_to_notify(rel, module._remove_notifier_node)
         module.list_module_dependency.append(self)
-        module.add_related_node(rel, self.remove_related_node)
+        module._add_node_to_notify(rel, self._remove_notifier_node)
+        if nid is not None:
+            module.id = nid
 
-    def add_related_node(self, rel, node_remove_function):
+    def _add_node_to_notify(self, rel, node_remove_function):
         """
         Update list: Add rel in list_relation. Add (rel,node_remove_function) tuple in list_related_node.
         :param rel: py2neo.Relationship Object. relation between self and Distribution/Module Object
-        :param node_remove_function: Distribution/Module Object function(method) named "remove_related_node".
+        :param node_remove_function: Distribution/Module Object function(method) named "_remove_notifier_node".
         It's the solution used to notify the Distribution/Module Object
         :return:
         """
         self.list_relation.append(rel)
         self.list_related_node.append((rel, node_remove_function))
 
-    def remove_related_node(self, rel, node):
+    def _remove_notifier_node(self, rel, node):
         """
         This method is called when a related SubModule or Module is deleted.
         Update relation list and module/submodule list
@@ -572,24 +537,24 @@ class SubModule(ArianeNode):
         self.artifactId_name = artifactId_name
         self.dir = {"name": self.artifactId_name, "version": self.version, "groupId": self.groupId,
                     "artifactId": self.artifactId, "nID": self.id}
-        self.node = ArianeDeliveryService.create_graph_node(self.node_type, self.dir)
         self.list_relation = []
         self.list_related_node = []
+        self.node = ArianeDeliveryService.graph_dao.init_node(self.node_type, self.dir)
 
-    def get_dir(self):
+    def _get_dir(self):
         self.dir = {"name": self.artifactId_name, "version": self.version, "groupId": self.groupId,
                     "artifactId": self.artifactId, "nID": self.id}
         return self.dir
 
-    def add_related_node(self, rel, node_remove_function):
+    def _add_node_to_notify(self, rel, node_remove_function):
         self.list_relation.append(rel)
         self.list_related_node.append((rel, node_remove_function))
 
     def save(self):
         if self.id == 0:
-            self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self.get_dir())
+            self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self._get_dir())
         else:
-            dir = self.get_dir()
+            dir = self._get_dir()
             dir["label"] = self.node_type
             self.node = ArianeDeliveryService.graph_dao.save_node(**dir)
 
@@ -622,9 +587,9 @@ class Plugin(ArianeNode):
         self.list_relation = []
         self.list_related_node = []
         self.dir = {"name": self.name, "version": self.version, "nID": self.id}
-        self.node = ArianeDeliveryService.create_graph_node(self.node_type, self.dir)
+        self.node = ArianeDeliveryService.graph_dao.init_node(self.node_type, self.dir)
 
-    def get_dir(self):
+    def _get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "nID": self.id}
         return self.dir
 
@@ -633,12 +598,12 @@ class Plugin(ArianeNode):
             for submod in self.list_submod:
                 submod.save()
 
-            self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self.get_dir())
+            self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self._get_dir())
 
             for submod in self.list_submod:
-                self.create_relation(submod)
+                self.__create_relation(submod)
         else:
-            dir = self.get_dir()
+            dir = self._get_dir()
             dir["label"] = self.node_type
             self.node = ArianeDeliveryService.graph_dao.save_node(**dir)
 
@@ -657,23 +622,25 @@ class Plugin(ArianeNode):
         for rel, node_remove_function in self.list_related_node:
             node_remove_function(rel, self)
 
-    def add_submodule(self,submod):
+    def add_submodule(self, submod):
         self.list_submod.append(submod)
-        if self.is_saved():
-            self.create_relation(submod)
+        if self._is_saved():
+            self.__create_relation(submod)
 
-    def create_relation(self, submod):
+    def __create_relation(self, submod):
         link_args = {"node": self.node, "relation": "COMPOSED OF", "linked_node": submod.node}
-        rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
+        nid, rel = ArianeDeliveryService.graph_dao.create_link(** link_args)
         self.list_relation.append(rel)
-        # Send "remove_related_node" function as argument
-        submod.add_related_node(rel, self.remove_related_node)
+        # Send "_remove_notifier_node" function as argument
+        submod._add_node_to_notify(rel, self._remove_notifier_node)
+        if nid is not None:
+            submod.id = nid
 
-    def add_related_node(self, rel, node_remove_function):
+    def _add_node_to_notify(self, rel, node_remove_function):
         self.list_relation.append(rel)
         self.list_related_node.append((rel, node_remove_function))
 
-    def remove_related_node(self, rel, submod):
+    def _remove_notifier_node(self, rel, submod):
         self.list_relation.remove(rel)
         self.list_submod.remove(submod)
 
