@@ -5,33 +5,26 @@ __author__ = 'stanrenia'
 
 class AppTest(unittest.TestCase):
 # TODO test notifing methods
-    @classmethod
-    def setUpClass(cls):
+
+    def setUp(self):
         # Init variables:
         args = {"login": "neo4j", "password":"admin", "type": "neo4j"}
-        cls.ariane = ariane_delivery.ArianeDeliveryService(args)
-        cls.sub = ariane_delivery.SubModule("arti", "0.2", "oyo", "oyo.arti")
-        cls.sub2 = ariane_delivery.SubModule("marti", "0.2", "aya", "aya.marti")
-        cls.mod = ariane_delivery.Module("My", "0.2.2", "other")
-        cls.mod2 = ariane_delivery.Module("idm", "0.3.2", "core")
-        cls.plugin = ariane_delivery.Plugin("RabbitMQ", "0.2.2")
-        cls.sub3 = ariane_delivery.SubModule("rab", "0.3", "rabitt", "rab.rabitt")
-        cls.distrib = ariane_delivery.Distribution("community", "0.6.1")
-        cls.ariane.graph_dao.delete_all()
-        cls.mod.add_submodule(cls.sub)
-        cls.mod.add_submodule(cls.sub2)
-        cls.plugin.add_submodule(cls.sub3)
-        cls.distrib.add_module(cls.mod)
-        cls.distrib.add_module(cls.mod2)
-        cls.distrib.add_plugin(cls.plugin)
-        cls.distrib.save()
-
-    @classmethod
-    def tearDownClass(cls):
-        related_nodes = cls.ariane.distribution_service.get_relations(cls.distrib)
-        print("Distribution's relations")
-        for rel in related_nodes:
-            print(rel)
+        self.ariane = ariane_delivery.ArianeDeliveryService(args)
+        self.sub = ariane_delivery.SubModule("arti", "0.2", "oyo", "oyo.arti")
+        self.sub2 = ariane_delivery.SubModule("marti", "0.2", "aya", "aya.marti")
+        self.mod = ariane_delivery.Module("My", "0.2.2", "other")
+        self.mod2 = ariane_delivery.Module("idm", "0.3.2", "core")
+        self.plugin = ariane_delivery.Plugin("RabbitMQ", "0.2.2")
+        self.sub3 = ariane_delivery.SubModule("rab", "0.3", "rabitt", "rab.rabitt")
+        self.distrib = ariane_delivery.Distribution("community", "0.6.1")
+        self.ariane.graph_dao.delete_all()
+        self.mod.add_submodule(self.sub)
+        self.mod.add_submodule(self.sub2)
+        self.plugin.add_submodule(self.sub3)
+        self.distrib.add_module(self.mod)
+        self.distrib.add_module(self.mod2)
+        self.distrib.add_plugin(self.plugin)
+        self.distrib.save()
 
     def test_save_distrib(self):
         #   Save distribution
@@ -241,3 +234,43 @@ class AppTest(unittest.TestCase):
         related_nodes = self.ariane.distribution_service.get_relations(self.distrib)
         for rel in related_nodes:
             self.assertIsInstance(rel, ariane_delivery.ArianeRelation)
+
+    def test_submodule_delete(self):
+        assert self.sub in self.mod.list_submod
+        self.sub.delete()
+        assert self.sub not in self.mod.list_submod
+
+        notfound = self.ariane.submodule_service.find(self.sub)
+        self.assertIsNone(notfound)
+
+    def test_module_delete(self):
+        assert self.mod2 in self.distrib.list_module
+        self.mod2.delete()
+        assert self.mod2 not in self.distrib.list_module
+
+        notfound = self.ariane.module_service.find(self.mod2)
+        self.assertIsNone(notfound)
+
+    def test_plugin_delete(self):
+        assert self.plugin in self.distrib.list_plugin
+        self.plugin.delete()
+        assert self.plugin not in self.distrib.list_plugin
+
+        notfound = self.ariane.module_service.find(self.plugin)
+        self.assertIsNone(notfound)
+
+    def test_distrib_delete(self):
+        self.distrib2 = ariane_delivery.Distribution("echinopsii", "0.7.0")
+        self.distrib2.save()
+        found = self.ariane.distribution_service.find(self.distrib2)
+        self.assertIsNotNone(found)
+        self.assertEqual(found[0], self.distrib2)
+
+        self.distrib2.delete()
+        notfound = self.ariane.distribution_service.find(self.distrib2)
+        self.assertIsNone(notfound)
+
+        self.distrib.delete()
+        d = self.ariane.distribution_service.get_all()
+        self.assertIsNone(d)
+
