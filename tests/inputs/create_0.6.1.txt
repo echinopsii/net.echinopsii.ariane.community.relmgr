@@ -1,4 +1,4 @@
-# syntaxe expected:
+# syntax expected:
 # distribution distribution_name distribution_version
 # module_name module_version module_type sub_module_name1 sub_module_name1_version sub_module_name2 sub_module_name2_version etc
 # plugin plugin_name plugin_version sub_module_name1 sub_module_name2 etc
@@ -10,9 +10,9 @@ distribution community 0.6.1
 directory 0.6.1 core base wat
 injector 0.6.1 core base wat
 idm 0.4.0 core base
-mapping 0.6.1 core ds taitale wat
-portal 0.6.1 core base idmwat wab wat wressources
-installer 0.1.0 environment tools
+mapping 0.6.1 core ds:_api_blueprints_dsl_rim taitale wat
+portal 0.6.1 core base idmwat wab wat wresources
+installer 0.6.1 environment tools
 environment 0.6.1 environment
 plugin rabbitmq 0.2.1 directory jsonparser injector
 
