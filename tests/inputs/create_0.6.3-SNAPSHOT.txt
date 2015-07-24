@@ -1,0 +1,34 @@
+# syntaxe expected:
+# distribution distribution_name distribution_version
+# module_name module_version module_type sub_module_name1 sub_module_name2 etc
+# -------To create sub sub module, use this syntax--------> 'SubModuleParent:_sub1_sub2_sub3' # underscores to separate submodules
+# plugin plugin_name plugin_version sub_module_name1 sub_module_name2 etc
+#
+# dependency:
+# module_name1 module_name2 version_min version_max
+
+distribution community 0.6.3-SNAPSHOT
+directory 0.6.3-SNAPSHOT core base wat
+injector 0.6.3-SNAPSHOT core base messaging wat
+idm 0.4.2-SNAPSHOT core base
+mapping 0.6.3-SNAPSHOT core ds:_api_blueprints_dsl_rim taitale wat
+portal 0.6.3-SNAPSHOT core base idmwat wab wat wresources
+installer 0.1.0 environment tools
+messaging 0.1.1-SNAPSHOT none api rabbitmq
+environment 0.6.3-SNAPSHOT environment
+plugin rabbitmq 0.2.3-SNAPSHOT directory jsonparser injector
+
+dependency:
+directory portal 0.6.0 0.7.0
+injector portal 0.6.0 0.7.0
+injector messaging 0.1.0 0.2.0
+portal idm 0.4.0 0.5.0
+mapping portal 0.6.0 0.7.0
+mapping idm 0.4.0 0.5.0
+messaging portal 0.6.0 0.7.0
+
+plugin_dependency:
+rabbitmq mapping 0.6.0 0.7.0
+rabbitmq directory 0.6.0 0.7.0
+rabbitmq portal 0.6.0 0.7.0
+rabbitmq injector 0.6.0 0.7.0
