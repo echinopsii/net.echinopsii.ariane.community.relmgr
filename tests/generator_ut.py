@@ -9,6 +9,7 @@ import os
 
 __author__ = 'stanrenia'
 # TODO corriger ../
+# TODO  ArianeDeliveryService -> DeliveryTree , DAO -> dao
 # TODO Implémenter services FileNode (CreateRemoveUpdateDelete CRUD)
 # TODO générer Distrib(Modules) puis générer Plugin (un par un, en fonction du nom d'entrée)
 # TODO: Insérer fichiers à générer dans DB pr chaque node: Créer nouveau Node('File' {type: '',})
