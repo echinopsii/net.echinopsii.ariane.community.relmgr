@@ -8,7 +8,7 @@ def create_db_file(filename):
     list_module = []
     list_plugin = []
     args = {"login": "neo4j", "password":"admin", "type": "neo4j"}
-    ariane = ariane_delivery.ArianeDeliveryService(args)
+    ariane = ariane_delivery.DeliveryTree(args)
     distrib = None
     txtout = ""
     try:

@@ -1,30 +1,32 @@
 from ariane_deliverytool.dao import ariane_delivery
 from ariane_deliverytool.generator import generator
 from tests import create_db_from_file
-from ariane_deliverytool.generator import tools
 import unittest
-import difflib
 import json
 import os
 
 __author__ = 'stanrenia'
-# TODO corriger ../
-# TODO  ArianeDeliveryService -> DeliveryTree , DAO -> dao
+# TODO Corriger warnings
+# TODO: Faire des Diagrammes (classes, relations, fonctionnement)
+# TODO: Implémenter ArianeRelation.delete()
+# TODO: Voir pourquoi node_id de Distribution change dans le test generator_ut.py, ajuster Generator.get_distrib() en fonction.
+# TODO Template Plan 0.6.3
+# TODO Mettre Header: Licence, auteur, titre, description
+# TODO crée toutes les distribs et export cypher.
+# TODO Déplacer les services Files (méthode make_files) dans un autre fichier.
+# TODO Possibilité d'améliorer le compare xml, afin d'afficher tous les fichiers à modifier au début du print. Voir d'automatiser les modifs à faire.
+# TODO Vérifier la version master.snapshot
 # TODO Implémenter services FileNode (CreateRemoveUpdateDelete CRUD)
-# TODO générer Distrib(Modules) puis générer Plugin (un par un, en fonction du nom d'entrée)
-# TODO: Insérer fichiers à générer dans DB pr chaque node: Créer nouveau Node('File' {type: '',})
-# TODO: Voir pour générer fichier un par un, au lieu de tous d'un coup
-# TODO: Valider toute la génération de fichiers.
 # TODO interface terminal pour génération fichiers
-# TODO (commencé) Plans: créer 1 template par module et par version
 
 class GeneratorTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         args = {"login": "neo4j", "password": "admin", "type": "neo4j"}
-        cls.ariane = ariane_delivery.ArianeDeliveryService(args)
+        cls.ariane = ariane_delivery.DeliveryTree(args)
         cls.ariane.delete_all()
         cls.dir_output = "outputs/"
+        cls.g = generator.Generator(cls.ariane, cls.dir_output)
 
     def setUp(self):
         self.ariane.delete_all()
@@ -32,143 +34,143 @@ class GeneratorTest(unittest.TestCase):
     def tearDown(self):
         self.assertTrue(self.ariane.check_uniqueness())
 
-    def test_create_files(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.2.txt')
+    # def test_path(self):
+    #     print(os.getcwd(), os.path.realpath(__file__))
+    #     print(os.path.exists('..ariane_delivertytool/generator/exception_extension/module_vsh_exceptions.json'))
+    #     print(os.path.exists('/Users/stanrenia/py_neo4j_db/ariane_deliverytool/generator/exception_extension/module_vsh_exceptions.json'))
+    #     print(os.listdir('./'))
 
-    def test_path(self):
-        print(os.path.exists('..ariane_delivertytool/generator/exception_extension/module_lib_exceptions.json'))
-        print(os.path.exists('/Users/stanrenia/py_neo4j_db/ariane_deliverytool/generator/exception_extension/module_lib_exceptions.json'))
-        print(os.listdir('./'))
+    def test_generate_pom_maven(self):
+        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
+        fpom = self.ariane.get_one_file(distrib, "pom_dist")
+        self.g.generate_pom_distrib('0.6.4-SNAPSHOT', fpom)
+        self.compare_files('xml', self.dir_output + fpom.path + fpom.name,
+                           'models/pom-ariane.community.distrib-master.SNAPSHOT.xml')
 
     def test_generate_pom_module(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.3-SNAPSHOT.txt')
-        g = generator.Generator(self.ariane)
-        distrib = self.ariane.distribution_service.get_unique({"version": "0.6.3-SNAPSHOT"})
+        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
         modules = self.ariane.module_service.get_all(distrib)
         plugins = self.ariane.plugin_service.get_all(distrib)
-        g.generate_pom("0.6.3-SNAPSHOT", self.dir_output+"ariane.community")
+
         for plug in plugins:
-            plug.list_submod = self.ariane.submodule_service.get_all(plug)
-            self.compare_files('xml', self.dir_output+'ariane.community.plugin.'+plug.name+'/pom.xml', 'models/pom-'+plug.name+'.xml')
+            self.g.generate_pom(plug)
+            self.compare_files('xml', self.dir_output+plug.get_directory_name()+'/pom.xml',
+                               'models/'+plug.get_directory_name()+'/pom.xml')
             for psub in plug.list_submod:
-                self.compare_files('xml', self.dir_output+'ariane.community.plugin.'+plug.name+'/'+psub.name+'/pom.xml',
-                                   'models/sub_pom/pom-'+plug.name+'-'+psub.name+'.xml')
+                self.compare_files('xml', self.dir_output+plug.get_directory_name()+'/'+psub.name+'/pom.xml',
+                                   'models/'+plug.get_directory_name()+'/'+psub.name+'/pom.xml')
 
         for mod in modules:
             if mod.name == "environment":
                 continue
-            mod.list_submod = self.ariane.submodule_service.get_all(mod)
-            mod.list_submod.extend(self.ariane.submodule_parent_service.get_all(mod))
-            modtyp = "core."
-            if mod.type != 'core':
-                modtyp = ""
-            self.compare_files('xml', self.dir_output+'ariane.community.'+modtyp+mod.name+'/pom.xml', 'models/pom-'+mod.name+'.xml')
+            self.g.generate_pom(mod)
+            self.compare_files('xml', self.dir_output+mod.get_directory_name()+'/pom.xml',
+                               'models/'+mod.get_directory_name()+'/pom.xml')
             for sub in mod.list_submod:
-                self.compare_files('xml', self.dir_output+'ariane.community.'+modtyp+mod.name+'/'+sub.name+'/pom.xml',
-                                   'models/sub_pom/'+'pom-'+mod.name+'-'+sub.name+'.xml')
+                self.compare_files('xml', self.dir_output+mod.get_directory_name()+'/'+sub.name+'/pom.xml',
+                                   'models/'+mod.get_directory_name()+'/'+sub.name+'/pom.xml')
                 if type(sub) is ariane_delivery.SubModuleParent:
                     for s in sub.list_submod:
-                        self.compare_files('xml', self.dir_output+'ariane.community.'+modtyp+mod.name+'/'+sub.name+'/'+s.name+'/pom.xml',
-                                           'models/sub_pom/'+'pom-'+mod.name+'-'+sub.name+'-'+s.name+'.xml')
+                        self.compare_files('xml', self.dir_output+mod.get_directory_name()+'/'+sub.name+'/'+s.name+'/pom.xml',
+                                           'models/'+mod.get_directory_name()+'/'+sub.name+'/'+s.name+'/pom.xml')
 
     def test_generate_distrib_json(self):
-        g = generator.Generator(self.ariane)
-        create_db_from_file.create_db_file('inputs/create_0.6.1.txt')
-        filename = g.generate_json("0.6.1", "module", self.dir_output+"ariane.community")
-        self.assertTrue(self.compare_files("json", filename, 'models/ariane.community.distrib-0.6.1.json'))
+        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
+        fjson = self.ariane.get_one_file(distrib, "json_dist")
+        filename = self.g.generate_json_dist("0.6.4-SNAPSHOT", fjson)
+        self.assertTrue(self.compare_files("json", filename, 'models/ariane.community.distrib-master.SNAPSHOT.json'))
 
     def test_generate_distrib_plugin_json(self):
-        g = generator.Generator(self.ariane)
-        create_db_from_file.create_db_file('inputs/create_0.5.3.txt')
-        filename = g.generate_json("0.5.3", "plugin", self.dir_output+"ariane.community")
-        self.assertTrue(self.compare_files("json", filename, "models/ariane.community.plugins-distrib-0.5.3.json"))
+        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
+        fjson = self.ariane.get_one_file(distrib, "json_plugin_dist")
+        filename = self.g.generate_json_plugin_dist("0.6.4-SNAPSHOT", fjson)
+        self.assertTrue(self.compare_files("json", filename, "models/ariane.community.plugins-distrib-master.SNAPSHOT.json"))
 
     def test_generate_plugins_json(self):
-        g = generator.Generator(self.ariane)
         create_db_from_file.create_db_file('inputs/create_0.5.3.txt')
         create_db_from_file.create_db_file('inputs/create_0.6.0.txt')
         create_db_from_file.create_db_file('inputs/create_0.6.1.txt')
         create_db_from_file.create_db_file('inputs/create_0.6.2.txt')
-        create_db_from_file.create_db_file('inputs/create_0.6.3-SNAPSHOT.txt')
+        create_db_from_file.create_db_file('inputs/create_0.6.3.txt')
+        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
 
-        filename = g.generate_plugins_json(self.dir_output+"ariane.community")
+        distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
+        fjson = self.ariane.get_one_file(distrib, "json_plugins")
+        filename = self.g.generate_json_plugins(fjson)
         self.assertTrue(self.compare_files("c_json", filename, "models/ariane.community.plugins.json"))
 
     def test_generate_git_repos_json(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.2.txt')
-        g = generator.Generator(self.ariane)
-        version = "0.6.2"
-        filename = g.generate_git_repos_json(version, self.dir_output+"ariane.community", extension=".git")
-        self.assertTrue((self.compare_files("json", filename, "models/ariane.community.git.repos-0.6.2.json")))
-
-    def test_generate_main_git_repos_json(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.2.txt')
-        g = generator.Generator(self.ariane)
-        version = "0.6.2"
-        filename = g.generate_git_repos_json(version, self.dir_output+"ariane.community", url="net.echinopsii.")
-        self.assertTrue(self.compare_files("json", filename, "models/ariane.community.git.repos-main-master.SNAPSHOT.json"))
+        create_db_from_file.create_db_file('inputs/create_0.6.3.txt')
+        version = "0.6.3"
+        distrib = self.ariane.distribution_service.get_unique({"version": version})
+        fjson = self.ariane.get_one_file(distrib, "git_repos")
+        self.g.generate_git_repos_json(version, fjson)
+        self.assertTrue((self.compare_files("json", self.dir_output+fjson.path+fjson.name, "models/"+fjson.name)))
 
     def test_generate_module_lib(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.2.txt')
-        g = generator.Generator(self.ariane)
-        version = "0.6.2"
-        g.generate_lib_json(version, self.dir_output+"ariane.community")
-        self.assertTrue(self.compare_files("json", self.dir_output+"ariane.community.core.directory/distrib/db/"
-                                           "resources/builds/ariane.community.core.directory-0.6.2.json",
-                                           "models/ariane.community.core.directory-0.6.2.json"))
-        self.assertTrue(self.compare_files("json", self.dir_output+"ariane.community.core.idm/distrib/db/"
-                                           "resources/builds/ariane.community.core.idm-0.4.1.json",
-                                           "models/ariane.community.core.idm-0.4.1.json"))
-        self.assertTrue(self.compare_files("json", self.dir_output+"ariane.community.core.injector/distrib/db/"
-                                           "resources/builds/ariane.community.core.injector-0.6.2.json",
-                                           "models/ariane.community.core.injector-0.6.2.json"))
-        self.assertTrue(self.compare_files("json", self.dir_output+"ariane.community.core.portal/distrib/db/"
-                                           "resources/builds/ariane.community.core.portal-0.6.2.json",
-                                           "models/ariane.community.core.portal-0.6.2.json"))
-        self.assertTrue(self.compare_files("json", self.dir_output+"ariane.community.core.mapping/distrib/db/"
-                                           "resources/builds/ariane.community.core.mapping-0.6.2.json",
-                                           "models/ariane.community.core.mapping-0.6.2.json"))
-        self.assertTrue(self.compare_files("json", self.dir_output+"ariane.community.messaging/distrib/db/"
-                                           "resources/builds/ariane.community.messaging-0.1.0.json",
-                                           "models/ariane.community.messaging-0.1.0.json"))
+        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
+        modules = self.ariane.module_service.get_all(distrib)
+        plugins = self.ariane.plugin_service.get_all(distrib)
+        for m in modules:
+            if m.name not in ["environment", "installer"]:
+                m.list_submod = self.ariane.submodule_service.get_all(m)
+                m.list_submod.extend(self.ariane.submodule_parent_service.get_all(m))
+                fjson = self.ariane.get_one_file(m, "json_build")
+                self.g.generate_lib_json(m, fjson)
+                self.assertTrue(self.compare_files("json", self.dir_output+fjson.path+fjson.name,
+                                                   "models/"+fjson.name))
+        for p in plugins:
+            p.list_submod = self.ariane.submodule_service.get_all(p)
+            p.list_submod.extend(self.ariane.submodule_parent_service.get_all(p))
+            fjson = self.ariane.get_one_file(p, "json_build")
+            self.g.generate_lib_json(p, fjson)
+            self.assertTrue(self.compare_files("json", self.dir_output+fjson.path+fjson.name,
+                                               "models/"+fjson.name))
 
     def test_generate_plan(self):
         create_db_from_file.create_db_file('inputs/create_0.6.2.txt')
-        g = generator.Generator(self.ariane)
+        distrib = self.ariane.distribution_service.get_unique({"version": "0.6.2"})
+        modules = self.ariane.module_service.get_all(distrib)
+        plugins = self.ariane.plugin_service.get_all(distrib)
         version = "0.6.2"
-        g.generate_plan(version, self.dir_output+"ariane.community")
-        self.assertTrue(self.compare_files("xml", self.dir_output+"ariane.community.core.directory/distrib/db/"
-                        "resources/virgo/repository/ariane-core/net.echinopsii.ariane.community.core.directory_0.6.2.plan",
-                                           "models/net.echinopsii.ariane.community.core.directory_0.6.2.plan"))
-        self.assertTrue(self.compare_files("xml", self.dir_output+"ariane.community.core.injector/distrib/db/"
-                        "resources/virgo/repository/ariane-core/net.echinopsii.ariane.community.core.injector_0.6.2.plan",
-                                           "models/net.echinopsii.ariane.community.core.injector_0.6.2.plan"))
-        self.assertTrue(self.compare_files("xml", self.dir_output+"ariane.community.core.portal/distrib/db/"
-                        "resources/virgo/repository/ariane-core/net.echinopsii.ariane.community.core.portal_0.6.2.plan",
-                                           "models/net.echinopsii.ariane.community.core.portal_0.6.2.plan"))
-        self.assertTrue(self.compare_files("xml", self.dir_output+"ariane.community.core.mapping/distrib/db/"
-                        "resources/virgo/repository/ariane-core/net.echinopsii.ariane.community.core.mapping_0.6.2.plan",
-                                           "models/net.echinopsii.ariane.community.core.mapping_0.6.2.plan"))
-        self.assertTrue(self.compare_files("xml", self.dir_output+"ariane.community.messaging/distrib/db/"
-                        "resources/virgo/repository/ariane-core/net.echinopsii.ariane.community.messaging_0.1.0.plan",
-                                           "models/net.echinopsii.ariane.community.messaging_0.1.0.plan"))
-        self.assertTrue(self.compare_files("xml", self.dir_output+"ariane.community.core.idm/distrib/db/"
-                        "resources/virgo/repository/ariane-core/net.echinopsii.ariane.community.core.idm_0.4.1.plan",
-                                           "models/net.echinopsii.ariane.community.core.idm_0.4.1.plan"))
-        self.assertTrue(self.compare_files("xml", self.dir_output+"ariane.community.plugin.rabbitmq/distrib/db/"
-                        "resources/virgo/repository/ariane-plugins/net.echinopsii.ariane.community.plugin.rabbitmq_0.2.2.plan",
-                                           "models/net.echinopsii.ariane.community.plugin.rabbitmq_0.2.2.plan"))
+        for m in modules:
+            if m.name not in ["environment", "installer"]:
+                m.list_submod = self.ariane.submodule_service.get_all(m)
+                m.list_submod.extend(self.ariane.submodule_parent_service.get_all(m))
+                fplan = self.ariane.get_one_file(m, "plan")
+                self.g.generate_plan(m, fplan, version)
+                self.assertTrue(self.compare_files('xml', self.dir_output+fplan.path+fplan.name,
+                                                   "models/"+fplan.name))
+        for p in plugins:
+            p.list_submod = self.ariane.submodule_service.get_all(p)
+            p.list_submod.extend(self.ariane.submodule_parent_service.get_all(p))
+            fplan = self.ariane.get_one_file(p, "plan")
+            self.g.generate_plan(p, fplan, version)
+            self.assertTrue(self.compare_files('xml', self.dir_output+fplan.path+fplan.name,
+                                               "models/"+fplan.name))
 
     def test_generate_installer_vsh(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.2.txt')
-        g = generator.Generator(self.ariane)
-        g.generate_vsh('0.6.2', self.dir_output+'ariane.community')
-        self.assertTrue(self.compare_files('xml', self.dir_output+'ariane.community.installer/distrib/installer/'
-                                           'resources/virgoscripts/deploy-components.vsh',
-                                           'models/installer_deploy-components.vsh'))
-        self.assertTrue(self.compare_files('xml', self.dir_output+'ariane.community.plugin.rabbitmq/distrib/installer/'
-                                           'resources/virgoscripts/deploy-plugin.rabbitmq.vsh',
-                                           'models/deploy-plugin.rabbitmq.vsh'))
+        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        distrib = self.ariane.distribution_service.get_unique({"version": '0.6.4-SNAPSHOT'})
+        modules = self.ariane.module_service.get_all(distrib)
+        plugins = self.ariane.plugin_service.get_all(distrib)
+        for m in modules:
+            mfiles = self.ariane.get_files(m)
+            for f in mfiles:
+                if f.type == "vsh":
+                    self.g.generate_vsh_installer(modules.copy(), f)
+                    self.assertTrue(self.compare_files('xml', self.dir_output+f.path+f.name, 'models/'+f.name))
+        for p in plugins:
+            pfiles = self.ariane.get_files(p)
+            for f in pfiles:
+                if f.type == "vsh":
+                    self.g.generate_vsh_plugin(p, f)
+                    self.assertTrue(self.compare_files('xml', self.dir_output+f.path+f.name, 'models/'+f.name))
 
     def compare_files(self, file_type, filename1, filename2):
         with open(filename1, 'r') as file1:

@@ -26,6 +26,12 @@
             ]
         },
         {
+            "pluginVersion": "0.2.3",
+            "distVersion": [
+                "0.6.3"
+            ]
+        },
+        {
             "pluginVersion": "master.SNAPSHOT",
             "distVersion": [
                 "master.SNAPSHOT"

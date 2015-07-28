@@ -5,7 +5,7 @@
     <parent>
         <groupId>net.echinopsii.ariane.community.core</groupId>
         <artifactId>net.echinopsii.ariane.community.core.injector</artifactId>
-        <version>0.6.3-SNAPSHOT</version>
+        <version>0.6.4-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -14,8 +14,7 @@
     <name>Ariane Community Core Injector WebApp Tooling</name>
     <packaging>bundle</packaging>
     
-
-    <dependencies>
+<dependencies>
         <dependency>
             <groupId>net.echinopsii.ariane.community.core.injector</groupId>
             <artifactId>net.echinopsii.ariane.community.core.injector.base</artifactId>
@@ -69,8 +68,8 @@
                         <Import-Package>
                             net.echinopsii.ariane.community.core.portal.base.model;version="[${version.net.echinopsii.ariane.core.portal.min},${version.net.echinopsii.ariane.core.portal.max})",
                             net.echinopsii.ariane.community.core.portal.base.plugin;version="[${version.net.echinopsii.ariane.core.portal.min},${version.net.echinopsii.ariane.core.portal.max})",
-                            net.echinopsii.ariane.community.core.injector.base.model;version="${project.version}}",
-                            net.echinopsii.ariane.community.core.injector.base.registry;version="${project.version}}",
+                            net.echinopsii.ariane.community.core.injector.base.model;version="${project.version}",
+                            net.echinopsii.ariane.community.core.injector.base.registry;version="${project.version}",
                             javax.annotation;version="${version.javax.annotations.jsr250-api}",
                             javax.el;version="${version.javax.el}",
                             javax.servlet;version="[${version.osgimin.javax.servlet-api},${version.osgimax.javax.servlet-api})",

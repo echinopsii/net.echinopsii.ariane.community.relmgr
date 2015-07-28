@@ -9,7 +9,7 @@ class AppTest(unittest.TestCase):
     def setUp(self):
         # Init variables:
         args = {"login": "neo4j", "password":"admin", "type": "neo4j"}
-        self.ariane = ariane_delivery.ArianeDeliveryService(args)
+        self.ariane = ariane_delivery.DeliveryTree(args)
         self.ariane.delete_all()
         self.sub = ariane_delivery.SubModule("arti", "0.2", "oyo", "oyo.arti")
         self.sub2 = ariane_delivery.SubModule("marti", "0.2", "aya", "aya.marti")

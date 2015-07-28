@@ -1,22 +1,45 @@
-from jinja2 import Environment, PackageLoader, Template
+from jinja2 import Environment, PackageLoader, TemplateNotFound, BaseLoader
 from ariane_deliverytool.dao import ariane_delivery
 import json
+from os.path import join, exists, getmtime, realpath
+from os import getcwd
 __author__ = 'stanrenia'
 
+class MyLoader(BaseLoader):
+
+    def __init__(self, path):
+        self.path = path
+
+    def get_source(self, environment, template):
+        path = join(self.path, template)
+        if not exists(path):
+            raise TemplateNotFound(template)
+        mtime = getmtime(path)
+        with open(path) as f:
+            source = f.read()
+        return source, path, lambda: mtime == getmtime(path)
 
 class Generator(object):
     ariane = None
+    dir_output = None
 
-    def __init__(self, ariane_delivery_service):
-        self.env = Environment(loader=PackageLoader('ariane_deliverytool.generator', 'templates'))
+    # TODO Modifiy MyLoader path when realese.
+    def __init__(self, ariane_delivery_service, output_directory):
+        self.env = Environment(loader=MyLoader('/Users/stanrenia/py_neo4j_db/tests/templates'))
         Generator.ariane = ariane_delivery_service
+        Generator.dir_output = output_directory
         self.modules_dict = {}
         self.plugin_dict = {}
         self.distrib_dict = {}
+        self.exception_sub_plan = []
+        self.exception_sub_lib = []
+        self.exception_mod_file_gen = []
+        self.extension_sub_lib = []
+        self.exception_vsh = []
 
     def get_distrib(self, version):
-        if version not in self.distrib_dict.keys():
-            self.distrib_dict[version] = self.ariane.distribution_service.get_unique({"version": version})
+        # if version not in self.distrib_dict.keys():
+        self.distrib_dict[version] = self.ariane.distribution_service.get_unique({"version": version})
         return self.distrib_dict[version]
 
     def get_modules_list(self, version):
@@ -30,31 +53,36 @@ class Generator(object):
         return self.plugin_dict[version]
 
     def get_submodule_lib_extensions(self):
-        with open('../ariane_delivertytool/generator/exception_extension/submodule_lib_extensions.json', 'r') as data_file:
-            data = json.load(data_file)
-            return data
+        if self.extension_sub_lib.__len__() == 0:
+            with open('inputs/submodule_lib_extensions.json', 'r') as data_file:
+                self.extension_sub_lib = json.load(data_file)
+        return self.extension_sub_lib
 
     def get_submodule_lib_exceptions(self):
-        with open('../ariane_delivertytool/generator/exception_extension/submodule_lib_exceptions.json', 'r') as data_file:
-            data = json.load(data_file)
-            return data
+        if self.exception_sub_lib.__len__() == 0:
+            with open('inputs/submodule_lib_exceptions.json', 'r') as data_file:
+                self.exception_sub_lib = json.load(data_file)
+        return self.exception_sub_lib
 
     def get_submodule_plan_exceptions(self):
-        with open('../ariane_delivertytool/generator/exception_extension/submodule_plan_exceptions.json', 'r') as data_file:
-            data = json.load(data_file)
-            return data
+        if self.exception_sub_plan.__len__() == 0:
+            with open('inputs/submodule_plan_exceptions.json', 'r') as data_file:
+                self.exception_sub_plan = json.load(data_file)
+        return self.exception_sub_plan
 
-    def get_module_lib_exceptions(self):
-        with open('../ariane_delivertytool/generator/exception_extension/module_lib_exceptions.json', 'r') as data_file:
-            data = json.load(data_file)
-            return data
+    def get_module_file_gen_exceptions(self):
+        if self.exception_mod_file_gen.__len__() == 0:
+            with open('inputs/module_file_gen_exceptions.json', 'r') as data_file:
+                self.exception_mod_file_gen = json.load(data_file)
+        return self.exception_mod_file_gen
 
-    def get_module_pom_exceptions(self):
-        with open('../ariane_delivertytool/generator/exception_extension/module_pom_exceptions.json', 'r') as data_file:
-            data = json.load(data_file)
-            return data
+    def get_vsh_exceptions(self):
+        if self.exception_vsh.__len__() == 0:
+            with open('inputs/module_vsh_exceptions.json', 'r') as data_file:
+                self.exception_vsh = json.load(data_file)
+        return self.exception_vsh
 
-    def make_vmin_vmax(self, version):
+    def __make_vmin_vmax(self, version):
         v = version.split('.')
         v[-1] = '0'
         vmin = '.'.join(v)
@@ -62,164 +90,212 @@ class Generator(object):
         vmax = '.'.join(v)
         return vmin, vmax
 
-    def generate_distribution(self, version):
-        dir_output = "ariane.community"
-        self.generate_json(version, "module", dir_output)
-        self.generate_json(version, "plugin", dir_output)
-        self.generate_git_repos_json(version, dir_output, extension=".git")
-        # main git-repos
-        self.generate_git_repos_json(version, dir_output, url="net.echinopsii.")
-        self.generate_plugins_json(dir_output)
-        self.generate_vsh(version, dir_output)
-        self.generate_pom(version, dir_output)
-        self.generate_lib_json(version, dir_output)
-        self.generate_plan(version, dir_output)
+    def generate_all_distribution(self, version):
+        self.generate_distribution_files(version)
+        self.generate_module_files(version)
+        self.generate_plugin_files(version)
 
-    def generate_pom(self, version, dir_output):
+    def generate_distribution_files(self, version):
+        distrib = self.get_distrib(version)
+        dist_files = self.ariane.get_files(distrib)
+        for df in dist_files:
+            if df.type == "pom_dist":
+                self.generate_pom_distrib(version, df)
+            elif df.type == "json_dist":
+                self.generate_json_dist(version, df)
+            elif df.type == "json_plugins":
+                self.generate_json_plugins(df)
+            elif df.type == "json_plugin_dist":
+                self.generate_json_plugin_dist(version, df)
+            elif df.type == "git_repos":
+                self.generate_git_repos_json(version, df)
+
+    def generate_module_files(self, version):
         modules = self.get_modules_list(version)
-        plugins = self.get_plugins_list(version)
-        module_exceptions = self.get_module_pom_exceptions()
+        file_gen_exception = self.get_module_file_gen_exceptions()
+
         for mod in modules:
-            if mod.name in module_exceptions:
+            if mod.name in file_gen_exception:
                 continue
-            self.__generate_one_pom(mod, dir_output)
-        for plug in plugins:
-            self.__generate_one_pom(plug, dir_output)
+            mod.list_submod = self.ariane.submodule_service.get_all(mod)
+            mod.list_submod.extend(self.ariane.submodule_parent_service.get_all(mod))
+            self.ariane.module_service.get_relations(mod)
+            mod_files = self.ariane.get_files(mod)
+            for f in mod_files:
+                if f.type == "plan":
+                    self.generate_plan(mod, f, version)
+                elif f.type == "json_build":
+                    self.generate_lib_json(mod, f)
+                elif f.type == "vsh":
+                    self.generate_vsh_installer(modules.copy(), f)
+                elif f.type == "pom":
+                    grId, artId = self.__generate_pom_mod_plug(mod, f)
 
-    def __generate_one_pom(self, ariane_node, dir_output):
-        if ariane_node.node_type == "Module" or ariane_node.node_type == "Plugin":
-            ariane_node.list_submod = self.ariane.submodule_service.get_all(ariane_node)
-            ariane_node.list_submod.extend(self.ariane.submodule_parent_service.get_all(ariane_node))
-            if ariane_node.node_type == 'Module':
-                self.ariane.module_service.get_relations(ariane_node)
-            else:
-                self.ariane.plugin_service.get_relations(ariane_node)
+                    for sub in mod.list_submod:
+                        s_grId, s_artId = self.__generate_pom_submodule(sub, grId, artId)
+                        if type(sub) is ariane_delivery.SubModuleParent:
+                            self.__generate_pom_subparent(sub, s_grId, s_artId)
 
-            template = self.env.get_template(ariane_node.name+'/pom.xml.tpl')
-            groupId = "net.echinopsii.ariane.community"
-            if (ariane_node.type == "core") or (ariane_node.type == "plugin"):
-                dir_output += '.'+ariane_node.type
-                groupId += '.'+ariane_node.type
-
-            dir_output += "." + ariane_node.name + '/'
-            artifactId = groupId + "." + ariane_node.name
-            version = ariane_node.version
-            packaging = "pom"
-
-            args = {"groupId": groupId, "artifactId": artifactId, "version": version,
-                    "packaging": packaging, "modules": ariane_node.list_submod,
-                    "dependencies": ariane_node.list_module_dependency}
-
-            filename = 'pom.xml'
-            with open(dir_output+filename, 'w') as target:
-                target.write(template.render(args))
-
-            for sub in ariane_node.list_submod:
-                template = self.env.get_template(ariane_node.name+'/'+sub.name+'/pom.xml.tpl')
-                sub_dir_output = dir_output + sub.name + '/'
-                args["name"] = sub.name
-                with open(sub_dir_output+filename, 'w') as target:
-                    target.write(template.render(args))
-
-                if type(sub) is ariane_delivery.SubModuleParent:
-                    s_args = {"groupId": groupId+'.'+ariane_node.name, "artifactId": groupId+'.'+ariane_node.name+'.'+sub.name, "version": version}
-                    for s in sub.list_submod:
-                        sub_sub_dir_output = sub_dir_output + s.name + '/'
-                        template = self.env.get_template(ariane_node.name+'/'+sub.name+'/'+s.name+'/pom.xml.tpl')
-                        s_args["name"] = s.name
-                        with open(sub_sub_dir_output+filename, 'w') as target:
-                            target.write(template.render(s_args))
-
-    def generate_plan(self, version, dir_output):
-        modules = self.get_modules_list(version)
+    def generate_plugin_files(self, version):
+        """ Generate all files for each plugin in the given distribution.
+        :param version:
+        :return:
+        """
         plugins = self.get_plugins_list(version)
-        exceptions = self.get_module_lib_exceptions()
+
+        for plug in plugins:
+            plug.list_submod = self.ariane.submodule_service.get_all(plug)
+            plug.list_submod.extend(self.ariane.submodule_parent_service.get_all(plug))
+            self.ariane.plugin_service.get_relations(plug)
+            plug_files = self.ariane.get_files(plug)
+            for f in plug_files:
+                if f.type == "plan":
+                    self.generate_plan(plug, f, version)
+                elif f.type == "json_build":
+                    self.generate_lib_json(plug, f)
+                elif f.type == "vsh":
+                    self.generate_vsh_plugin(plug, f)
+                elif f.type == "pom":
+                    grId, artId  = self.__generate_pom_mod_plug(plug, f)
+                    for sub in plug.list_submod:
+                        s_grId, s_artId = self.__generate_pom_submodule(sub, grId, artId)
+                        if type(sub) is ariane_delivery.SubModuleParent:
+                            self.__generate_pom_subparent(sub, s_grId, s_artId)
+
+    def generate_pom(self, mod_plug):
+        """ Generate all poms (parent and children) for a given module or plugin.
+        :param mod_plug: ariane_delivery.Module or ariane_delivery.Plugin object stored in database
+        :return: Nothing
+        """
+        file_gen_exception = self.get_module_file_gen_exceptions()
+
+        if mod_plug.name not in file_gen_exception:
+            mod_plug.list_submod = self.ariane.submodule_service.get_all(mod_plug)
+            mod_plug.list_submod.extend(self.ariane.submodule_parent_service.get_all(mod_plug))
+            if type(mod_plug) is ariane_delivery.Module:
+                self.ariane.module_service.get_relations(mod_plug)
+            elif type(mod_plug) is ariane_delivery.Plugin:
+                self.ariane.plugin_service.get_relations(mod_plug)
+
+            mf = self.ariane.get_one_file(mod_plug, "pom")
+            if mf.type == "pom":
+                grId, artId = self.__generate_pom_mod_plug(mod_plug, mf)
+
+                for sub in mod_plug.list_submod:
+                    s_grId, s_artId = self.__generate_pom_submodule(sub, grId, artId)
+                    if type(sub) is ariane_delivery.SubModuleParent:
+                        self.__generate_pom_subparent(sub, s_grId, s_artId)
+
+    def __generate_pom_submodule(self, sub, grId, artId):
+        fpom = self.ariane.get_one_file(sub, 'pom')
+        template = self.env.get_template(fpom.path + 'pom.xml.tpl')
+
+        args = {"version": sub.version, "groupId": grId, "artifactId": artId, "name": sub.name}
+
+        with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
+            target.write(template.render(args))
+
+        groupId = artId
+        artifactId = artId + '.' + sub.name
+
+        return groupId, artifactId
+
+    def __generate_pom_subparent(self, sub, grId, artId):
+        sub.list_submod = self.ariane.submodule_service.get_all(sub)
+        sub.list_submod.extend(self.ariane.submodule_parent_service.get_all(sub))
+        for s in sub.list_submod:
+            self.__generate_pom_submodule(s, grId, artId)
+            if type(s) is ariane_delivery.SubModuleParent:
+                self.__generate_pom_subparent(s, grId, artId)
+
+    def __generate_pom_mod_plug(self, mod_plug, fpom):
+        template = self.env.get_template(fpom.path + 'pom.xml.tpl')
+
+        groupId = mod_plug.pom_attr + mod_plug.get_directory_name()
+        groupId = str(groupId).replace('.'+mod_plug.name, '')
+        artifactId = groupId + "." + mod_plug.name
+        version = mod_plug.version
+        packaging = "pom"
+
+        args = {"groupId": groupId, "artifactId": artifactId, "version": version,
+                "packaging": packaging, "modules": mod_plug.list_submod,
+                "dependencies": mod_plug.list_module_dependency}
+
+        with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
+            target.write(template.render(args))
+
+        return groupId, artifactId
+
+    def generate_pom_distrib(self, version, fpom):
+        modules = self.get_modules_list(version)
+        template = self.env.get_template(fpom.path + 'pom_distrib.xml.tpl')
+        args = {"modules": modules, "version": version}
+        with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
+            target.write(template.render(args))
+
+    def generate_plan(self, mod_plug, fplan, version):
         sub_exceptions = self.get_submodule_plan_exceptions()
         snapshot = False
         if "SNAPSHOT" in version:
             version = "master.SNAPSHOT"
             snapshot = True
-        modules.extend(plugins)
-        for m in modules:
-            if m.name not in exceptions:
-                template = self.env.get_template("plans/"+version+"/plan_"+m.name+"_"+version+"_template.xml.tpl")
-                submodules = self.ariane.submodule_service.get_all(m)
-                submodules.extend(self.ariane.submodule_parent_service.get_all(m))
-                # Remove each submodule which is in exceptions list.
-                # Note that if submodule is a SubModuleParent which has a SubModule to be excluded,
-                # this is done in the module template.
-                for s in submodules.copy():
-                    if s.name in sub_exceptions:
-                        submodules.remove(s)
-                vmin, vmax = self.make_vmin_vmax(m.version)
-                if snapshot:
-                    m_version = str(m.version).replace("-", ".")
-                else:
-                    m_version = m.version
-                args = {"version": m_version, "module": m, "vmin": vmin, "vmax": vmax, "submodules": submodules}
-                typ = m.type+'.'
-                if m.type == "none":
-                    typ = ""
 
-                # ariane.community.core.directory/distrib/db/resources/virgo/repository/ariane-core/
-                # ariane.community.core.directory/distrib/db/resources/virgo/repository/ariane-plugins/
-                if str(m.node_type).lower() == "module":
-                    ntyp = 'ariane-core/'
-                else:
-                    ntyp = 'ariane-plugins/'
-                mod_dir_output = dir_output + '.' + typ + m.name + '/distrib/db/resources/virgo/repository/' + ntyp
-                filename = "net.echinopsii.ariane.community."+typ+m.name+"_"+m_version+".plan"
-                with open(mod_dir_output+filename, 'w') as target:
-                    target.write(template.render(args))
+        template = self.env.get_template(fplan.path+"plan_"+mod_plug.name+"_"+version+"_template.xml.tpl")
+        submodules = mod_plug.list_submod
+        # Remove each submodule which is in exceptions list.
+        # Note that if submodule is a SubModuleParent which has a SubModule to be excluded,
+        # this is done in the module template.
+        for s in submodules.copy():
+            if s.name in sub_exceptions:
+                submodules.remove(s)
+        vmin, vmax = self.__make_vmin_vmax(mod_plug.version)
+        if snapshot:
+            m_version = str(mod_plug.version).replace("-", ".")
+        else:
+            m_version = mod_plug.version
+        args = {"version": m_version, "module": mod_plug, "vmin": vmin, "vmax": vmax, "submodules": submodules}
 
-    def generate_json(self, version, mod_or_plug, dir_output):
-        elements = None
-        if str(mod_or_plug).lower() == "module":
-            elements = self.get_modules_list(version)
-            ntyp = ""
-        elif str(mod_or_plug).lower() == "plugin":
-            ntyp = "plugins-"
-            elements = self.get_plugins_list(version)
+        with open(self.dir_output+fplan.path+fplan.name, 'w') as target:
+            target.write(template.render(args))
 
+    def generate_json_plugin_dist(self, version, fjson):
+        elements = self.get_plugins_list(version)
+        dictio = {}
+
+        for e in elements:
+            key = e.get_directory_name()
+            if "SNAPSHOT" in e.version:
+                l = ["master.SNAPSHOT"]
+            else:
+                l = [e.version]
+            dictio[key] = l
+
+        with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
+            json.dump(dictio, target, indent=4)
+
+            return self.dir_output+fjson.path+fjson.name
+
+    def generate_json_dist(self, version, fjson):
+        elements = self.get_modules_list(version)
         dictio = {}
         snapshot = False
         if "SNAPSHOT" in version:
-            distrib_version = "master.SNAPSHOT"
             snapshot = True
 
         for e in elements:
-            key = "ariane.community."
+            key = e.get_directory_name()
             if type(e) is ariane_delivery.Module:
-                if e.type == "core":
-                    key += e.type + '.'
-                key += e.name
                 if snapshot:
                     dictio[key] = "master.SNAPSHOT"
                 else:
                     dictio[key] = e.version
-            elif type(e) is ariane_delivery.Plugin:
-                key += "plugin." + e.name
-                if snapshot:
-                    l = "master.SNAPSHOT"
-                else:
-                    l = [e.version]
-                dictio[key] = l
 
-        # ariane.community.distrib/resources/distrib/ariane.community.distrib-0.5.0.json
-        if ntyp == "":
-            dir_output += ".distrib/resources/distrib/"
-        else:
-            dir_output += ".distrib/resources/plugins/"
-
-        filename = "ariane.community."+ntyp+"distrib-" + version + ".json"
-
-        with open(dir_output+filename, 'w') as target:
+        with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
             json.dump(dictio, target, indent=4)
 
-            return dir_output+filename
+            return self.dir_output+fjson.path+fjson.name
 
-    def generate_plugins_json(self, dir_output):
-        filename = "ariane.community.plugins.json"
+    def generate_json_plugins(self, fjson):
         distribs = self.ariane.distribution_service.get_all()
         plugin_dict = {}
         for d in distribs:
@@ -264,127 +340,81 @@ class Generator(object):
                     if flag_new_version:
                         plugin_dict[p_name].append({"pluginVersion": p.version, "distVersion": [d.version]})
 
-        with open(dir_output+'.distrib/resources/plugins/'+filename, 'w') as target:
+        # each distrib has the same directories tree, here 'd' is the last distrib from the list.
+        with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
             json.dump(plugin_dict, target, indent=4)
 
-        return dir_output+'.distrib/resources/plugins/'+filename
+        return self.dir_output+fjson.path+fjson.name
 
-    def generate_git_repos_json(self, version, dir_output, url=None, extension=None):
-        filename = "ariane.community.git.repos-"+version+".json"
-        if extension is None:
-            filename = "ariane.community.git.repos-main-master.SNAPSHOT.json"
+    def generate_git_repos_json(self, version, fjson):
+        distrib = self.get_distrib(version)
 
         modules = self.get_modules_list(version)
         plugins = self.get_plugins_list(version)
-        if url is None:
-            url = "https://github.com/echinopsii/net.echinopsii."
-        else:
-            if url[-1:] != '.':
-                url += '.'
-
-        if extension is None:
-            extension = ""
+        url = "https://github.com/echinopsii/net.echinopsii."
 
         dictio = {}
 
         for m in modules:
-            key = "ariane.community."
-            if m.type == "core":
-                key += "core."
-            key += m.name
+            key = m.get_directory_name()
             if m.type == "none":
                 typ = "core"
             else:
                 typ = m.type
-            dictio[key] = {"type": typ, "url": url + key + extension}
+            dictio[key] = {"type": typ, "url": url + key + '.git'}
 
         for p in plugins:
-            key = "ariane.community.plugin." + p.name
-            dictio[key] = {"type": "plugin", "url": url + key + extension}
+            key = p.get_directory_name()
+            dictio[key] = {"type": "plugin", "url": url + key + '.git'}
 
-        with open(dir_output+'.distrib/resources/sources/'+filename, 'w') as target:
+        with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
             json.dump(dictio, target, indent=4)
 
-        return dir_output+'.distrib/resources/sources/'+filename
+        return self.dir_output+fjson.path+fjson.name
 
-    def generate_lib_json(self, version, dir_output):
-        modules = self.get_modules_list(version)
+    def generate_lib_json(self, mod_plug, fjson):
         extension_dict = self.get_submodule_lib_extensions()
         exception_list = self.get_submodule_lib_exceptions()
-        modules_exception = self.get_module_lib_exceptions()
+        list_lib = []
+        for s in mod_plug.list_submod:
+            ext = ".jar"
+            if s.name not in exception_list:
+                if s.name in extension_dict.keys():
+                    ext = extension_dict[s.name]
+
+                if type(s) is ariane_delivery.SubModuleParent:
+                    for s_sub in s.list_submod:
+                        ext = ".jar"
+                        url = "net/echinopsii/" + str(mod_plug.get_directory_name()).replace('.', '/') + "/"+s.name+"/"
+                        url += "net.echinopsii."+mod_plug.get_directory_name()+"."+s.name+"."+s_sub.name+"/"+mod_plug.version+"/net.echinopsii."+mod_plug.get_directory_name()+"."+s.name+"."+s_sub.name+"-"+mod_plug.version + ext
+                        list_lib.append(url)
+                else:
+                    url = "net/echinopsii/" + str(mod_plug.get_directory_name()).replace('.', '/') + "/"
+                    url += "net.echinopsii."+mod_plug.get_directory_name()+"."+s.name+"/"+mod_plug.version+"/net.echinopsii."+mod_plug.get_directory_name()+"."+s.name+"-"+mod_plug.version + ext
+                    list_lib.append(url)
+
+            with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
+                json.dump(list_lib, target, indent=4)
+
+    def generate_vsh_installer(self, modules, fvsh):
+        vsh_exceptions = self.get_vsh_exceptions()
 
         for m in modules:
-            if m.name not in modules_exception:
-                list_lib = []
-                submodules = self.ariane.submodule_service.get_all(m)
-                submodules.extend(self.ariane.submodule_parent_service.get_all(m))
-                for s in submodules:
-                    typ = "core/"
-                    if m.type != "core":
-                        typ = ""
-                    ext = ".jar"
-                    if s.name not in exception_list:
-                        if s.name in extension_dict.keys():
-                            ext = extension_dict[s.name]
+            if "-SNAPSHOT" in m.version:
+                m.version = str(m.version).replace('-', '.')
 
-                        if type(s) is ariane_delivery.SubModuleParent:
-                            for s_sub in s.list_submod:
-                                typ = "core/"
-                                if m.type != "core":
-                                    typ = ""
-                                ext = ".jar"
-                                url = "net/echinopsii/ariane/community/"+typ+m.name+"/"+s.name+"/"
-                                typ = typ[:-1] # remove slash of core/, if typ is empty this does nothing
-                                if typ != "":
-                                    typ += '.'
-                                url += "net.echinopsii.ariane.community."+typ+m.name+"."+s.name+"."+s_sub.name+"/"+m.version+"/net.echinopsii.ariane.community."+typ+m.name+"."+s.name+"."+s_sub.name+"-"+m.version + ext
-                                list_lib.append(url)
-                        else:
-                            url = "net/echinopsii/ariane/community/"+typ+m.name+"/"
-                            typ = typ[:-1]# remove slash of core/, if typ is empty this does nothing
-                            if typ != "":
-                                typ += '.'
-                            url += "net.echinopsii.ariane.community."+typ+m.name+"."+s.name+"/"+m.version+"/net.echinopsii.ariane.community."+typ+m.name+"."+s.name+"-"+m.version + ext
-                            list_lib.append(url)
-                if "SNAPSHOT" in version:
-                    filename = "ariane.community."+typ+m.name+"-master.SNAPSHOT.json"
-                else:
-                    filename = "ariane.community."+typ+m.name+"-"+m.version+".json"
-                # ariane.community.core.directory/distrib/db/resources/builds/ariane.community.core.directory-0.6.0.json
-                mod_dir_output = dir_output+'.'+typ+m.name+'/'+'/distrib/db/resources/builds/'
-                with open(mod_dir_output+filename, 'w') as target:
-                    json.dump(list_lib, target, indent=4)
-
-    def generate_vsh(self, version, dir_output):
-        modules = self.get_modules_list(version)
-        plugins = self.get_plugins_list(version)
-
-        modules_exception = self.get_module_lib_exceptions()
-        for mod in modules.copy():
-            if mod.name in modules_exception:
-                modules.remove(mod)
-        template = self.env.get_template('vsh/installer_vsh.tpl')
-
+        for m in modules.copy():
+            if m.name in vsh_exceptions:
+                modules.remove(m)
+        template = self.env.get_template(fvsh.path+'installer_vsh.tpl')
         args = {"modules": modules}
-        # ariane.community.installer/distrib/installer/resources/virgoscripts/deploy-components.vsh
-        with open(dir_output+'.installer/distrib/installer/resources/virgoscripts/'+'deploy-components.vsh', 'w') as target:
+        with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
             target.write(template.render(args))
 
-        template = self.env.get_template('vsh/plugin_vsh.tpl')
-        # ariane.community.plugin.rabbitmq/distrib/installer/resources/virgoscripts/deploy-plugin.rabbitmq.vsh
-        for p in plugins:
-            args = {"plugin": p}
-            with open(dir_output+'.plugin.'+p.name+'/distrib/installer/resources/virgoscripts/'+'deploy-plugin.'+p.name+'.vsh', 'w') as target:
-                target.write(template.render(args))
-
-    def generate_pom_distrib(self, version, dir_output):
-        template = self.env.get_template('maven/pom_distrib.xml.tpl')
-
-        args = {"version": version, "modules": self.get_modules_list(version)}
-
-        # ariane.community.distrib/resources/maven/pom-ariane.community.distrib-0.5.2.xml
-        if "SNAPSHOT" in version:
-            version = "master.SNAPSHOT"
-        filename = "pom-ariane.community.distrib-" + version + ".xml"
-        with open(dir_output+'distrib/resources/maven/' + filename, 'w') as target:
+    def generate_vsh_plugin(self, p, fvsh):
+        if "-SNAPSHOT" in p.version:
+            p.version = str(p.version).replace('-', '.')
+        template = self.env.get_template(fvsh.path+'plugin_vsh.tpl')
+        args = {"plugin": p}
+        with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
             target.write(template.render(args))

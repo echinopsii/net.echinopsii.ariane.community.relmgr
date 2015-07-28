@@ -112,7 +112,7 @@ class NeoGraph(object):
                     rel.properties[key] = prop[key]
                 rel.push()
 
-    def create_link(self, args):
+    def create_relation(self, args):
         # print(args)
         node = args["node"]
         linked_node = args["linked_node"]

@@ -5,7 +5,7 @@
 
     <groupId>net.echinopsii.ariane.community.core</groupId>
     <artifactId>net.echinopsii.ariane.community.core.directory</artifactId>
-    <version>0.6.3-SNAPSHOT</version>
+    <version>0.6.4-SNAPSHOT</version>
     <name>Ariane Community Core Directory Parent</name>
     <packaging>pom</packaging>
 
@@ -74,7 +74,7 @@
 
 <!-- Ariane module dependencies -->
     
-        <version.net.echinopsii.ariane.core.portal>0.6.3-SNAPSHOT</version.net.echinopsii.ariane.core.portal>
+        <version.net.echinopsii.ariane.core.portal>0.6.4-SNAPSHOT</version.net.echinopsii.ariane.core.portal>
         <version.net.echinopsii.ariane.core.portal.min>0.6.0</version.net.echinopsii.ariane.core.portal.min>
         <version.net.echinopsii.ariane.core.portal.max>0.7.0</version.net.echinopsii.ariane.core.portal.max>
     

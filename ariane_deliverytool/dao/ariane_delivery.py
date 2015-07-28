@@ -1,9 +1,8 @@
 from ariane_deliverytool.dao import graphDBFabric
 
 __author__ = 'stanrenia'
-# TODO: Faire des Diagrammes (classes, relations, fonctionnement)
 
-class ArianeDeliveryService(object):
+class DeliveryTree(object):
     graph_dao = None
     dao_type = None
     submodule_service = None
@@ -13,12 +12,12 @@ class ArianeDeliveryService(object):
     distribution_service = None
 
     def __init__(self, graph_dao_args):
-        ArianeDeliveryService.dao_type, ArianeDeliveryService.graph_dao = graphDBFabric.DaoFabric.make(graph_dao_args)
-        ArianeDeliveryService.submodule_service = SubModuleService()
-        ArianeDeliveryService.module_service = ModuleService()
-        ArianeDeliveryService.plugin_service = PluginService()
-        ArianeDeliveryService.submodule_parent_service = SubModuleParentService()
-        ArianeDeliveryService.distribution_service = DistributionService()
+        DeliveryTree.dao_type, DeliveryTree.graph_dao = graphDBFabric.DaoFabric.make(graph_dao_args)
+        DeliveryTree.submodule_service = SubModuleService()
+        DeliveryTree.module_service = ModuleService()
+        DeliveryTree.plugin_service = PluginService()
+        DeliveryTree.submodule_parent_service = SubModuleParentService()
+        DeliveryTree.distribution_service = DistributionService()
 
     def delete_all(self):
         self.graph_dao.delete_all()
@@ -45,29 +44,38 @@ class ArianeDeliveryService(object):
         list_fnode = None
         if isinstance(ariane_node, ArianeNode):
             args = {"node": ariane_node.node, "reverse": False, "relation": "CONTAINS"}
-            list_fnode = ArianeDeliveryService.graph_dao.get_all(args)
+            list_fnode = DeliveryTree.graph_dao.get_all(args)
             for i, fnode in enumerate(list_fnode.copy()):
-                prop = ArianeDeliveryService.graph_dao.get_node_properties(fnode)
+                prop = DeliveryTree.graph_dao.get_node_properties(fnode)
                 list_fnode[i] = FileNode.create(prop)
         return list_fnode
+
+    def get_one_file(self, ariane_node, file_type):
+        list_fnode = self.get_files(ariane_node)
+        ret_file = None
+        for fnode in list_fnode:
+            if fnode.type == file_type:
+                ret_file = fnode
+                break
+        return ret_file
 
     def find(self, args):
         found = None
         dir = {"args_type": "dict", "label": self._get_label()}
         if self._check_dict_properties(args) is True:
             args.update(dir)
-            found = ArianeDeliveryService.graph_dao.find(args)
+            found = DeliveryTree.graph_dao.find(args)
         elif type(args) in ArianeNode.__subclasses__():
             args = args._get_dir()
             args.update(dir)
-            found = ArianeDeliveryService.graph_dao.find(args)
+            found = DeliveryTree.graph_dao.find(args)
         elif type(args) is list:
             if self._check_list_type(args) is True:
                 found = []
                 for arg in args:
                     param = arg._get_dir()
                     param.update(dir)
-                    f = ArianeDeliveryService.graph_dao.find(param)
+                    f = DeliveryTree.graph_dao.find(param)
                     if f is not None:
                         found.append(f[0])
                 if len(found) == 0:
@@ -90,7 +98,7 @@ class ArianeDeliveryService(object):
        """
         if self._check_dict_properties(args) is True:
             args["label"] = self._get_label()
-            node = ArianeDeliveryService.graph_dao.get_unique(args)
+            node = DeliveryTree.graph_dao.get_unique(args)
             if (node is not None) and (type(node) is not int):
                 node = self._create_ariane_node(node)
             return node
@@ -100,8 +108,8 @@ class ArianeDeliveryService(object):
     def get_relation_between(self, start, end):
         rel = None
         if isinstance(start, ArianeNode) and isinstance(end, ArianeNode):
-            relation = ArianeDeliveryService.graph_dao.get_relation_between(start.id, end.id)
-            rel_d = ArianeDeliveryService.graph_dao.get_relation_data(relation)
+            relation = DeliveryTree.graph_dao.get_relation_between(start.id, end.id)
+            rel_d = DeliveryTree.graph_dao.get_relation_data(relation)
             start_node = ArianeNode.create_subclass(rel_d["start_label"], rel_d["start_properties"])
             end_node = ArianeNode.create_subclass(rel_d["end_label"], rel_d["end_properties"])
             rel = ArianeRelation(start_node, rel_d["relation"], end_node, rel_d["rel_properties"], rel_d["rel_node"])
@@ -133,7 +141,7 @@ class ArianeDeliveryService(object):
     def __search_related_nodes(self, args, relations):
         node = args
         args = {"node": node.node, "relation": relations}
-        list_relation = ArianeDeliveryService.graph_dao.get_relations(args)
+        list_relation = DeliveryTree.graph_dao.get_relations(args)
         return self.__cast_related_nodes(node, list_relation)
 
     def __cast_related_nodes(self, cur_node, related_nodes_list):
@@ -146,7 +154,7 @@ class ArianeDeliveryService(object):
                 relation_list = []
 
                 for rel in related_nodes_list:
-                    rel_d = ArianeDeliveryService.graph_dao.get_relation_data(rel)
+                    rel_d = DeliveryTree.graph_dao.get_relation_data(rel)
                     start_node = ArianeNode.create_subclass(rel_d["start_label"], rel_d["start_properties"])
                     end_node = ArianeNode.create_subclass(rel_d["end_label"], rel_d["end_properties"])
                     if cur_node == start_node:
@@ -183,7 +191,7 @@ class ArianeDeliveryService(object):
                     return False
             return True
 
-class DistributionService(ArianeDeliveryService):
+class DistributionService(DeliveryTree):
     def __init__(self):
         self._ariane_node = Distribution("model", "model")
 
@@ -194,7 +202,7 @@ class DistributionService(ArianeDeliveryService):
         """
         list_distrib = []
         args = {"reverse": False, "label": self._ariane_node.__class__.__name__, "node": None, "relation": None}
-        list_node = ArianeDeliveryService.graph_dao.get_all(args)
+        list_node = DeliveryTree.graph_dao.get_all(args)
         for node in list_node:
             list_distrib.append(self._create_ariane_node(node))
 
@@ -208,8 +216,14 @@ class DistributionService(ArianeDeliveryService):
 
     @staticmethod
     def _create_ariane_node(node):
-        args = ArianeDeliveryService.graph_dao.get_node_properties(node)
+        args = DeliveryTree.graph_dao.get_node_properties(node)
         return Distribution(args["name"], args["version"], args["nID"])
+
+    def __get_name_version_master(self, version):
+        if "SNAPSHOT" in version:
+            return "master.SNAPSHOT"
+        else:
+            return version
 
     def make_files(self, distrib):
         """
@@ -217,10 +231,10 @@ class DistributionService(ArianeDeliveryService):
         :return:
         """
         for mod in distrib.list_module:
-            ArianeDeliveryService.module_service.make_files(mod)
+            DeliveryTree.module_service.make_files(mod)
 
         for plug in distrib.list_plugin:
-            ArianeDeliveryService.plugin_service.make_files(plug["Plugin"])
+            DeliveryTree.plugin_service.make_files(plug["Plugin"])
 
         # ariane.community.distrib/resources/distrib/ariane.community.distrib-0.6.2.json
         # ariane.community.distrib/resources/maven/pom-ariane.community.distrib-0.6.2.xml
@@ -235,12 +249,12 @@ class DistributionService(ArianeDeliveryService):
         self.__make_file_git_repos(distrib)
 
     def __make_file_json_dist(self, distrib):
-        fname = distrib.get_directory_name() + '-' + distrib.version + '.json'
+        fname = distrib.get_directory_name() + '-' + self.__get_name_version_master(distrib.version) + '.json'
         fpath = distrib.get_directory_name()+"/resources/distrib/"
         distrib.add_file(FileNode(fname, "json_dist", distrib.version, fpath))
 
     def __make_file_pom_dist(self, distrib):
-        fname = "pom-"+distrib.get_directory_name()+'-'+distrib.version + '.xml'
+        fname = "pom-"+distrib.get_directory_name()+'-'+ self.__get_name_version_master(distrib.version) + '.xml'
         fpath = distrib.get_directory_name() + '/resources/maven/'
         distrib.add_file(FileNode(fname, "pom_dist", distrib.version, fpath))
 
@@ -250,19 +264,19 @@ class DistributionService(ArianeDeliveryService):
         distrib.add_file(FileNode(fname, "json_plugins", distrib.version, fpath))
 
     def __make_file_json_plugin_dist(self, distrib):
-        fname = 'ariane.community.plugins-distrib-'+distrib.version+'.json'
+        fname = 'ariane.community.plugins-distrib-'+ self.__get_name_version_master(distrib.version) +'.json'
         fpath = distrib.get_directory_name()+"/resources/plugins/"
         distrib.add_file(FileNode(fname, "json_plugin_dist", distrib.version, fpath))
 
     def __make_file_git_repos(self, distrib):
-        fname = 'ariane.community.git.repos-'+distrib.version+'.json'
+        fname = 'ariane.community.git.repos-'+ self.__get_name_version_master(distrib.version) +'.json'
         fpath = distrib.get_directory_name() + "/resources/sources/"
         distrib.add_file(FileNode(fname, "git_repos", distrib.version, fpath))
 
     def _get_label(self):
         return self._ariane_node.node_type
 
-class ModuleService(ArianeDeliveryService):
+class ModuleService(DeliveryTree):
     def __init__(self):
         self._ariane_node = Module("model", "model")
 
@@ -275,7 +289,7 @@ class ModuleService(ArianeDeliveryService):
         if type(args) is Distribution:
             # list_node = list_related_nodes["related_nodes"]
             args = {"reverse": True, "node": args.node, "relation": "DEPENDS ON"}
-            list_node = ArianeDeliveryService.graph_dao.get_all(args)
+            list_node = DeliveryTree.graph_dao.get_all(args)
             for node in list_node:
                 list_mod.append(self._create_ariane_node(node))
         elif args is None:
@@ -289,6 +303,12 @@ class ModuleService(ArianeDeliveryService):
     def get_relations(self, args):
         return self._get_relations(args, ["COMPOSED OF", "DEPENDS ON"])
 
+    def __get_name_version_master(self, version):
+        if "SNAPSHOT" in version:
+            return "master.SNAPSHOT"
+        else:
+            return version
+
     def make_files(self, module):
         """
         make all files contained in module : .json, .plan, pom.xml
@@ -296,9 +316,9 @@ class ModuleService(ArianeDeliveryService):
         """
         for sub in module.list_submod:
             if isinstance(sub, SubModule):
-                ArianeDeliveryService.submodule_service.make_files(sub, module.get_directory_name() + '/')
+                DeliveryTree.submodule_service.make_files(sub, module.get_directory_name() + '/')
             else:
-                ArianeDeliveryService.submodule_parent_service.make_files(sub, module.get_directory_name() + '/')
+                DeliveryTree.submodule_parent_service.make_files(sub, module.get_directory_name() + '/')
 
         if module.name not in ["environment", "installer"]:
             self.__make_file_build(module)
@@ -310,12 +330,12 @@ class ModuleService(ArianeDeliveryService):
             self.__make_file_vsh(module)
 
     def __make_file_build(self, module):
-        fname = module.get_directory_name() + '-' + module.version + '.json'
+        fname = module.get_directory_name() + '-' + self.__get_name_version_master(module.version) + '.json'
         fpath = module.get_directory_name()+"/distrib/db/resources/builds/"
         module.add_file(FileNode(fname, "json_build", module.version, fpath))
 
     def __make_file_plan(self, module):
-        fname = "net.echinopsii."+ module.get_directory_name() + '_' + module.version + '.plan'
+        fname = "net.echinopsii."+ module.get_directory_name() + '_' + self.__get_name_version_master(module.version) + '.plan'
         fpath = module.get_directory_name()+"/distrib/db/resources/virgo/repository/ariane-core/"
         module.add_file(FileNode(fname, "plan", module.version, fpath))
 
@@ -331,13 +351,13 @@ class ModuleService(ArianeDeliveryService):
 
     @staticmethod
     def _create_ariane_node(node):
-        args = ArianeDeliveryService.graph_dao.get_node_properties(node)
+        args = DeliveryTree.graph_dao.get_node_properties(node)
         return Module(args["name"], args["version"], args["type"], args["nID"])
 
     def _get_label(self):
         return self._ariane_node.node_type
 
-class PluginService(ArianeDeliveryService):
+class PluginService(DeliveryTree):
     def __init__(self):
         self._ariane_node = Plugin("model", "model")
 
@@ -349,7 +369,7 @@ class PluginService(ArianeDeliveryService):
         list_plugin = []
         if type(args) is Distribution:
             args = {"reverse": True, "node": args.node, "relation": "COMPATIBLE WITH"}
-            list_node = ArianeDeliveryService.graph_dao.get_all(args)
+            list_node = DeliveryTree.graph_dao.get_all(args)
             for node in list_node:
                 list_plugin.append(self._create_ariane_node(node))
         elif args is None:
@@ -363,6 +383,12 @@ class PluginService(ArianeDeliveryService):
     def get_relations(self, args):
         return self._get_relations(args, ["COMPOSED OF", "COMPATIBLE WITH", "DEPENDS ON"])
 
+    def __get_name_version_master(self, version):
+        if "SNAPSHOT" in version:
+            return "master.SNAPSHOT"
+        else:
+            return version
+
     def make_files(self, plugin):
         """
         make all files contained in plugin : .json, .plan, pom.xml, .vsh
@@ -370,9 +396,9 @@ class PluginService(ArianeDeliveryService):
         """
         for sub in plugin.list_submod:
             if isinstance(sub, SubModule):
-                ArianeDeliveryService.submodule_service.make_files(sub, plugin.get_directory_name() + '/')
+                DeliveryTree.submodule_service.make_files(sub, plugin.get_directory_name() + '/')
             else:
-                ArianeDeliveryService.submodule_parent_service.make_files(sub, plugin.get_directory_name() + '/')
+                DeliveryTree.submodule_parent_service.make_files(sub, plugin.get_directory_name() + '/')
 
         if plugin.name not in [""]:
             self.__make_file_build(plugin)
@@ -384,12 +410,12 @@ class PluginService(ArianeDeliveryService):
             self.__make_file_vsh(plugin)
 
     def __make_file_build(self, plugin):
-        fname = plugin.get_directory_name() + '-' + plugin.version + '.json'
+        fname = plugin.get_directory_name() + '-' + self.__get_name_version_master(plugin.version) + '.json'
         fpath = plugin.get_directory_name()+"/distrib/db/resources/builds/"
         plugin.add_file(FileNode(fname, "json_build", plugin.version, fpath))
 
     def __make_file_plan(self, plugin):
-        fname = "net.echinopsii."+ plugin.get_directory_name() + '_' + plugin.version + '.plan'
+        fname = "net.echinopsii."+ plugin.get_directory_name() + '_' + self.__get_name_version_master(plugin.version) + '.plan'
         fpath = plugin.get_directory_name()+"/distrib/db/resources/virgo/repository/ariane-plugins/"
         plugin.add_file(FileNode(fname, "plan", plugin.version, fpath))
 
@@ -404,13 +430,13 @@ class PluginService(ArianeDeliveryService):
         plugin.add_file(FileNode(fname, "vsh", plugin.version, fpath))
 
     def _create_ariane_node(self, node):
-        args = ArianeDeliveryService.graph_dao.get_node_properties(node)
+        args = DeliveryTree.graph_dao.get_node_properties(node)
         return Plugin(args["name"], args["version"], args["nID"])
 
     def _get_label(self):
         return self._ariane_node.node_type
 
-class SubModuleService(ArianeDeliveryService):
+class SubModuleService(DeliveryTree):
     def __init__(self):
         self._ariane_node = SubModule("model", "model")
 
@@ -422,7 +448,7 @@ class SubModuleService(ArianeDeliveryService):
         """
         list_submod = []
         args = {"reverse": False, "node": module.node, "label": self._ariane_node.__class__.__name__, "relation": "COMPOSED OF"}
-        list_node = ArianeDeliveryService.graph_dao.get_all(args)
+        list_node = DeliveryTree.graph_dao.get_all(args)
         for node in list_node:
             sub = self._create_ariane_node(node)
             list_submod.append(sub)
@@ -432,7 +458,7 @@ class SubModuleService(ArianeDeliveryService):
         return self._get_relations(args, ["COMPOSED OF"])
 
     def _create_ariane_node(self, node):
-        args = ArianeDeliveryService.graph_dao.get_node_properties(node)
+        args = DeliveryTree.graph_dao.get_node_properties(node)
         return SubModule(args["name"], args["version"], args["groupId"], args["artifactId"], args["nID"])
 
     def make_files(self, submod, parent_path):
@@ -446,7 +472,7 @@ class SubModuleService(ArianeDeliveryService):
     def _get_label(self):
         return self._ariane_node.node_type
 
-class SubModuleParentService(ArianeDeliveryService):
+class SubModuleParentService(DeliveryTree):
     def __init__(self):
         self._ariane_node = SubModuleParent("model", "model")
 
@@ -458,7 +484,7 @@ class SubModuleParentService(ArianeDeliveryService):
         """
         list_submod = []
         args = {"reverse": False, "node": module.node, "label": self._ariane_node.__class__.__name__, "relation": "COMPOSED OF"}
-        list_node = ArianeDeliveryService.graph_dao.get_all(args)
+        list_node = DeliveryTree.graph_dao.get_all(args)
         for node in list_node:
             sub = self._create_ariane_node(node)
             sub.list_submod.extend(SubModuleService().get_all(sub))
@@ -469,16 +495,16 @@ class SubModuleParentService(ArianeDeliveryService):
         return self._get_relations(args, ["COMPOSED OF"])
 
     def _create_ariane_node(self, node):
-        args = ArianeDeliveryService.graph_dao.get_node_properties(node)
+        args = DeliveryTree.graph_dao.get_node_properties(node)
         return SubModuleParent(args["name"], args["version"], args["nID"])
 
     def make_files(self, subpar, parent_path):
         self.__make_file_pom(subpar, parent_path)
         for sub in subpar.list_submod:
             if isinstance(sub, SubModule):
-                ArianeDeliveryService.submodule_service.make_files(sub, parent_path+subpar.name+'/')
+                DeliveryTree.submodule_service.make_files(sub, parent_path+subpar.name+'/')
             else:
-                ArianeDeliveryService.submodule_parent_service.make_files(sub, parent_path+subpar.name+'/')
+                DeliveryTree.submodule_parent_service.make_files(sub, parent_path+subpar.name+'/')
 
     def __make_file_pom(self, subpar, parent_path):
         fname = "pom.xml"
@@ -496,16 +522,9 @@ class ArianeRelation(object):
         self.properties = dict(properties)
         self.rel_node = rel_node
 
-    def get_node(self, id):
-        if self.start.id == id:
-            return self.start
-        elif self.end.id == id:
-            return self.end
-        return None
-
     def save(self):
         if (self.start.id != 0) and (self.end.id != 0):
-            ArianeDeliveryService.graph_dao.save_relation({"start_nID": self.start.id, "relation": self.relation,
+            DeliveryTree.graph_dao.save_relation({"start_nID": self.start.id, "relation": self.relation,
                                                            "end_nID": self.end.id, "properties": self.properties,
                                                            "rel_node": self.rel_node})
 
@@ -519,8 +538,10 @@ class ArianeNode(object):
         self.name = name
         self.version = version
         self.id = 0
-        self.pom_attr = "net.echinopsii.ariane.community"
+        self.pom_attr = "net.echinopsii."
         self.list_files = []
+        self.list_relation = []
+        self.list_related_node = []
 
     def add_file(self, file_node):
         if type(file_node) is FileNode:
@@ -530,7 +551,7 @@ class ArianeNode(object):
 
     def _create_file(self, file_node):
         link_args = {"node": self.node, "relation": "CONTAINS", "linked_node": file_node.node}
-        nid, rel = ArianeDeliveryService.graph_dao.create_link(link_args)
+        nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
         self.list_relation.append(rel)
         file_node._add_node_to_notify(rel, self._remove_notifier_filenode)
         if nid is not None:
@@ -603,10 +624,8 @@ class Distribution(ArianeNode):
         self.directory_name = ""
         self.list_module = []
         self.list_plugin = []
-        self.list_relation = []
-        self.list_related_node = []
         self.dir = {"name": self.name, "version": self.version, "nID": self.id}
-        self.node = ArianeDeliveryService.graph_dao.init_node(self.node_type, self.dir)
+        self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
     def _get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "nID": self.id}
@@ -623,7 +642,7 @@ class Distribution(ArianeNode):
             for fnode in self.list_files:
                 fnode.save()
 
-            self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self._get_dir())
+            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
             for plugin_dict in self.list_plugin:
                 self.__create_relation(plugin_dict["Plugin"], "COMPATIBLE WITH", plugin_dict["properties"])
 
@@ -636,7 +655,7 @@ class Distribution(ArianeNode):
         else:
             dir = self._get_dir()
             dir["node"] = self.node
-            self.node = ArianeDeliveryService.graph_dao.save_node(dir)
+            self.node = DeliveryTree.graph_dao.save_node(dir)
 
     def delete(self):
         for mod in self.list_module.copy():
@@ -644,8 +663,8 @@ class Distribution(ArianeNode):
         for plugin_dict in self.list_plugin.copy():
             plugin_dict["Plugin"].delete()
         for rel in self.list_relation:
-            ArianeDeliveryService.graph_dao.delete(rel)
-        ArianeDeliveryService.graph_dao.delete(self.node)
+            DeliveryTree.graph_dao.delete(rel)
+        DeliveryTree.graph_dao.delete(self.node)
 
     def add_module(self, module):
         self.list_module.append(module)
@@ -661,7 +680,7 @@ class Distribution(ArianeNode):
         link_args = {"node": mod_plug.node, "relation": relation, "linked_node": self.node}
         if prop is not None:
             link_args["properties"] = prop
-        nid, rel = ArianeDeliveryService.graph_dao.create_link(link_args)
+        nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
         self.list_relation.append(rel)
         mod_plug._add_node_to_notify(rel, self._remove_notifier_node)
         if nid is not None:
@@ -696,11 +715,9 @@ class Module(ArianeNode):
         self.directory_name = ""
         self.list_submod = []
         self.list_module_dependency = []
-        self.list_relation = []
-        self.list_related_node = []
         self.dir = {"name": self.name, "version": self.version, "type": self.type, "git_repos": self.git_repos,
                     "nID": self.id}
-        self.node = ArianeDeliveryService.graph_dao.init_node(self.node_type, self.dir)
+        self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
         self._len_list_mod_dep = 0
         self._len_list_submod = 0
         self._len_list_files = 0
@@ -718,7 +735,7 @@ class Module(ArianeNode):
             for fnode in self.list_files:
                 fnode.save()
 
-            self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self._get_dir())
+            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
 
             for submod in self.list_submod:
                 self.__create_relation(submod)
@@ -735,7 +752,7 @@ class Module(ArianeNode):
             # update properties in graph database
             dir = self._get_dir()
             dir["node"] = self.node
-            self.node = ArianeDeliveryService.graph_dao.save_node(dir)
+            self.node = DeliveryTree.graph_dao.save_node(dir)
 
             if len(self.list_module_dependency) > self._len_list_mod_dep:
                 for dep in self.list_module_dependency:
@@ -762,8 +779,8 @@ class Module(ArianeNode):
         for submod in self.list_submod.copy():
             submod.delete()
         for rel in self.list_relation:
-            ArianeDeliveryService.graph_dao.delete(rel)
-        ArianeDeliveryService.graph_dao.delete(self.node)
+            DeliveryTree.graph_dao.delete(rel)
+        DeliveryTree.graph_dao.delete(self.node)
         for rel, node_remove_function in self.list_related_node:
             node_remove_function(rel, self)
 
@@ -780,7 +797,7 @@ class Module(ArianeNode):
         :return: Nothing
         """
         link_args = {"node": self.node, "relation": "COMPOSED OF", "linked_node": submod.node}
-        nid, rel = ArianeDeliveryService.graph_dao.create_link(link_args)
+        nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
         self.list_relation.append(rel)
         # Send "_remove_notifier_node" function as argument
         submod._add_node_to_notify(rel, self._remove_notifier_node)
@@ -807,7 +824,7 @@ class Module(ArianeNode):
         module = mod_args["module"]
         link_args = {"node": self.node, "relation": "DEPENDS ON", "linked_node": module.node, "properties": properties.copy()}
 
-        nid, rel = ArianeDeliveryService.graph_dao.create_link(link_args)
+        nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
         self._add_node_to_notify(rel, module._remove_notifier_node)
         module._add_node_to_notify(rel, self._remove_notifier_node)
 
@@ -880,9 +897,9 @@ class SubModule(ArianeNode):
         self.artifactId_name = artifactId_name
         self.dir = {"name": self.artifactId_name, "version": self.version, "groupId": self.groupId,
                     "artifactId": self.artifactId, "nID": self.id}
-        self.list_relation = []
-        self.list_related_node = []
-        self.node = ArianeDeliveryService.graph_dao.init_node(self.node_type, self.dir)
+        # self.list_relation = []
+        # self.list_related_node = []
+        self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
     def _get_dir(self):
         self.dir = {"name": self.artifactId_name, "version": self.version, "groupId": self.groupId,
@@ -894,7 +911,7 @@ class SubModule(ArianeNode):
             for fnode in self.list_files:
                 fnode.save()
 
-            self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self._get_dir())
+            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
 
             for fnode in self.list_files:
                 self._create_file(fnode)
@@ -902,7 +919,7 @@ class SubModule(ArianeNode):
         else:
             dir = self._get_dir()
             dir["node"] = self.node
-            self.node = ArianeDeliveryService.graph_dao.save_node(dir)
+            self.node = DeliveryTree.graph_dao.save_node(dir)
 
     def delete(self):
         """
@@ -912,8 +929,8 @@ class SubModule(ArianeNode):
         :return: Nothing
         """
         for rel in self.list_relation:
-            ArianeDeliveryService.graph_dao.delete(rel)
-        ArianeDeliveryService.graph_dao.delete(self.node)
+            DeliveryTree.graph_dao.delete(rel)
+        DeliveryTree.graph_dao.delete(self.node)
         for rel, node_remove_function in self.list_related_node:
             node_remove_function(rel, self)
 
@@ -948,13 +965,11 @@ class Plugin(ArianeNode):
         self.type = "plugin"
         self.directory_name = ""
         self.list_submod = []
-        self.list_relation = []
-        self.list_related_node = []
         self.list_module_dependency = []
         self._len_list_submod = 0
         self._len_list_mod_dep = 0
         self.dir = {"name": self.name, "version": self.version, "nID": self.id}
-        self.node = ArianeDeliveryService.graph_dao.init_node(self.node_type, self.dir)
+        self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
     def _get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "nID": self.id}
@@ -968,7 +983,7 @@ class Plugin(ArianeNode):
             for fnode in self.list_files:
                 fnode.save()
 
-            self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self._get_dir())
+            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
 
             for submod in self.list_submod:
                 self.__create_relation(submod)
@@ -983,7 +998,7 @@ class Plugin(ArianeNode):
         else:
             dir = self._get_dir()
             dir["node"] = self.node
-            self.node = ArianeDeliveryService.graph_dao.save_node(dir)
+            self.node = DeliveryTree.graph_dao.save_node(dir)
 
             if len(self.list_module_dependency) > self._len_list_mod_dep:
                 for dep in self.list_module_dependency:
@@ -1005,8 +1020,8 @@ class Plugin(ArianeNode):
         for submod in self.list_submod.copy():
             submod.delete()
         for rel in self.list_relation:
-            ArianeDeliveryService.graph_dao.delete(rel)
-        ArianeDeliveryService.graph_dao.delete(self.node)
+            DeliveryTree.graph_dao.delete(rel)
+        DeliveryTree.graph_dao.delete(self.node)
         for rel, node_remove_function in self.list_related_node:
             node_remove_function(rel, self)
 
@@ -1017,7 +1032,7 @@ class Plugin(ArianeNode):
 
     def __create_relation(self, submod):
         link_args = {"node": self.node, "relation": "COMPOSED OF", "linked_node": submod.node}
-        nid, rel = ArianeDeliveryService.graph_dao.create_link(link_args)
+        nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
         self.list_relation.append(rel)
         # Send "_remove_notifier_node" function as argument
         submod._add_node_to_notify(rel, self._remove_notifier_node)
@@ -1044,7 +1059,7 @@ class Plugin(ArianeNode):
         module = mod_args["module"]
         link_args = {"node": self.node, "relation": "DEPENDS ON", "linked_node": module.node, "properties": properties.copy()}
 
-        nid, rel = ArianeDeliveryService.graph_dao.create_link(link_args)
+        nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
         self._add_node_to_notify(rel, module._remove_notifier_node)
 
         if nid is not None:
@@ -1081,12 +1096,10 @@ class SubModuleParent(ArianeNode):
         self.node_type = self.__class__.__name__
         self.id = id
         self.list_submod = []
-        self.list_relation = []
-        self.list_related_node = []
         self.artifactId = ""
         self.groupId = ""
         self.dir = {"name": self.name, "version": self.version, "nID": self.id}
-        self.node = ArianeDeliveryService.graph_dao.init_node(self.node_type, self.dir)
+        self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
     def _get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "groupId": self.groupId, "artifactId": self.artifactId, "nID": self.id}
@@ -1100,7 +1113,7 @@ class SubModuleParent(ArianeNode):
             for fnode in self.list_files:
                 fnode.save()
 
-            self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self._get_dir())
+            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
 
             for submod in self.list_submod:
                 self.__create_relation(submod)
@@ -1111,7 +1124,7 @@ class SubModuleParent(ArianeNode):
         else:
             dir = self._get_dir()
             dir["node"] = self.node
-            self.node = ArianeDeliveryService.graph_dao.save_node(dir)
+            self.node = DeliveryTree.graph_dao.save_node(dir)
 
     def delete(self):
         """
@@ -1123,8 +1136,8 @@ class SubModuleParent(ArianeNode):
         for submod in self.list_submod.copy():
             submod.delete()
         for rel in self.list_relation:
-            ArianeDeliveryService.graph_dao.delete(rel)
-        ArianeDeliveryService.graph_dao.delete(self.node)
+            DeliveryTree.graph_dao.delete(rel)
+        DeliveryTree.graph_dao.delete(self.node)
         for rel, node_remove_function in self.list_related_node:
             node_remove_function(rel, self)
 
@@ -1135,7 +1148,7 @@ class SubModuleParent(ArianeNode):
 
     def __create_relation(self, submod):
         link_args = {"node": self.node, "relation": "COMPOSED OF", "linked_node": submod.node}
-        nid, rel = ArianeDeliveryService.graph_dao.create_link(link_args)
+        nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
         self.list_relation.append(rel)
         # Send "_remove_notifier_node" function as argument
         submod._add_node_to_notify(rel, self._remove_notifier_node)
@@ -1179,7 +1192,7 @@ class FileNode(object):
                           "vsh", "git_repos"]
         self.list_relation = []
         self.list_related_node = []
-        self.node = ArianeDeliveryService.graph_dao.init_node(self.node_type, self.dir)
+        self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
     def _get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "type": self.type,
@@ -1200,11 +1213,11 @@ class FileNode(object):
 
     def save(self):
         if self.id == 0:
-            self.node, self.id = ArianeDeliveryService.graph_dao.create_node(self.node_type, self._get_dir())
+            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
         else:
             dir = self._get_dir()
             dir["node"] = self.node
-            self.node = ArianeDeliveryService.graph_dao.save_node(dir)
+            self.node = DeliveryTree.graph_dao.save_node(dir)
 
     def delete(self):
         """
@@ -1214,8 +1227,8 @@ class FileNode(object):
         :return: Nothing
         """
         for rel in self.list_relation:
-            ArianeDeliveryService.graph_dao.delete(rel)
-        ArianeDeliveryService.graph_dao.delete(self.node)
+            DeliveryTree.graph_dao.delete(rel)
+        DeliveryTree.graph_dao.delete(self.node)
         for rel, node_remove_function in self.list_related_node:
             node_remove_function(rel, self)
 
