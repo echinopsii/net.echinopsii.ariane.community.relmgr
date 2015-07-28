@@ -1,0 +1,5 @@
+{
+    "ariane.community.plugin.rabbitmq": [
+        "master.SNAPSHOT"
+    ]
+}

@@ -1,0 +1,23 @@
+# syntax expected:
+# distribution distribution_name distribution_version
+# module_name module_version module_type sub_module_name1 sub_module_name1_version sub_module_name2 sub_module_name2_version etc
+# plugin plugin_name plugin_version sub_module_name1 sub_module_name2 etc
+#
+# dependency:
+# module_name1 module_name2 version_min version_max
+
+distribution community 0.5.3
+directory 0.5.0 core base wat
+injector 0.5.0 core base wat
+idm 0.4.0 core base
+mapping 0.5.0 core ds:_api_blueprints_dsl_rim taitale wat
+portal 0.5.0 core base idmwat wab wat wresources
+installer 0.5.0 environment tools
+environment 0.5.0 environment
+
+dependency:
+directory portal 0.5.0 0.6.0
+injector portal 0.5.0 0.6.0
+portal idm 0.4.0 0.5.0
+mapping portal 0.5.0 0.6.0
+mapping idm 0.4.0 0.5.0
