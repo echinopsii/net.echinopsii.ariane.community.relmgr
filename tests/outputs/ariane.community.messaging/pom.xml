@@ -78,10 +78,6 @@
         <version.net.echinopsii.ariane.core.portal.min>0.6.0</version.net.echinopsii.ariane.core.portal.min>
         <version.net.echinopsii.ariane.core.portal.max>0.7.0</version.net.echinopsii.ariane.core.portal.max>
     
-        <version.net.echinopsii.ariane.core.portal>0.6.4-SNAPSHOT</version.net.echinopsii.ariane.core.portal>
-        <version.net.echinopsii.ariane.core.portal.min>0.6.0</version.net.echinopsii.ariane.core.portal.min>
-        <version.net.echinopsii.ariane.core.portal.max>0.7.0</version.net.echinopsii.ariane.core.portal.max>
-    
 
 
    <!-- Dependencies versions-->

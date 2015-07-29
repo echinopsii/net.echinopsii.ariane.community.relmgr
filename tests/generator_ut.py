@@ -40,6 +40,10 @@ class GeneratorTest(unittest.TestCase):
     def test_import_export(self):
         create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
 
+    def test_generate_all(self):
+        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        self.g.generate_all_distribution("0.6.4-SNAPSHOT")
+
     def test_generate_pom_maven(self):
         create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
         distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})

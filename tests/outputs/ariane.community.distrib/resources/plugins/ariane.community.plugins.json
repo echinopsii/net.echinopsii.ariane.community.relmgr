@@ -1,41 +1,10 @@
 {
     "ariane.community.plugin.rabbitmq": [
         {
-            "pluginVersion": "0.1.0",
-            "distVersion": [
-                "0.5.3"
-            ]
-        },
-        {
-            "pluginVersion": "0.2.1",
-            "distVersion": [
-                "0.6.0",
-                "0.6.1"
-            ]
-        },
-        {
-            "pluginVersion": "0.2.0",
-            "distVersion": [
-                "0.6.0"
-            ]
-        },
-        {
-            "pluginVersion": "0.2.2",
-            "distVersion": [
-                "0.6.2"
-            ]
-        },
-        {
-            "pluginVersion": "0.2.3",
-            "distVersion": [
-                "0.6.3"
-            ]
-        },
-        {
-            "pluginVersion": "master.SNAPSHOT",
             "distVersion": [
                 "master.SNAPSHOT"
-            ]
+            ],
+            "pluginVersion": "master.SNAPSHOT"
         }
     ]
 }

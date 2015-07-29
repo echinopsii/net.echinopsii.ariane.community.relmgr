@@ -123,7 +123,7 @@ class Generator(object):
             mod_files = self.ariane.get_files(mod)
             for f in mod_files:
                 if f.type == "plan":
-                    self.generate_plan(mod, f, version)
+                    self.generate_plan(mod, f)
                 elif f.type == "json_build":
                     self.generate_lib_json(mod, f)
                 elif f.type == "vsh":
@@ -150,7 +150,7 @@ class Generator(object):
             plug_files = self.ariane.get_files(plug)
             for f in plug_files:
                 if f.type == "plan":
-                    self.generate_plan(plug, f, version)
+                    self.generate_plan(plug, f)
                 elif f.type == "json_build":
                     self.generate_lib_json(plug, f)
                 elif f.type == "vsh":
