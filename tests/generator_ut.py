@@ -38,7 +38,7 @@ class GeneratorTest(unittest.TestCase):
     #     print(os.listdir('./'))
 
     def test_import_export(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.3.txt')
+        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
 
     def test_generate_pom_maven(self):
         create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
