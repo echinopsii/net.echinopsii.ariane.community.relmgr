@@ -10,6 +10,7 @@
 {%- block configuration -%}
 <artifact type="configuration" name="net.echinopsii.ariane.community.core.InjectorComponentsRegistry"/>
 <artifact type="configuration" name="net.echinopsii.ariane.community.core.InjectorGearsRegistry"/>
+<artifact type="configuration" name="net.echinopsii.ariane.community.core.InjectorRegistryFactory"/>
 <artifact type="configuration" name="net.echinopsii.ariane.community.core.InjectorMessagingManagedService"/>
         {%- endblock -%}
 {% block bundle %}

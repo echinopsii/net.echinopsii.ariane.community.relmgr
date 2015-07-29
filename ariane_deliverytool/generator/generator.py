@@ -24,8 +24,8 @@ class Generator(object):
     dir_output = None
 
     # TODO Modifiy MyLoader path when realese.
-    def __init__(self, ariane_delivery_service, output_directory):
-        self.env = Environment(loader=MyLoader('/Users/stanrenia/py_neo4j_db/tests/templates'))
+    def __init__(self, ariane_delivery_service, output_directory, templates_directory):
+        self.env = Environment(loader=MyLoader(templates_directory))
         Generator.ariane = ariane_delivery_service
         Generator.dir_output = output_directory
         self.modules_dict = {}
@@ -108,7 +108,7 @@ class Generator(object):
             elif df.type == "json_plugin_dist":
                 self.generate_json_plugin_dist(version, df)
             elif df.type == "git_repos":
-                self.generate_git_repos_json(version, df)
+                self.generate_json_git_repos(version, df)
 
     def generate_module_files(self, version):
         modules = self.get_modules_list(version)
@@ -170,8 +170,6 @@ class Generator(object):
         file_gen_exception = self.get_module_file_gen_exceptions()
 
         if mod_plug.name not in file_gen_exception:
-            mod_plug.list_submod = self.ariane.submodule_service.get_all(mod_plug)
-            mod_plug.list_submod.extend(self.ariane.submodule_parent_service.get_all(mod_plug))
             if type(mod_plug) is ariane_delivery.Module:
                 self.ariane.module_service.get_relations(mod_plug)
             elif type(mod_plug) is ariane_delivery.Plugin:
@@ -233,14 +231,11 @@ class Generator(object):
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
             target.write(template.render(args))
 
-    def generate_plan(self, mod_plug, fplan, version):
+    def generate_plan(self, mod_plug, fplan):
         sub_exceptions = self.get_submodule_plan_exceptions()
         snapshot = False
-        if "SNAPSHOT" in version:
-            version = "master.SNAPSHOT"
-            snapshot = True
 
-        template = self.env.get_template(fplan.path+"plan_"+mod_plug.name+"_"+version+"_template.xml.tpl")
+        template = self.env.get_template(fplan.path+"plan_"+mod_plug.name+"_template.xml.tpl")
         submodules = mod_plug.list_submod
         # Remove each submodule which is in exceptions list.
         # Note that if submodule is a SubModuleParent which has a SubModule to be excluded,
@@ -346,7 +341,7 @@ class Generator(object):
 
         return self.dir_output+fjson.path+fjson.name
 
-    def generate_git_repos_json(self, version, fjson):
+    def generate_json_git_repos(self, version, fjson):
         distrib = self.get_distrib(version)
 
         modules = self.get_modules_list(version)
@@ -418,3 +413,60 @@ class Generator(object):
         args = {"plugin": p}
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
             target.write(template.render(args))
+
+    def compare_files(self, file_type, filename1, filename2):
+        with open(filename1, 'r') as file1:
+            with open(filename2, 'r') as file2:
+                if file_type == "json":
+                    return self.compare_json(file1, file2)
+                elif file_type == "c_json":
+                    return self.compare_complex_json(file1, file2)
+                elif file_type == "xml":
+                    return self.compare_xml(file1, file2)
+                else:
+                    pass
+
+    def compare_json(self, file1, file2):
+        data1 = json.load(file1)
+        data2 = json.load(file2)
+        if (type(data1) is list) and (type(data2) is list):
+            data1.sort()
+            data2.sort()
+        return data1 == data2
+
+    def compare_complex_json(self, file1, file2):
+        """
+        Compare json files both composed of the following elements: {"key": [ {}, {}, ...], "key2": [{}, {}, ...], ...}
+        a dictionary with list of dictionaries as values
+        :param file1: 1st .json file
+        :param file2: 2nd .json file
+        :return: True if both .json files are equal
+        """
+        data1 = json.load(file1)
+        data2 = json.load(file2)
+        l = data1["ariane.community.plugin.rabbitmq"]
+        l2 = data2["ariane.community.plugin.rabbitmq"]
+        length = 0
+        if len(l) == len(l2):
+            for d in l:
+                for d2 in l2:
+                    if d == d2:
+                        length += 1
+                        break
+            if length == len(l):
+                return True
+
+        return False
+
+    def compare_xml(self, file1, file2):
+        model = file1.read()
+        flag = True
+        for line in(l.strip() for l in file2.readlines()):
+            if line in model:
+                continue
+            else:
+                if "<!--" not in line:
+                    print(file2.name)
+                    print(line)
+                flag = False
+        return flag

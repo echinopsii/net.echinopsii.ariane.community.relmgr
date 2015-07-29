@@ -79,7 +79,7 @@ class TestMakeDir(unittest.TestCase):
         mkdir.make_distrib_directory()
 
     def test_copy(self):
-        cpy = CopyModels("/ECHINOPSII/srenia", os.path.join(os.getcwd(), 'models'))
+        cpy = CopyModels(os.path.join(os.getcwd(), 'templates'), "/ECHINOPSII/srenia")
         cpy.copy()
 
 class CopyModels(object):
@@ -108,25 +108,27 @@ class CopyModels(object):
                         dirnames = dn
                         filenames = fn
                         break
-                    # if "pom.xml" in filenames:
-                    #     pom_path = os.path.join(dirpath+"pom.xml")
+                    # if "pom.xml.tpl" in filenames:
+                    #     pom_path = os.path.join(dirpath+"pom.xml.tpl")
                     #     dpath = str(pom_path).replace(self.rootpath, "")
                     #     dst_path = dest_path + dpath
-                    #     #print(dst_path)
+                    #     print(dst_path)
                     #     shutil.copy(pom_path, dst_path)
+                    # else:
+                    #     print(dest_path)
 
-                    # for plan in filenames:
-                    #     if str(plan).endswith(".plan"):
-                    #         plan_path = os.path.join(dirpath+plan)
-                    #         if "master" in plan_path or "0.6.3" in plan_path:
-                    #             shutil.copy(plan_path, os.getcwd()+'/models/')
+                    for plan in filenames:
+                        if str(plan).startswith("plan_"):
+                            plan_path = os.path.join(dirpath+plan)
+                            if "master" in plan_path or "0.6.3" in plan_path:
+                                shutil.copy(plan_path, os.getcwd()+'/models/')
 
-                    for json in filenames:
-                        if str(json).startswith("ariane.community"):
-                            json_path = os.path.join(dirpath+json)
-                            if "master" in json_path or "0.6.3" in json_path:
-                                shutil.copy(json_path, os.getcwd()+'/models/')
-
+                    # for json in filenames:
+                    #     if str(json).startswith("ariane.community"):
+                    #         json_path = os.path.join(dirpath+json)
+                    #         if "master" in json_path or "0.6.3" in json_path:
+                    #             shutil.copy(json_path, os.getcwd()+'/models/')
+                    #
                     for d in dirnames:
                         copy_rec(os.path.join(dirpath, d+'/'), dest_path)
 

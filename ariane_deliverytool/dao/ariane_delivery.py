@@ -195,6 +195,12 @@ class DistributionService(DeliveryTree):
     def __init__(self):
         self._ariane_node = Distribution("model", "model")
 
+    def update_arianenode_lists(self, distrib):
+        if isinstance(distrib, Distribution):
+            distrib.list_module = DeliveryTree.module_service.get_all(distrib)
+            distrib.list_plugin.extend(DeliveryTree.plugin_service.get_all(distrib))
+            DeliveryTree.distribution_service.get_relations(distrib)
+
     def get_all(self, args=None):
         """ Get all distributions existing in database
         :param args:  None
@@ -246,7 +252,7 @@ class DistributionService(DeliveryTree):
         self.__make_file_pom_dist(distrib)
         self.__make_file_json_plugins(distrib)
         self.__make_file_json_plugin_dist(distrib)
-        self.__make_file_git_repos(distrib)
+        self.__make_file_json_git_repos(distrib)
 
     def __make_file_json_dist(self, distrib):
         fname = distrib.get_directory_name() + '-' + self.__get_name_version_master(distrib.version) + '.json'
@@ -268,10 +274,10 @@ class DistributionService(DeliveryTree):
         fpath = distrib.get_directory_name()+"/resources/plugins/"
         distrib.add_file(FileNode(fname, "json_plugin_dist", distrib.version, fpath))
 
-    def __make_file_git_repos(self, distrib):
+    def __make_file_json_git_repos(self, distrib):
         fname = 'ariane.community.git.repos-'+ self.__get_name_version_master(distrib.version) +'.json'
         fpath = distrib.get_directory_name() + "/resources/sources/"
-        distrib.add_file(FileNode(fname, "git_repos", distrib.version, fpath))
+        distrib.add_file(FileNode(fname, "json_git_repos", distrib.version, fpath))
 
     def _get_label(self):
         return self._ariane_node.node_type
@@ -279,6 +285,12 @@ class DistributionService(DeliveryTree):
 class ModuleService(DeliveryTree):
     def __init__(self):
         self._ariane_node = Module("model", "model")
+
+    def update_arianenode_lists(self, module):
+        if isinstance(module, Module):
+            module.list_submod = DeliveryTree.submodule_service.get_all(module)
+            module.list_submod.extend(DeliveryTree.submodule_parent_service.get_all(module))
+            DeliveryTree.module_service.get_relations(module)
 
     def get_all(self, args=None):
         """ Get all modules from a given distribution
@@ -361,6 +373,12 @@ class PluginService(DeliveryTree):
     def __init__(self):
         self._ariane_node = Plugin("model", "model")
 
+    def update_arianenode_lists(self, plugin):
+        if isinstance(plugin, Plugin):
+            plugin.list_submod = DeliveryTree.submodule_service.get_all(plugin)
+            plugin.list_submod.extend(DeliveryTree.submodule_parent_service.get_all(plugin))
+            DeliveryTree.plugin_service.get_relations(plugin)
+
     def get_all(self, args=None):
         """ Get all plugins from a given distribution
         :param distribution: Distribution object
@@ -440,6 +458,9 @@ class SubModuleService(DeliveryTree):
     def __init__(self):
         self._ariane_node = SubModule("model", "model")
 
+    def update_arianenode_lists(self, arg):
+        pass
+
     def get_all(self, module):
         """
         get all submodules from a given module or plugin
@@ -475,6 +496,12 @@ class SubModuleService(DeliveryTree):
 class SubModuleParentService(DeliveryTree):
     def __init__(self):
         self._ariane_node = SubModuleParent("model", "model")
+
+    def update_arianenode_lists(self, subpar):
+        if isinstance(subpar, SubModuleParent):
+            subpar.list_submod = DeliveryTree.submodule_service.get_all(subpar)
+            subpar.list_submod.extend(DeliveryTree.submodule_parent_service.get_all(subpar))
+            DeliveryTree.submodule_parent_service.get_relations(subpar)
 
     def get_all(self, module):
         """
@@ -544,7 +571,7 @@ class ArianeNode(object):
         self.list_related_node = []
 
     def add_file(self, file_node):
-        if type(file_node) is FileNode:
+        if isinstance(file_node, FileNode):
             self.list_files.append(file_node)
             if self._is_saved():
                 self._create_file(file_node)
@@ -566,6 +593,10 @@ class ArianeNode(object):
             return False
         else:
             return True
+
+    def _reset_node(self):
+        self.id = 0
+        self.node = DeliveryTree.graph_dao.init_node(self.node_type, self._get_dir())
 
     def _check_properties(self, args):
         for arg_key in args.keys():
@@ -658,23 +689,27 @@ class Distribution(ArianeNode):
             self.node = DeliveryTree.graph_dao.save_node(dir)
 
     def delete(self):
-        for mod in self.list_module.copy():
-            mod.delete()
-        for plugin_dict in self.list_plugin.copy():
-            plugin_dict["Plugin"].delete()
-        for rel in self.list_relation:
-            DeliveryTree.graph_dao.delete(rel)
-        DeliveryTree.graph_dao.delete(self.node)
+        if self._is_saved():
+            for mod in self.list_module.copy():
+                mod.delete()
+            for plugin_dict in self.list_plugin.copy():
+                plugin_dict["Plugin"].delete()
+            for rel in self.list_relation:
+                DeliveryTree.graph_dao.delete(rel)
+            DeliveryTree.graph_dao.delete(self.node)
+            self._reset_node()
 
     def add_module(self, module):
-        self.list_module.append(module)
-        if self._is_saved():
-            self.__create_relation(module, "DEPENDS ON")
+        if isinstance(module, Module):
+            self.list_module.append(module)
+            if self._is_saved():
+                self.__create_relation(module, "DEPENDS ON")
 
     def add_plugin(self, plugin, prop=None):
-        self.list_plugin.append({"Plugin": plugin, "properties": prop})
-        if self._is_saved():
-            self.__create_relation(plugin, "COMPATIBLE WITH", prop)
+        if isinstance(plugin, Plugin):
+            self.list_plugin.append({"Plugin": plugin, "properties": prop})
+            if self._is_saved():
+                self.__create_relation(plugin, "COMPATIBLE WITH", prop)
 
     def __create_relation(self, mod_plug, relation, prop=None):
         link_args = {"node": mod_plug.node, "relation": relation, "linked_node": self.node}
@@ -747,6 +782,7 @@ class Module(ArianeNode):
 
             for fnode in self.list_files:
                 self._create_file(fnode)
+            self._len_list_files = len(self.list_files)
 
         else:
             # update properties in graph database
@@ -776,18 +812,21 @@ class Module(ArianeNode):
         nodes are: Module and Plugin)
         :return: Nothing
         """
-        for submod in self.list_submod.copy():
-            submod.delete()
-        for rel in self.list_relation:
-            DeliveryTree.graph_dao.delete(rel)
-        DeliveryTree.graph_dao.delete(self.node)
-        for rel, node_remove_function in self.list_related_node:
-            node_remove_function(rel, self)
+        if self._is_saved():
+            for submod in self.list_submod.copy():
+                submod.delete()
+            for rel in self.list_relation:
+                DeliveryTree.graph_dao.delete(rel)
+            DeliveryTree.graph_dao.delete(self.node)
+            for rel, node_remove_function in self.list_related_node:
+                node_remove_function(rel, self)
+            self._reset_node()
 
     def add_submodule(self, submod):
-        self.list_submod.append(submod)
-        if self._is_saved():
-            self.__create_relation(submod)
+        if isinstance(submod, SubModule) or isinstance(submod, SubModuleParent):
+            self.list_submod.append(submod)
+            if self._is_saved():
+                self.__create_relation(submod)
 
     def __create_relation(self, submod):
         """
@@ -810,14 +849,15 @@ class Module(ArianeNode):
         :param mod_args: dict with the following keys: "module": Module object, "version_min": str, "version_max": str
         :return: Nothing
         """
-        if self._is_saved():
-            self.__create_dependency(mod_args)
-
-        properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"]}
         module = mod_args["module"]
-        properties["module"] = module
-        properties["version"] = module.version
-        self.list_module_dependency.append(properties)
+        if isinstance(module, Module):
+            if self._is_saved():
+                self.__create_dependency(mod_args)
+
+            properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"]}
+            properties["module"] = module
+            properties["version"] = module.version
+            self.list_module_dependency.append(properties)
 
     def __create_dependency(self, mod_args):
         properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"]}
@@ -928,11 +968,13 @@ class SubModule(ArianeNode):
         related nodes are: SubModules)
         :return: Nothing
         """
-        for rel in self.list_relation:
-            DeliveryTree.graph_dao.delete(rel)
-        DeliveryTree.graph_dao.delete(self.node)
-        for rel, node_remove_function in self.list_related_node:
-            node_remove_function(rel, self)
+        if self._is_saved():
+            for rel in self.list_relation:
+                DeliveryTree.graph_dao.delete(rel)
+            DeliveryTree.graph_dao.delete(self.node)
+            for rel, node_remove_function in self.list_related_node:
+                node_remove_function(rel, self)
+            self._reset_node()
 
     def set_groupid_artifact(self, mod_plug, sub_parent=None):
         group_type = ""
@@ -987,6 +1029,7 @@ class Plugin(ArianeNode):
 
             for submod in self.list_submod:
                 self.__create_relation(submod)
+            self._len_list_submod = len(self.list_submod)
 
             for dep in self.list_module_dependency:
                 self.__create_dependency(dep)
@@ -1017,18 +1060,21 @@ class Plugin(ArianeNode):
         nodes are: Module and Plugin)
         :return: Nothing
         """
-        for submod in self.list_submod.copy():
-            submod.delete()
-        for rel in self.list_relation:
-            DeliveryTree.graph_dao.delete(rel)
-        DeliveryTree.graph_dao.delete(self.node)
-        for rel, node_remove_function in self.list_related_node:
-            node_remove_function(rel, self)
+        if self._is_saved():
+            for submod in self.list_submod.copy():
+                submod.delete()
+            for rel in self.list_relation:
+                DeliveryTree.graph_dao.delete(rel)
+            DeliveryTree.graph_dao.delete(self.node)
+            for rel, node_remove_function in self.list_related_node:
+                node_remove_function(rel, self)
+            self._reset_node()
 
     def add_submodule(self, submod):
-        self.list_submod.append(submod)
-        if self._is_saved():
-            self.__create_relation(submod)
+        if isinstance(submod, SubModule) or isinstance(submod, SubModuleParent):
+            self.list_submod.append(submod)
+            if self._is_saved():
+                self.__create_relation(submod)
 
     def __create_relation(self, submod):
         link_args = {"node": self.node, "relation": "COMPOSED OF", "linked_node": submod.node}
@@ -1041,18 +1087,19 @@ class Plugin(ArianeNode):
 
     def add_module_dependency(self, mod_args):
         """
-        Add Module to Module dependency.
+        Add Module to Plugin dependency.
         :param mod_args: dict with the following keys: "module": Module object, "version_min": str, "version_max": str
         :return: Nothing
         """
-        if self._is_saved():
-            self.__create_dependency(mod_args)
-
-        properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"]}
         module = mod_args["module"]
-        properties["module"] = module
-        properties["version"] = module.version
-        self.list_module_dependency.append(properties)
+        if isinstance(module, Module):
+            if self._is_saved():
+                self.__create_dependency(mod_args)
+
+            properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"]}
+            properties["module"] = module
+            properties["version"] = module.version
+            self.list_module_dependency.append(properties)
 
     def __create_dependency(self, mod_args):
         properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"]}
@@ -1133,18 +1180,21 @@ class SubModuleParent(ArianeNode):
         nodes are: Module and Plugin)
         :return: Nothing
         """
-        for submod in self.list_submod.copy():
-            submod.delete()
-        for rel in self.list_relation:
-            DeliveryTree.graph_dao.delete(rel)
-        DeliveryTree.graph_dao.delete(self.node)
-        for rel, node_remove_function in self.list_related_node:
-            node_remove_function(rel, self)
+        if self._is_saved():
+            for submod in self.list_submod.copy():
+                submod.delete()
+            for rel in self.list_relation:
+                DeliveryTree.graph_dao.delete(rel)
+            DeliveryTree.graph_dao.delete(self.node)
+            for rel, node_remove_function in self.list_related_node:
+                node_remove_function(rel, self)
+            self._reset_node()
 
     def add_submodule(self, submod):
-        self.list_submod.append(submod)
-        if self._is_saved():
-            self.__create_relation(submod)
+        if isinstance(submod, SubModule) or isinstance(submod, SubModuleParent):
+            self.list_submod.append(submod)
+            if self._is_saved():
+                self.__create_relation(submod)
 
     def __create_relation(self, submod):
         link_args = {"node": self.node, "relation": "COMPOSED OF", "linked_node": submod.node}
@@ -1189,7 +1239,7 @@ class FileNode(object):
         self.dir = {"name": self.name, "version": self.version, "type": self.type,
                     "path": self.path, "nID": self.id}
         self.list_type = ["pom", "plan", "json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_plugins",
-                          "vsh", "git_repos"]
+                          "vsh", "json_git_repos"]
         self.list_relation = []
         self.list_related_node = []
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
@@ -1226,11 +1276,14 @@ class FileNode(object):
         related nodes are: SubModules)
         :return: Nothing
         """
-        for rel in self.list_relation:
-            DeliveryTree.graph_dao.delete(rel)
-        DeliveryTree.graph_dao.delete(self.node)
-        for rel, node_remove_function in self.list_related_node:
-            node_remove_function(rel, self)
+        if self.id > 0:
+            for rel in self.list_relation:
+                DeliveryTree.graph_dao.delete(rel)
+            DeliveryTree.graph_dao.delete(self.node)
+            for rel, node_remove_function in self.list_related_node:
+                node_remove_function(rel, self)
+            self.id = 0
+            self.node = DeliveryTree.graph_dao.init_node(self.node_type, self._get_dir())
 
     def __repr__(self):
         out = "FileNode(name = "+self.name+", version = "+self.version+", type = "+self.type+", path = "+self.path+"," \

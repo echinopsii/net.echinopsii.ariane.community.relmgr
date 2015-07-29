@@ -28,6 +28,7 @@ class AppTest(unittest.TestCase):
         self.mod.add_submodule(self.sub2)
         self.mod.add_file(ariane_delivery.FileNode("bbb.xml", "xml", "0.1", "/AA"))
         self.plugin.add_submodule(self.sub3)
+        self.plugin.add_file(ariane_delivery.FileNode("plugFile", "xml", ":", "/aez/fef"))
         self.fnode = ariane_delivery.FileNode("dodo.json", "json", "0.6.2", "/la/lala")
         self.distrib.add_file(self.fnode)
         self.distrib.add_module(self.mod)
@@ -198,6 +199,8 @@ class AppTest(unittest.TestCase):
         listfound = self.ariane.module_service.find({"name": "idm"})
         self.assertEqual(listfound[0], self.mod2)
 
+        listfound = self.ariane.module_service.find(self.plugin)
+
         listfound = self.ariane.module_service.find({"name": "My", "version": "newmew", "type": "other"})
         self.assertEqual(listfound[0], self.mod)
 
@@ -246,6 +249,8 @@ class AppTest(unittest.TestCase):
             self.assertIsInstance(rel, ariane_delivery.ArianeRelation)
 
     def test_PluginService(self):
+        self.plugin.save()
+        self.plugin.add_file(ariane_delivery.FileNode("toto", "ad", "carry", "/r/s/q"))
         # PluginService():
         listplug = self.ariane.plugin_service.get_all(self.distrib)
         self.assertEqual(self.plugin, listplug[0])
@@ -292,6 +297,10 @@ class AppTest(unittest.TestCase):
         #   distrib2 is a single node
         self.distrib2 = ariane_delivery.Distribution("echinopsii", "0.7.0")
         self.distrib2.save()
+        self.distrib.add_file(ariane_delivery.FileNode("dfg", "botrk", "bf", "/e/z"))
+        self.distrib.add_module(ariane_delivery.Module("Ari", "Orbital"))
+        self.distrib.save()
+        self.distrib.add_plugin(ariane_delivery.Plugin("Gnar", "Gnaaar"))
         listdistrib = self.ariane.distribution_service.get_all()
         self.assertGreater(len(listdistrib), 1)
         assert ((listdistrib[0] == self.distrib) or (listdistrib[0] == self.distrib2) and
@@ -346,3 +355,14 @@ class AppTest(unittest.TestCase):
         d = self.ariane.distribution_service.get_all()
         self.assertIsNone(d)
 
+    def test_delete_error(self):
+        mymod = ariane_delivery.Module("def", "epic")
+        mymod.delete()
+
+    def test_add_error(self):
+        A = ariane_delivery.Module("A", "myversion")
+        A.save()
+        B = ariane_delivery.SubModule("B", "B_version")
+        A.add_submodule(B)
+        d = ariane_delivery.Distribution("d", "epic")
+        A.add_submodule(d)
