@@ -1,6 +1,6 @@
 from jinja2 import Environment, PackageLoader, TemplateNotFound, BaseLoader
 from ariane_deliverytool.dao import ariane_delivery
-import json
+import os, json, ariane_deliverytool
 from os.path import join, exists, getmtime, realpath
 from os import getcwd
 __author__ = 'stanrenia'
@@ -20,6 +20,7 @@ class MyLoader(BaseLoader):
         return source, path, lambda: mtime == getmtime(path)
 
 class Generator(object):
+    ariane_deliverytool_module_path = os.path.dirname(ariane_deliverytool.__file__)
     ariane = None
     dir_output = None
 
@@ -54,31 +55,31 @@ class Generator(object):
 
     def get_submodule_lib_extensions(self):
         if self.extension_sub_lib.__len__() == 0:
-            with open('inputs/submodule_lib_extensions.json', 'r') as data_file:
+            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/submodule_lib_extensions.json', 'r') as data_file:
                 self.extension_sub_lib = json.load(data_file)
         return self.extension_sub_lib
 
     def get_submodule_lib_exceptions(self):
         if self.exception_sub_lib.__len__() == 0:
-            with open('inputs/submodule_lib_exceptions.json', 'r') as data_file:
+            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/submodule_lib_exceptions.json', 'r') as data_file:
                 self.exception_sub_lib = json.load(data_file)
         return self.exception_sub_lib
 
     def get_submodule_plan_exceptions(self):
         if self.exception_sub_plan.__len__() == 0:
-            with open('inputs/submodule_plan_exceptions.json', 'r') as data_file:
+            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/submodule_plan_exceptions.json', 'r') as data_file:
                 self.exception_sub_plan = json.load(data_file)
         return self.exception_sub_plan
 
     def get_module_file_gen_exceptions(self):
         if self.exception_mod_file_gen.__len__() == 0:
-            with open('inputs/module_file_gen_exceptions.json', 'r') as data_file:
+            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/module_file_gen_exceptions.json', 'r') as data_file:
                 self.exception_mod_file_gen = json.load(data_file)
         return self.exception_mod_file_gen
 
     def get_vsh_exceptions(self):
         if self.exception_vsh.__len__() == 0:
-            with open('inputs/module_vsh_exceptions.json', 'r') as data_file:
+            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/module_vsh_exceptions.json', 'r') as data_file:
                 self.exception_vsh = json.load(data_file)
         return self.exception_vsh
 
