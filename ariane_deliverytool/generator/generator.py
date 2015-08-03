@@ -25,7 +25,10 @@ class Generator(object):
     dir_output = None
 
     # TODO Modifiy MyLoader path when realese.
-    def __init__(self, ariane_delivery_service, output_directory, templates_directory):
+    def __init__(self, ariane_delivery_service, project_directory):
+        output_directory = self.__refactor_path(project_directory)
+        templates_directory = self.__refactor_path(project_directory)
+
         self.env = Environment(loader=MyLoader(templates_directory))
         Generator.ariane = ariane_delivery_service
         Generator.dir_output = output_directory
@@ -83,6 +86,11 @@ class Generator(object):
                 self.exception_vsh = json.load(data_file)
         return self.exception_vsh
 
+    def __refactor_path(self, arg_path):
+        if not str(arg_path).endswith('/'):
+            arg_path += '/'
+        return arg_path
+
     def __make_vmin_vmax(self, version):
         v = version.split('.')
         v[-1] = '0'
@@ -101,7 +109,7 @@ class Generator(object):
         dist_files = self.ariane.get_files(distrib)
         for df in dist_files:
             if df.type == "pom_dist":
-                self.generate_pom_distrib(version, df)
+                self.generate_pom_dist(version, df)
             elif df.type == "json_dist":
                 self.generate_json_dist(version, df)
             elif df.type == "json_plugins":
@@ -118,9 +126,7 @@ class Generator(object):
         for mod in modules:
             if mod.name in file_gen_exception:
                 continue
-            mod.list_submod = self.ariane.submodule_service.get_all(mod)
-            mod.list_submod.extend(self.ariane.submodule_parent_service.get_all(mod))
-            self.ariane.module_service.get_relations(mod)
+            self.ariane.module_service.update_arianenode_lists(mod)
             mod_files = self.ariane.get_files(mod)
             for f in mod_files:
                 if f.type == "plan":
@@ -128,7 +134,7 @@ class Generator(object):
                 elif f.type == "json_build":
                     self.generate_lib_json(mod, f)
                 elif f.type == "vsh":
-                    self.generate_vsh_installer(modules.copy(), f)
+                    self.generate_vsh_installer(modules, f)
                 elif f.type == "pom":
                     grId, artId = self.__generate_pom_mod_plug(mod, f)
 
@@ -145,9 +151,7 @@ class Generator(object):
         plugins = self.get_plugins_list(version)
 
         for plug in plugins:
-            plug.list_submod = self.ariane.submodule_service.get_all(plug)
-            plug.list_submod.extend(self.ariane.submodule_parent_service.get_all(plug))
-            self.ariane.plugin_service.get_relations(plug)
+            self.ariane.plugin_service.update_arianenode_lists(plug)
             plug_files = self.ariane.get_files(plug)
             for f in plug_files:
                 if f.type == "plan":
@@ -225,7 +229,7 @@ class Generator(object):
 
         return groupId, artifactId
 
-    def generate_pom_distrib(self, version, fpom):
+    def generate_pom_dist(self, version, fpom):
         modules = self.get_modules_list(version)
         template = self.env.get_template(fpom.path + 'pom_distrib.xml.tpl')
         args = {"modules": modules, "version": version}
@@ -235,6 +239,8 @@ class Generator(object):
     def generate_plan(self, mod_plug, fplan):
         sub_exceptions = self.get_submodule_plan_exceptions()
         snapshot = False
+        if "SNAPSHOT" in mod_plug.version:
+            snapshot = True
 
         template = self.env.get_template(fplan.path+"plan_"+mod_plug.name+"_template.xml.tpl")
         submodules = mod_plug.list_submod
@@ -246,7 +252,8 @@ class Generator(object):
                 submodules.remove(s)
         vmin, vmax = self.__make_vmin_vmax(mod_plug.version)
         if snapshot:
-            m_version = str(mod_plug.version).replace("-", ".")
+            m_version = mod_plug.version
+            m_version = str(m_version).replace("-", ".")
         else:
             m_version = mod_plug.version
         args = {"version": m_version, "module": mod_plug, "vmin": vmin, "vmax": vmax, "submodules": submodules}
@@ -394,16 +401,16 @@ class Generator(object):
 
     def generate_vsh_installer(self, modules, fvsh):
         vsh_exceptions = self.get_vsh_exceptions()
+        modict = {"name": [m.name for m in modules], "version": [m.version for m in modules]}
+        for v in modict["version"]:
+            if "-SNAPSHOT" in v:
+                v = str(v).replace('-', '.')
 
-        for m in modules:
-            if "-SNAPSHOT" in m.version:
-                m.version = str(m.version).replace('-', '.')
-
-        for m in modules.copy():
-            if m.name in vsh_exceptions:
-                modules.remove(m)
+        for n in modict["name"]:
+            if n in vsh_exceptions:
+                modict["name"].remove(n)
         template = self.env.get_template(fvsh.path+'installer_vsh.tpl')
-        args = {"modules": modules}
+        args = {"modules": modict}
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
             target.write(template.render(args))
 

@@ -645,6 +645,14 @@ class ArianeNode(object):
                 return True
         return False
 
+    def __copy__(self):
+        copy = self
+        return copy
+
+    def __deepcopy__(self, memo):
+        copy = self
+        return copy
+
 
 class Distribution(ArianeNode):
 
@@ -875,7 +883,8 @@ class Module(ArianeNode):
         properties = {"version_min": rel.properties["version_min"], "version_max": rel.properties["version_max"]}
         properties["module"] = rel.end
         properties["version"] = rel.end.version
-        self.list_module_dependency.append(properties)
+        if properties not in self.list_module_dependency:
+            self.list_module_dependency.append(properties)
 
     def _add_node_to_notify(self, rel, node_remove_function):
         """
@@ -1116,7 +1125,8 @@ class Plugin(ArianeNode):
         properties = {"version_min": rel.properties["version_min"], "version_max": rel.properties["version_max"]}
         properties["module"] = rel.end
         properties["version"] = rel.end.version
-        self.list_module_dependency.append(properties)
+        if properties not in self.list_module_dependency:
+            self.list_module_dependency.append(properties)
 
     def _add_node_to_notify(self, rel, node_remove_function):
         self.list_relation.append(rel)
