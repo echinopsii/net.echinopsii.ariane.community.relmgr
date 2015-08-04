@@ -2,11 +2,16 @@ from ariane_deliverytool.dao import ariane_delivery
 from ariane_deliverytool.generator import generator
 from tests import create_db_from_file
 import unittest
+from xml.etree import  ElementTree
+import xml.dom.minidom
+import re
+import lxml.etree as etree
 import json
 import os
 
 __author__ = 'stanrenia'
-# TODO Corriger warnings
+# TODO Corriger generate plan
+# TODO Corriger indent templates
 # TODO: Implémenter ArianeRelation.delete()
 # TODO: Implémenter les Erreurs (vérifier les paramètres d'entrées des fonctions public) et exceptions
 # TODO: Voir pourquoi node_id de Distribution change dans le test generator_ut.py, ajuster Generator.get_distrib() en fonction.
@@ -14,6 +19,7 @@ __author__ = 'stanrenia'
 # TODO Déplacer les services Files (méthode make_files) dans un autre fichier.
 # TODO Possibilité d'améliorer le compare xml, afin d'afficher tous les fichiers à modifier au début du print. Voir d'automatiser les modifs à faire.
 # TODO Implémenter services FileNode (CreateRemoveUpdateDelete CRUD)
+# TODO Corriger warnings
 # TODO interface terminal pour génération fichiers
 
 class GeneratorTest(unittest.TestCase):
@@ -36,6 +42,35 @@ class GeneratorTest(unittest.TestCase):
     #     print(os.path.exists('..ariane_delivertytool/generator/exception_extension/module_vsh_exceptions.json'))
     #     print(os.path.exists('/Users/stanrenia/py_neo4j_db/ariane_deliverytool/generator/exception_extension/module_vsh_exceptions.json'))
     #     print(os.listdir('./'))
+
+    def test_lxml(self):
+        doc = xml.dom.minidom.parse('outputs/ariane.community.core.idm/pom.xml')
+        uglyXml = doc.toprettyxml(indent='  ')
+        text_re = re.compile('>\n\s+([^<>\s].*?)\n\s+</', re.DOTALL)
+        prettyXml = text_re.sub('>\g<1></', uglyXml)
+        print(prettyXml)
+
+    def test_xxl(self):
+        def indent(elem, level=0):
+            i = "\n" + level*"  "
+            if len(elem):
+                if not elem.text or not elem.text.strip():
+                    elem.text = i + "  "
+                if not elem.tail or not elem.tail.strip():
+                    elem.tail = i
+                for elem in elem:
+                    indent(elem, level+1)
+                if not elem.tail or not elem.tail.strip():
+                    elem.tail = i
+            else:
+                if level and (not elem.tail or not elem.tail.strip()):
+                    elem.tail = i
+
+        root = ElementTree.parse('outputs/ariane.community.core.idm/pom.xml').getroot()
+        indent(root)
+        # ElementTree.dump(root)
+        ele = ElementTree.ElementTree(root)
+        ele.write('outputs/ariane.community.core.idm/pom2.xml')
 
     def test_import_export(self):
         create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
@@ -137,8 +172,8 @@ class GeneratorTest(unittest.TestCase):
                                                "models/"+fjson.name))
 
     def test_generate_plan(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.2.txt')
-        distrib = self.ariane.distribution_service.get_unique({"version": "0.6.2"})
+        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
         modules = self.ariane.module_service.get_all(distrib)
         plugins = self.ariane.plugin_service.get_all(distrib)
         for m in modules:
@@ -184,7 +219,7 @@ class GeneratorTest(unittest.TestCase):
     #                 return self.compare_xml(file1, file2)
     #             else:
     #                 pass
-    # 
+    #
     # def compare_json(self, file1, file2):
     #     data1 = json.load(file1)
     #     data2 = json.load(file2)
@@ -192,7 +227,7 @@ class GeneratorTest(unittest.TestCase):
     #         data1.sort()
     #         data2.sort()
     #     return data1 == data2
-    # 
+    #
     # def compare_complex_json(self, file1, file2):
     #     """
     #     Compare json files both composed of the following elements: {"key": [ {}, {}, ...], "key2": [{}, {}, ...], ...}
@@ -214,9 +249,9 @@ class GeneratorTest(unittest.TestCase):
     #                     break
     #         if length == len(l):
     #             return True
-    # 
+    #
     #     return False
-    # 
+    #
     # def compare_xml(self, file1, file2):
     #     model = file1.read()
     #     flag = True

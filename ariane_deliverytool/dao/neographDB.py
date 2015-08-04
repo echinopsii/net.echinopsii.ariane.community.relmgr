@@ -225,7 +225,7 @@ class NeoGraph(object):
         counter = 0
         for key in args.keys():
             if key == "nID":
-                properties = "nID:"+args.get(key)+""
+                properties = "nID:"+str(args.get(key))+""
                 match = "MATCH (n:"+label+" {"+properties+"}) RETURN n"
                 break
             else:

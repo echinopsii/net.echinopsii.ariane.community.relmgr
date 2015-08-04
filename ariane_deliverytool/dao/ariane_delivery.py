@@ -163,10 +163,12 @@ class DeliveryTree(object):
                         end_node = cur_node
                     if (type(start_node) is not Distribution) and (type(end_node) is not SubModule):
                         start_node._add_node_to_notify(rel, end_node._remove_notifier_node)
+                        end_node.list_relation.append(rel)
                     else:
                         start_node, end_node = end_node, start_node
                         if (type(start_node) is not Distribution) and (type(end_node) is not SubModule):
                             start_node._add_node_to_notify(rel, end_node._remove_notifier_node)
+                            end_node.list_relation.append(rel)
                         start_node, end_node = end_node, start_node
                     ariane_relation = ArianeRelation(start_node, rel_d["relation"], end_node,
                                                      rel_d["rel_properties"], rel_d["rel_node"])
@@ -198,8 +200,21 @@ class DistributionService(DeliveryTree):
     def update_arianenode_lists(self, distrib):
         if isinstance(distrib, Distribution):
             distrib.list_module = DeliveryTree.module_service.get_all(distrib)
-            distrib.list_plugin.extend(DeliveryTree.plugin_service.get_all(distrib))
+            if distrib.list_module is None:
+                distrib.list_module = []
+            distrib.list_plugin = DeliveryTree.plugin_service.get_all(distrib)
+            if distrib.list_plugin is None:
+                distrib.list_plugin = []
             DeliveryTree.distribution_service.get_relations(distrib)
+
+    def deep_update_arianenode_lists(self, distrib):
+        if isinstance(distrib, Distribution):
+            self.update_arianenode_lists(distrib)
+            for m in distrib.list_module:
+                DeliveryTree.module_service.deep_update_arianenode_lists(m)
+            for pdict in distrib.list_plugin:
+                p = pdict["Plugin"]
+                DeliveryTree.plugin_service.deep_update_arianenode_lists(p)
 
     def get_all(self, args=None):
         """ Get all distributions existing in database
@@ -290,7 +305,19 @@ class ModuleService(DeliveryTree):
         if isinstance(module, Module):
             module.list_submod = DeliveryTree.submodule_service.get_all(module)
             module.list_submod.extend(DeliveryTree.submodule_parent_service.get_all(module))
+            if module.list_submod is None:
+                module.list_submod = []
             DeliveryTree.module_service.get_relations(module)
+
+    def deep_update_arianenode_lists(self, module):
+        if isinstance(module, Module):
+            self.update_arianenode_lists(module)
+            for s in module.list_submod:
+                if isinstance(s, SubModuleParent):
+                    DeliveryTree.submodule_parent_service.deep_update_arianenode_lists(s)
+            for mprop in module.list_module_dependency:
+                m = mprop["module"]
+                DeliveryTree.module_service.deep_update_arianenode_lists(m)
 
     def get_all(self, args=None):
         """ Get all modules from a given distribution
@@ -377,7 +404,19 @@ class PluginService(DeliveryTree):
         if isinstance(plugin, Plugin):
             plugin.list_submod = DeliveryTree.submodule_service.get_all(plugin)
             plugin.list_submod.extend(DeliveryTree.submodule_parent_service.get_all(plugin))
+            if plugin.list_submod is None:
+                plugin.list_submod = []
             DeliveryTree.plugin_service.get_relations(plugin)
+
+    def deep_update_arianenode_lists(self, plugin):
+        if isinstance(plugin, Plugin):
+            self.update_arianenode_lists(plugin)
+            for s in plugin.list_submod:
+                if isinstance(s, SubModuleParent):
+                    DeliveryTree.submodule_parent_service.deep_update_arianenode_lists(s)
+            for mprop in plugin.list_module_dependency:
+                m = mprop["module"]
+                DeliveryTree.module_service.deep_update_arianenode_lists(m)
 
     def get_all(self, args=None):
         """ Get all plugins from a given distribution
@@ -501,7 +540,16 @@ class SubModuleParentService(DeliveryTree):
         if isinstance(subpar, SubModuleParent):
             subpar.list_submod = DeliveryTree.submodule_service.get_all(subpar)
             subpar.list_submod.extend(DeliveryTree.submodule_parent_service.get_all(subpar))
+            if subpar.list_submod is None:
+                subpar.list_submod = []
             DeliveryTree.submodule_parent_service.get_relations(subpar)
+
+    def deep_update_arianenode_lists(self, subpar):
+        if isinstance(subpar, SubModuleParent):
+            self.update_arianenode_lists(subpar)
+            for s in subpar.list_submod:
+                if isinstance(s, SubModuleParent):
+                    DeliveryTree.submodule_parent_service.deep_update_arianenode_lists(s)
 
     def get_all(self, module):
         """
@@ -552,12 +600,12 @@ class ArianeRelation(object):
     def save(self):
         if (self.start.id != 0) and (self.end.id != 0):
             DeliveryTree.graph_dao.save_relation({"start_nID": self.start.id, "relation": self.relation,
-                                                           "end_nID": self.end.id, "properties": self.properties,
-                                                           "rel_node": self.rel_node})
+                                                  "end_nID": self.end.id, "properties": self.properties,
+                                                  "rel_node": self.rel_node})
 
     def __repr__(self):
         return "Relation: ("+self.start.__repr__()+")-[relation = "+self.relation+" ; "+str(self.properties)+"" \
-            "]->("+self.end.__repr__()+")"
+                                                                                                             "]->("+self.end.__repr__()+")"
 
 class ArianeNode(object):
 
@@ -630,12 +678,18 @@ class ArianeNode(object):
             node = SubModule(args["name"], args["version"], args["groupId"], args["artifactId"], args["nID"])
         elif node_type == "SubModuleParent":
             node = SubModuleParent(args["name"], args["version"], args["nID"])
-        # elif node_type == "FileNode":
-        #     node = FileNode(args["name"], args["type"], args["version"], args["path"], args["nID"])
         else:
             return None
 
         return node
+
+    @staticmethod
+    def check_args_init(argv, kwargs):
+        for key in argv:
+            if key in kwargs.keys():
+                if kwargs[key] is None or kwargs[key] == "":
+                    return False
+        return True
 
     def __eq__(self, other):
         if type(other) in ArianeNode.__subclasses__():
@@ -670,6 +724,19 @@ class Distribution(ArianeNode):
         self.dir = {"name": self.name, "version": self.version, "nID": self.id}
         return self.dir
 
+    def update(self, args):
+        flag = False
+        for key in args.keys():
+            if self._check_current_property(key):
+                if key == "name" and self.name != args[key]:
+                    self.name = args[key]
+                elif key == "version" and self.version != args[key]:
+                    self.version = args[key]
+                else:
+                    break
+                flag = True
+        return flag
+
     def save(self):
         if self.id == 0:
             for mod in self.list_module:
@@ -698,9 +765,12 @@ class Distribution(ArianeNode):
 
     def delete(self):
         if self._is_saved():
+            DeliveryTree.distribution_service.update_arianenode_lists(self)
             for mod in self.list_module.copy():
+                DeliveryTree.module_service.update_arianenode_lists(mod)
                 mod.delete()
             for plugin_dict in self.list_plugin.copy():
+                DeliveryTree.plugin_service.update_arianenode_lists(plugin_dict["Plugin"])
                 plugin_dict["Plugin"].delete()
             for rel in self.list_relation:
                 DeliveryTree.graph_dao.delete(rel)
@@ -746,6 +816,9 @@ class Distribution(ArianeNode):
     def __repr__(self):
         out = "Distribution( name = "+self.name+", version = "+self.version+", nID = "+str(self.id)+")"
         return out
+
+    def get_properties(self):
+        return self._get_dir()
 
 class Module(ArianeNode):
 
@@ -822,6 +895,8 @@ class Module(ArianeNode):
         """
         if self._is_saved():
             for submod in self.list_submod.copy():
+                if isinstance(submod, SubModuleParent):
+                    DeliveryTree.submodule_parent_service.update_arianenode_lists(submod)
                 submod.delete()
             for rel in self.list_relation:
                 DeliveryTree.graph_dao.delete(rel)
@@ -1004,7 +1079,7 @@ class SubModule(ArianeNode):
 
     def __repr__(self):
         out = "SubModule(name = "+self.artifactId_name+", version = "+self.version+", groupId = "+self.groupId+", artifactId = "+self.artifactId+"," \
-            " nID = "+str(self.id)+")"
+                                                                                                                                                 " nID = "+str(self.id)+")"
         return out
 
 class Plugin(ArianeNode):
@@ -1071,6 +1146,8 @@ class Plugin(ArianeNode):
         """
         if self._is_saved():
             for submod in self.list_submod.copy():
+                if isinstance(submod, SubModuleParent):
+                    DeliveryTree.submodule_parent_service.update_arianenode_lists(submod)
                 submod.delete()
             for rel in self.list_relation:
                 DeliveryTree.graph_dao.delete(rel)
@@ -1192,6 +1269,8 @@ class SubModuleParent(ArianeNode):
         """
         if self._is_saved():
             for submod in self.list_submod.copy():
+                if isinstance(submod, SubModuleParent):
+                    DeliveryTree.submodule_parent_service.update_arianenode_lists(submod)
                 submod.delete()
             for rel in self.list_relation:
                 DeliveryTree.graph_dao.delete(rel)
@@ -1297,5 +1376,5 @@ class FileNode(object):
 
     def __repr__(self):
         out = "FileNode(name = "+self.name+", version = "+self.version+", type = "+self.type+", path = "+self.path+"," \
-              " nID = "+str(self.id)+")"
+                                                                                                                   " nID = "+str(self.id)+")"
         return out

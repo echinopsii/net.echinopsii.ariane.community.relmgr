@@ -40,7 +40,7 @@ class Command(object):
         name = args.name
         print(cmd, version)
         distrib = Command.ariane.distribution_service.get_unique({"version": version})
-        if (distrib is not None) and (not isinstance(distrib, int)):
+        if isinstance(distrib, ariane_delivery.Distribution):
             if cmd in Command.commands_dist:
                 if cmd == "distribution":
                     Command.g.generate_all_distribution(version)
@@ -96,7 +96,7 @@ class Command(object):
             else:
                 raise err.CommandError("Error, wrong command")
         else:
-            pass # raise "Error, this version does not exist in database"
+            raise err.CommandError("Error, Distribution not found in database")
 
 
 

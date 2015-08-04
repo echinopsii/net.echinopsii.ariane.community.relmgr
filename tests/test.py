@@ -4,7 +4,7 @@ import unittest
 __author__ = 'stanrenia'
 
 class AppTest(unittest.TestCase):
-# TODO test SubModuleParent
+    # TODO test SubModuleParent
 
     def setUp(self):
         # Init variables:
@@ -112,7 +112,7 @@ class AppTest(unittest.TestCase):
         listfound = self.ariane.submodule_service.find({"name": "marti"})
         self.assertEqual(self.sub2, listfound[0])
         listfound = self.ariane.submodule_service.find({"name": "rab", "version": "0.3", "groupId": "rabitt",
-                                                   "artifactId": "rab.rabitt"})
+                                                        "artifactId": "rab.rabitt"})
         self.assertEqual(self.sub3, listfound[0])
 
         listfound = self.ariane.submodule_service.find(self.sub2)
@@ -126,6 +126,9 @@ class AppTest(unittest.TestCase):
 
         #   get_unique service method
         unique = self.ariane.submodule_service.get_unique({"name": "rab"})
+        self.assertEqual(self.sub3, unique)
+
+        unique = self.ariane.submodule_service.get_unique({"nID": self.sub3.id})
         self.assertEqual(self.sub3, unique)
 
         unique = self.ariane.submodule_service.get_unique({"name": "bob"})
@@ -358,6 +361,14 @@ class AppTest(unittest.TestCase):
     def test_delete_error(self):
         mymod = ariane_delivery.Module("def", "epic")
         mymod.delete()
+
+    def test_delete_all(self):
+        self.ariane.delete_all()
+        self.assertIsNone(self.ariane.distribution_service.find({"nID": 1}))
+        self.assertIsNone(self.ariane.module_service.find({"nID": 1}))
+        self.assertIsNone(self.ariane.plugin_service.find({"nID": 1}))
+        self.assertIsNone(self.ariane.submodule_service.find({"nID": 1}))
+        self.assertIsNone(self.ariane.submodule_parent_service.find({"nID": 1}))
 
     def test_add_error(self):
         A = ariane_delivery.Module("A", "myversion")
