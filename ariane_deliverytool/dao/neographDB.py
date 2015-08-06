@@ -69,6 +69,7 @@ class NeoGraph(object):
         :param args: properties of this node.
         :return: py2neo.Node object with label and properties updated.
         """
+        node = None
         if args["nID"] == 0:
             node = Node.cast(args)
             node.labels.add(label)
@@ -156,6 +157,14 @@ class NeoGraph(object):
         else:
             return listrel
 
+    def get_by_nid(self, nid):
+        rec = None
+        if isinstance(nid, int) and nid > 0:
+            listrecord = self.graph.cypher.execute("MATCH (n {nID:"+str(nid)+"}) RETURN n")
+            for record in listrecord:
+                rec = record.n
+        return rec
+
     def get_all(self, args):
         """
         get all nodes depending on args parameters.
@@ -208,6 +217,23 @@ class NeoGraph(object):
             return None
         else:
             return list_found
+
+    def find_without_label(self, args):
+        properties = ""
+        for key in args.keys():
+            if key == "nID":
+                properties = "nID: "+str(args.get("nID"))+","
+            else:
+                properties += ""+str(key)+": '"+str(args.get(key))+"',"
+        properties = properties[:-1]
+        match = "MATCH (n {"+properties+"}) RETURN n"
+        listrecord = self.graph.cypher.execute(match)
+        list_found = []
+        for record in listrecord:
+            list_found.append(record.n)
+        if len(list_found) == 0:
+            return None
+        return list_found
 
     def get_unique(self, args):
         """

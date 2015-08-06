@@ -29,7 +29,7 @@ class GeneratorTest(unittest.TestCase):
         cls.ariane = ariane_delivery.DeliveryTree(args)
         cls.ariane.delete_all()
         cls.dir_output = "outputs/"
-        cls.g = generator.Generator(cls.ariane, cls.dir_output, '/Users/stanrenia/py_neo4j_db/tests/templates')
+        cls.g = generator.Generator(cls.ariane, '/Users/stanrenia/py_neo4j_db/tests/templates')
 
     def setUp(self):
         self.ariane.delete_all()
@@ -42,35 +42,6 @@ class GeneratorTest(unittest.TestCase):
     #     print(os.path.exists('..ariane_delivertytool/generator/exception_extension/module_vsh_exceptions.json'))
     #     print(os.path.exists('/Users/stanrenia/py_neo4j_db/ariane_deliverytool/generator/exception_extension/module_vsh_exceptions.json'))
     #     print(os.listdir('./'))
-
-    def test_lxml(self):
-        doc = xml.dom.minidom.parse('outputs/ariane.community.core.idm/pom.xml')
-        uglyXml = doc.toprettyxml(indent='  ')
-        text_re = re.compile('>\n\s+([^<>\s].*?)\n\s+</', re.DOTALL)
-        prettyXml = text_re.sub('>\g<1></', uglyXml)
-        print(prettyXml)
-
-    def test_xxl(self):
-        def indent(elem, level=0):
-            i = "\n" + level*"  "
-            if len(elem):
-                if not elem.text or not elem.text.strip():
-                    elem.text = i + "  "
-                if not elem.tail or not elem.tail.strip():
-                    elem.tail = i
-                for elem in elem:
-                    indent(elem, level+1)
-                if not elem.tail or not elem.tail.strip():
-                    elem.tail = i
-            else:
-                if level and (not elem.tail or not elem.tail.strip()):
-                    elem.tail = i
-
-        root = ElementTree.parse('outputs/ariane.community.core.idm/pom.xml').getroot()
-        indent(root)
-        # ElementTree.dump(root)
-        ele = ElementTree.ElementTree(root)
-        ele.write('outputs/ariane.community.core.idm/pom2.xml')
 
     def test_import_export(self):
         create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')

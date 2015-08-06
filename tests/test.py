@@ -230,6 +230,9 @@ class AppTest(unittest.TestCase):
         listfound = self.ariane.module_service.find(self.mod3)
         self.assertEqual(self.mod3.version, listfound[0].version)
 
+        sub = ariane_delivery.SubModule("toto", "tata")
+        self.mod.add_submodule(sub)
+        self.mod.save()
         listmod = self.ariane.module_service.get_all(self.distrib)
         self.assertGreater(len(listmod), 2)
 
@@ -256,7 +259,7 @@ class AppTest(unittest.TestCase):
         self.plugin.add_file(ariane_delivery.FileNode("toto", "ad", "carry", "/r/s/q"))
         # PluginService():
         listplug = self.ariane.plugin_service.get_all(self.distrib)
-        self.assertEqual(self.plugin, listplug[0])
+        self.assertEqual(self.plugin, listplug[0]["Plugin"])
 
         listfound = self.ariane.plugin_service.find({"name": "RabbitMQ"})
         listfound2 = self.ariane.plugin_service.find({"name": "RabbitMQ", "version": "0.2.2"})
@@ -319,10 +322,15 @@ class AppTest(unittest.TestCase):
         for rel in related_nodes:
             self.assertIsInstance(rel, ariane_delivery.ArianeRelation)
 
+    def test_ariane_service(self):
+        mod = self.ariane.find_without_label(self.mod2.get_properties())
+        print(mod)
+        mod.name = "gooya"
+        mod.save()
+
     def test_submodule_delete(self):
         assert self.sub in self.mod.list_submod
         self.sub.delete()
-        assert self.sub not in self.mod.list_submod
 
         notfound = self.ariane.submodule_service.find(self.sub)
         self.assertIsNone(notfound)
@@ -330,7 +338,6 @@ class AppTest(unittest.TestCase):
     def test_module_delete(self):
         assert self.mod2 in self.distrib.list_module
         self.mod2.delete()
-        assert self.mod2 not in self.distrib.list_module
 
         notfound = self.ariane.module_service.find(self.mod2)
         self.assertIsNone(notfound)
@@ -338,7 +345,6 @@ class AppTest(unittest.TestCase):
     def test_plugin_delete(self):
         assert self.plugin in [plugin["Plugin"] for plugin in self.distrib.list_plugin]
         self.plugin.delete()
-        assert self.plugin not in self.distrib.list_plugin
 
         notfound = self.ariane.module_service.find(self.plugin)
         self.assertIsNone(notfound)
