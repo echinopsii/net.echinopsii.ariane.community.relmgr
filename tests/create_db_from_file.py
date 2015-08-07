@@ -1,4 +1,4 @@
-from ariane_deliverytool.dao import ariane_delivery
+from ariane_reltreelib.dao import ariane_delivery
 
 __author__ = 'stanrenia'
 

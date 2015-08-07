@@ -1,6 +1,6 @@
 import os
 import unittest
-from ariane_deliverytool.dao import ariane_delivery
+from ariane_reltreelib.dao import ariane_delivery
 from tests import create_db_from_file
 from os import walk
 import shutil

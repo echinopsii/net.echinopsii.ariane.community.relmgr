@@ -1,5 +1,5 @@
-from ariane_deliverytool.dao import ariane_delivery
-from ariane_deliverytool.generator import generator
+from ariane_reltreelib.dao import ariane_delivery
+from ariane_reltreelib.generator import generator
 from tests import create_db_from_file
 import unittest
 from xml.etree import  ElementTree
@@ -29,7 +29,8 @@ class GeneratorTest(unittest.TestCase):
         cls.ariane = ariane_delivery.DeliveryTree(args)
         cls.ariane.delete_all()
         cls.dir_output = "outputs/"
-        cls.g = generator.Generator(cls.ariane, '/Users/stanrenia/py_neo4j_db/tests/templates')
+        cls.g = generator.Generator(cls.ariane, {"outputs": '/ECHINOPSII/srenia/ariane_relmgr/tests/outputs',
+                                                 "templates": '/ECHINOPSII/srenia/ariane_relmgr/tests/templates'})
 
     def setUp(self):
         self.ariane.delete_all()
@@ -54,7 +55,7 @@ class GeneratorTest(unittest.TestCase):
         create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
         distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
         fpom = self.ariane.get_one_file(distrib, "pom_dist")
-        self.g.generate_pom_distrib('0.6.4-SNAPSHOT', fpom)
+        self.g.generate_pom_dist('0.6.4-SNAPSHOT', fpom)
         self.g.compare_files('xml', self.dir_output + fpom.path + fpom.name,
                            'models/pom-ariane.community.distrib-master.SNAPSHOT.xml')
 
