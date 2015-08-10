@@ -1,9 +1,21 @@
+<!doctype html>
 <html>
 <head>
-    <title>{{ title }} - microblog</title>
+    <title> Client Test</title>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+    <script type="text/javascript" src="../static/client.js"></script>
+    <link rel="stylesheet" type="text/css" href="client.css">
 </head>
 <body>
-<h1>Hello, {{ user.nickname }}!</h1>
-<h2> The module is {{ mod }}</h2>
+<h1>Client Test</h1>
+<ul>
+    <li><input type="text" name="name" id="name"/></li>
+    <li><input type="text" name="version" id="version"/></li>
+    <li><button type="button" id="btntest" class="myButton">Go</button></li>
+</ul>
+<div id="response"></div>
+
+<button type="button" id="btnHelloWorld" class="myButton">Say Hello</button>
+<div id="hwdiv"></div>
 </body>
 </html>

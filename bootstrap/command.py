@@ -1,12 +1,31 @@
+# Ariane Release Manager
+# Bootstrap Command
+#
+# Copyright (C) 2015 echinopsii
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import sys, os, shutil, argparse
 
 project_path = str(os.getcwd())
+print(project_path)
 if project_path.endswith('/bootstrap'):
     module_path = project_path[:-len('/bootstrap')]
     sys.path.append(module_path)
-    project_path = project_path[:-len('/ariane_relmgr/bootstrap')]
+    project_path = project_path[:-len('/ariane.community.relmgr/bootstrap')]
 else:
-    raise Exception("Incorrect project path")
+    raise Exception("Incorrect project path: ", project_path)
 
 from ariane_reltreelib.generator import generator
 from ariane_reltreelib.dao import ariane_delivery

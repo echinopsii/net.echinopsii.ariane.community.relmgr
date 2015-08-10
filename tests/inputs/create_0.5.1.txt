@@ -6,15 +6,14 @@
 # dependency:
 # module_name1 module_name2 version_min version_max
 
-distribution community 0.5.3
+distribution community 0.5.1
 directory 0.5.1 core base wat
-injector 0.5.2 core base wat
+injector 0.5.1 core base wat
 idm 0.4.0 core base
-mapping 0.5.2 core ds:_api_blueprints_dsl_rim taitale wat
+mapping 0.5.1 core ds:_api_blueprints_dsl_rim taitale wat
 portal 0.5.1 core base idmwat wab wat wresources
-installer 0.5.3 environment tools
-environment 0.5.2 environment
-plugin rabbitmq 0.1.0 directory jsonparser injector
+installer 0.5.1 environment tools
+environment 0.5.1 environment
 
 dependency:
 directory portal 0.5.0 0.6.0

@@ -1,6 +1,6 @@
 # Ariane Release Manager
-# Ariane Release Server
-# REST Server init
+# Bootstrap test
+# Generate new distribution
 #
 # Copyright (C) 2015 echinopsii
 #
@@ -17,12 +17,21 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from flask import Flask
-from flask_restful import Api
-from ariane_reltreelib.dao import ariane_delivery
+import sys
 
-app = Flask(__name__)
-api = Api(app)
-ariane = ariane_delivery.DeliveryTree({"login": "neo4j", "password": "admin", "type": "neo4j"})
-# from srv_rest.app import views
-from ariane_relsrv.app import restful
+sys.path.append('/ECHINOPSII/srenia/ariane.community.relmgr')
+
+from ariane_reltreelib.dao import ariane_delivery
+from ariane_reltreelib.generator import generator
+
+args = {"login": "neo4j", "password": "admin", "type": "neo4j"}
+ariane = ariane_delivery.DeliveryTree(args)
+output_directory = "/ECHINOPSII/srenia/"
+templates_directory = "/ECHINOPSII/srenia/"
+g = generator.Generator(ariane, {"outputs": output_directory, "templates": templates_directory})
+
+# g.generate_all_distribution("0.6.4-SNAPSHOT")
+idm = ariane.plugin_service.find({"name": "rabbitmq"})
+idm = idm[0]
+ariane.plugin_service.update_arianenode_lists(idm)
+g.generate_pom(idm)

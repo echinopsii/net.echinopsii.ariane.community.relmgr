@@ -1,4 +1,23 @@
-from flask import Flask, make_response, jsonify
+# Ariane Release Manager
+# Ariane Release Server
+# REST Server
+#
+# Copyright (C) 2015 echinopsii
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+from flask import Flask, make_response, jsonify, render_template
 from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import ariane_delivery
 import json
@@ -35,7 +54,10 @@ class HelloWorld(Resource):
     def get(self):
         msg = {"msg": "Hello World !"}
         return jsonify(msg)
-
+class HelloHtml(Resource):
+    def get(self):
+        headers = {'Content-Type': 'text/html'}
+        return make_response(render_template('index.html'), 200, headers)
 
 class RestFileNode(Resource):
     def __init__(self):
@@ -612,6 +634,7 @@ api.add_resource(RestSubModule, '/rest/submodule/<int:unique_key>', '/rest/submo
 api.add_resource(RestFileNodeList, '/rest/file/')
 api.add_resource(RestFileNode, '/rest/file/<int:unique_key>', '/rest/file/<unique_key>')
 api.add_resource(HelloWorld, '/helloworld', "/hello/world")
+api.add_resource(HelloHtml, '/hellohtml')
 
 if __name__ == '__main__':
     app.run(debug=True)
