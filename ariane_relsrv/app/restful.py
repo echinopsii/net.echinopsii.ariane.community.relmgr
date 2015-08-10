@@ -197,7 +197,7 @@ class RestPluginList(Resource):
         if args["version"] is not None:
             d = ariane.distribution_service.get_unique({"version": args["version"]})
             plist = ariane.plugin_service.get_all(d)
-            p = [(p["Plugin"]).get_properties() for p in plist]
+            p = [p.get_properties() for p in plist]
             return json.dumps({"plugins": p})
         else:
             abort_error("BAD_REQUEST", "Missing parameter 'version'")

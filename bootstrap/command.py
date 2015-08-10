@@ -1,10 +1,10 @@
 import sys, os, shutil, argparse
 
 project_path = str(os.getcwd())
-if project_path.endswith('/boostrap'):
-    module_path = project_path[:-len('/boostrap')]
+if project_path.endswith('/bootstrap'):
+    module_path = project_path[:-len('/bootstrap')]
     sys.path.append(module_path)
-    project_path = project_path[:-len('/ariane.community.deliverytool/boostrap')]
+    project_path = project_path[:-len('/ariane_relmgr/bootstrap')]
 else:
     raise Exception("Incorrect project path")
 
@@ -27,6 +27,8 @@ class Command(object):
 
     def __init__(self):
         Command.ariane = ariane_delivery.DeliveryTree({"login": "neo4j", "password": "admin", "type": "neo4j"})
+        # Command.g = generator.Generator(Command.ariane, {"outputs": "/ECHINOPSII/srenia/ariane_relmgr/tests/outputs",
+        #                                                 "templates": "/ECHINOPSII/srenia/ariane_relmgr/tests/templates"})
         Command.g = generator.Generator(Command.ariane, {"outputs": project_path, "templates": project_path})
 
     def execute(self):
@@ -59,11 +61,19 @@ class Command(object):
                 if name is not None:
                     modules = Command.ariane.module_service.get_all(distrib)
                     plugins = Command.ariane.plugin_service.get_all(distrib)
-                    if (cmd == "vsh") and (name == "installer"):
-                        for m in modules:
-                            fnode = Command.ariane.get_one_file(m, "vsh")
-                            if fnode is not None:
-                                Command.g.generate_vsh_installer(modules.copy(), fnode)
+                    if cmd == "vsh":
+                        if name == "installer":
+                            for m in modules:
+                                fnode = Command.ariane.get_one_file(m, "vsh")
+                                if fnode is not None:
+                                    Command.g.generate_vsh_installer(modules.copy(), fnode)
+                        else:
+                            p = Command.ariane.plugin_service.get_unique({"name": name})
+                            if p is not None:
+                                fvsh = Command.ariane.get_one_file(p, "vsh")
+                                Command.g.generate_vsh_plugin(p, fvsh)
+                            else:
+                                raise err.CommandError("Error, Plugin name not found in database")
                     else:
                         # Get Module or Plugin
                         mod = [mod for mod in modules if mod.name == name]

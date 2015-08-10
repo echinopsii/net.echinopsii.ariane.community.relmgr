@@ -227,7 +227,7 @@ class DistributionService(DeliveryTree):
             distrib.list_module = DeliveryTree.module_service.get_all(distrib)
             if distrib.list_module is None:
                 distrib.list_module = []
-            distrib.list_plugin = DeliveryTree.plugin_service.get_all(distrib)
+            distrib.list_plugin = DeliveryTree.plugin_service.get_all(distrib, with_relation=True)
             if distrib.list_plugin is None:
                 distrib.list_plugin = []
             DeliveryTree.distribution_service.get_relations(distrib)
@@ -444,7 +444,7 @@ class PluginService(DeliveryTree):
                 m = mprop["module"]
                 DeliveryTree.module_service.deep_update_arianenode_lists(m)
 
-    def get_all(self, args=None):
+    def get_all(self, args=None, with_relation=False):
         """ Get all plugins from a given distribution
         :param distribution: Distribution object
         :return: a list of all Plugin objects related to the distribution
@@ -456,8 +456,11 @@ class PluginService(DeliveryTree):
             list_node = DeliveryTree.graph_dao.get_all(args)
             for node in list_node:
                 plugin = self._create_ariane_node(node)
-                rel = DeliveryTree.get_relation_between(plugin, distrib)
-                list_plugin.append({"Plugin": plugin, "properties": rel.properties})
+                if with_relation:
+                    rel = DeliveryTree.get_relation_between(plugin, distrib)
+                    list_plugin.append({"Plugin": plugin, "properties": rel.properties})
+                else:
+                    list_plugin.append(plugin)
         elif args is None:
             pass
 

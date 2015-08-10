@@ -400,24 +400,29 @@ class Generator(object):
 
     def generate_vsh_installer(self, modules, fvsh):
         vsh_exceptions = self.get_vsh_exceptions()
-        modict = {"name": [m.name for m in modules], "version": [m.version for m in modules]}
-        for v in modict["version"]:
+
+        modlist = []
+        for mod in modules:
+            v = mod.version
             if "-SNAPSHOT" in v:
                 v = str(v).replace('-', '.')
+            modlist.append({"name": mod.name, "version": v, "type": mod.type})
 
-        for n in modict["name"]:
-            if n in vsh_exceptions:
-                modict["name"].remove(n)
+        for mod in modlist.copy():
+            if mod["name"] in vsh_exceptions:
+                modlist.remove(mod)
+
         template = self.env.get_template(fvsh.path+'installer_vsh.tpl')
-        args = {"modules": modict}
+        args = {"modules": modlist}
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
             target.write(template.render(args))
 
     def generate_vsh_plugin(self, p, fvsh):
         if "-SNAPSHOT" in p.version:
-            p.version = str(p.version).replace('-', '.')
+            v = p.version
+            v = str(v).replace('-', '.')
         template = self.env.get_template(fvsh.path+'plugin_vsh.tpl')
-        args = {"plugin": p}
+        args = {"plugin": {"name": p.name, "version": v}}
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
             target.write(template.render(args))
 
