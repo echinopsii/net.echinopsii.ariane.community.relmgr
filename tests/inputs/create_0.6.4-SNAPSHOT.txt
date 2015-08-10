@@ -1,4 +1,3 @@
-# syntaxe expected:
 # distribution distribution_name distribution_version
 # module_name module_version module_type sub_module_name1 sub_module_name2 etc
 # -------To create sub sub module, use this syntax--------> 'SubModuleParent:_sub1_sub2_sub3' # underscores to separate submodules

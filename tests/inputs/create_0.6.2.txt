@@ -25,3 +25,9 @@ portal idm 0.4.0 0.5.0
 mapping portal 0.6.0 0.7.0
 mapping idm 0.4.0 0.5.0
 messaging portal 0.6.0 0.7.0
+
+plugin_dependency:
+rabbitmq mapping 0.6.0 0.7.0
+rabbitmq directory 0.6.0 0.7.0
+rabbitmq portal 0.6.0 0.7.0
+rabbitmq injector 0.6.0 0.7.0
