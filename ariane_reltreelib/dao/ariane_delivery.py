@@ -211,6 +211,7 @@ class DeliveryTree(object):
                         start_node = cur_node
                     elif cur_node == end_node:
                         end_node = cur_node
+                    cur_node.list_relation.append(rel)
                     start_node.list_relation.append(rel)
                     end_node.list_relation.append(rel)
                     ariane_relation = ArianeRelation(start_node, rel_d["relation"], end_node,
@@ -435,7 +436,7 @@ class ModuleService(DeliveryTree):
     @staticmethod
     def _create_ariane_node(node):
         args = DeliveryTree.graph_dao.get_node_properties(node)
-        return Module(args["name"], args["version"], args["type"], args["nID"])
+        return Module(args["name"], args["version"], type=args["type"], id=args["nID"], order=args["order"])
 
     def _get_label(self):
         return self._ariane_node.node_type
@@ -582,7 +583,8 @@ class SubModuleService(DeliveryTree):
 
     def _create_ariane_node(self, node):
         args = DeliveryTree.graph_dao.get_node_properties(node)
-        return SubModule(args["name"], args["version"], args["groupId"], args["artifactId"], args["nID"])
+        return SubModule(args["name"], args["version"], args["groupId"], args["artifactId"], id=args["nID"],
+                         order=args["order"])
 
     def make_files(self, submod, parent_path):
         self.__make_file_pom(submod, parent_path)
@@ -884,17 +886,18 @@ class Distribution(ArianeNode):
 
 class Module(ArianeNode):
 
-    def __init__(self, name, version, type="none", id=0):
+    def __init__(self, name, version, type="none", id=0, order=0):
         super().__init__(name, version)
         self.id = id
         self.node_type = self.__class__.__name__
         self.type = type
         self.git_repos = self.__set_git_repos()
+        self.order = order
         self.directory_name = ""
         self.list_submod = []
         self.list_module_dependency = []
         self.dir = {"name": self.name, "version": self.version, "type": self.type, "git_repos": self.git_repos,
-                    "nID": self.id}
+                    "order": self.order, "nID": self.id}
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
         self._len_list_mod_dep = 0
         self._len_list_submod = 0
@@ -902,7 +905,7 @@ class Module(ArianeNode):
 
     def _get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "type": self.type, "git_repos": self.git_repos,
-                    "nID": self.id}
+                    "order": self.order, "nID": self.id}
         return self.dir
 
     def update(self, args):
@@ -917,6 +920,8 @@ class Module(ArianeNode):
                     self.type = args[key]
                 elif key == "git_repos" and self.git_repos != args[key]:
                     self.git_repos = args[key]
+                elif key == "order" and self.order != args[key]:
+                    self.order = args[key]
                 else:
                     continue
                 flag = True
@@ -1062,20 +1067,20 @@ class Module(ArianeNode):
 
 class SubModule(ArianeNode):
 
-    def __init__(self, name, version,  groupId="none", artifactId="none", id=0):
+    def __init__(self, name, version,  groupId="none", artifactId="none", id=0, order=0):
         super().__init__(name, version)
         self.node_type = self.__class__.__name__
         self.id = id
         self.groupId = groupId
         self.artifactId = artifactId
-        self.name = name
+        self.order = order
         self.dir = {"name": self.name, "version": self.version, "groupId": self.groupId,
-                    "artifactId": self.artifactId, "nID": self.id}
+                    "artifactId": self.artifactId, "order": self.order, "nID": self.id}
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
     def _get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "groupId": self.groupId,
-                    "artifactId": self.artifactId, "nID": self.id}
+                    "artifactId": self.artifactId, "order": self.order, "nID": self.id}
         return self.dir
 
     def update(self, args):
@@ -1090,6 +1095,8 @@ class SubModule(ArianeNode):
                     self.groupId = args[key]
                 elif key == "artifactId" and self.artifactId != args[key]:
                     self.artifactId = args[key]
+                elif key == "order" and self.order != args[key]:
+                    self.order = args[key]
                 else:
                     continue
                 flag = True

@@ -268,6 +268,10 @@ class Generator(object):
         for s in submodules.copy():
             if s.name in sub_exceptions:
                 submodules.remove(s)
+            if isinstance(s, ariane_delivery.SubModuleParent):
+                submodules.extend(s.list_submod)
+                submodules.remove(s)
+        submodules = sorted(submodules, key=lambda submod: submod.order)
         vmin, vmax = self.__make_vmin_vmax(mod_plug.version)
         if snapshot:
             m_version = mod_plug.version
@@ -321,11 +325,12 @@ class Generator(object):
         plugin_dict = {}
         for d in distribs:
             plugins = self.ariane.plugin_service.get_all(d)
-            for p in plugins:
-                if "SNAPSHOT" in p.version:
-                    p.version = "master.SNAPSHOT"
-                if "SNAPSHOT" in d.version:
-                    d.version = "master.SNAPSHOT"
+            if plugins is not None:
+                for p in plugins:
+                    if "SNAPSHOT" in p.version:
+                        p.version = "master.SNAPSHOT"
+                    if "SNAPSHOT" in d.version:
+                        d.version = "master.SNAPSHOT"
 
                 p_name = "ariane.community.plugin." + p.name
                 if p_name not in plugin_dict.keys():
@@ -419,7 +424,7 @@ class Generator(object):
 
     def generate_vsh_installer(self, modules, fvsh):
         vsh_exceptions = self.get_vsh_exceptions()
-
+        modules = sorted(modules, key=lambda mod: mod.order)
         modlist = []
         for mod in modules:
             v = mod.version

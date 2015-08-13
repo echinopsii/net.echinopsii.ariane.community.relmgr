@@ -19,7 +19,7 @@
 from ariane_reltreelib.dao import ariane_delivery
 from ariane_reltreelib.generator import generator
 from tests import create_db_from_file
-import unittest
+import unittest, os
 
 __author__ = 'stanrenia'
 # TODO Corriger generate plan
@@ -41,11 +41,12 @@ class GeneratorTest(unittest.TestCase):
         cls.ariane = ariane_delivery.DeliveryTree(args)
         cls.ariane.delete_all()
         cls.dir_output = "outputs/"
-        cls.g = generator.Generator(cls.ariane, {"outputs": '/ECHINOPSII/srenia/ariane_relmgr/tests/outputs',
-                                                 "templates": '/ECHINOPSII/srenia/ariane_relmgr/tests/templates'})
+        cls.g = generator.Generator(cls.ariane, {"outputs": '/ECHINOPSII/srenia/ariane.community.relmgr/tests/outputs',
+                                                 "templates": '/ECHINOPSII/srenia/ariane.community.relmgr/tests/templates'})
 
     def setUp(self):
         self.ariane.delete_all()
+        # pass
 
     def tearDown(self):
         self.assertTrue(self.ariane.check_uniqueness())
@@ -56,7 +57,7 @@ class GeneratorTest(unittest.TestCase):
     #     print(os.path.exists('/Users/stanrenia/py_neo4j_db/ariane_deliverytool/generator/exception_extension/module_vsh_exceptions.json'))
     #     print(os.listdir('./'))
 
-    def test_import_export(self):
+    def test_import(self):
         create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
         # create_db_from_file.create_db_file('inputs/create_0.6.3.txt')
         # create_db_from_file.create_db_file('inputs/create_0.6.2.txt')

@@ -32,6 +32,7 @@ def create_db_file(filename):
     try:
         with open(filename, 'r') as file:
             print('Reading file: ' + filename)
+            mod_order = 1
             for line in file:
                 #print(line)
                 list_param = line.split()
@@ -50,8 +51,11 @@ def create_db_file(filename):
                         mod_version = list_param[1]
                         mod_type = list_param[2]
                         mod = ariane_delivery.Module(mod_name, mod_version, mod_type)
+                        mod.order = mod_order
+                        mod_order += 1
                         if len(list_param) > 3:
                             list_submod = list_param[3:]
+                            sub_order = 1
                             for submod in list_submod:
                                 if ":" in submod:
                                     sub_list = submod.split(':')
@@ -62,11 +66,15 @@ def create_db_file(filename):
                                     sub_parent = ariane_delivery.SubModuleParent(sub_parent, mod.version)
                                     for s in sub_list:
                                         sub_sub = ariane_delivery.SubModule(s, mod.version)
+                                        sub_sub.order = sub_order
+                                        sub_order += 1
                                         sub_sub.set_groupid_artifact(mod, sub_parent)
                                         sub_parent.add_submodule(sub_sub)
                                     mod.add_submodule(sub_parent)
                                 else:
                                     sub = ariane_delivery.SubModule(submod, mod.version)
+                                    sub.order = sub_order
+                                    sub_order += 1
                                     sub.set_groupid_artifact(mod)
                                     mod.add_submodule(sub)
                         list_module.append(mod)
@@ -84,8 +92,11 @@ def create_db_file(filename):
                         plug = ariane_delivery.Plugin(plugin_name, plugin_version)
 
                         list_submod = list_param[index_sub:]
+                        sub_order = 1
                         for submod in list_submod:
                             sub = ariane_delivery.SubModule(submod, plug.version)
+                            sub.order = sub_order
+                            sub_order += 1
                             sub.set_groupid_artifact(plug)
                             plug.add_submodule(sub)
                         list_plugin.append({"plugin": plug, "version_min": vmin, "version_max": vmax})

@@ -1,5 +1,6 @@
 from ariane_reltreelib.dao import ariane_delivery
-import unittest
+import unittest, os
+from create_db_from_file import create_db_file
 
 __author__ = 'stanrenia'
 
@@ -259,7 +260,7 @@ class AppTest(unittest.TestCase):
         self.plugin.add_file(ariane_delivery.FileNode("toto", "ad", "carry", "/r/s/q"))
         # PluginService():
         listplug = self.ariane.plugin_service.get_all(self.distrib)
-        self.assertEqual(self.plugin, listplug[0]["Plugin"])
+        self.assertEqual(self.plugin, listplug[0])
 
         listfound = self.ariane.plugin_service.find({"name": "RabbitMQ"})
         listfound2 = self.ariane.plugin_service.find({"name": "RabbitMQ", "version": "0.2.2"})
@@ -368,6 +369,12 @@ class AppTest(unittest.TestCase):
         mymod = ariane_delivery.Module("def", "epic")
         mymod.delete()
 
+    def test_delete_after_import(self):
+        self.ariane.delete_all()
+        create_db_file("inputs/create_0.6.3.txt")
+        d = self.ariane.distribution_service.get_unique({"version": "0.6.3"})
+        d.delete()
+
     def test_delete_all(self):
         self.ariane.delete_all()
         self.assertIsNone(self.ariane.distribution_service.find({"nID": 1}))
@@ -383,3 +390,28 @@ class AppTest(unittest.TestCase):
         A.add_submodule(B)
         d = ariane_delivery.Distribution("d", "epic")
         A.add_submodule(d)
+
+    def test_export_all(self):
+        def import_all():
+            create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+            create_db_file('inputs/create_0.6.3.txt')
+            create_db_file('inputs/create_0.6.2.txt')
+            create_db_file('inputs/create_0.6.1.txt')
+            create_db_file('inputs/create_0.6.0.txt')
+            create_db_file('inputs/create_0.5.3.txt')
+            create_db_file('inputs/create_0.5.2.txt')
+            create_db_file('inputs/create_0.5.1.txt')
+            create_db_file('inputs/create_0.5.0.txt')
+        import_all()
+        print(self.ariane.check_uniqueness())
+        dists = self.ariane.distribution_service.get_all()
+        versions = [d.version for d in dists]
+        for v in versions:
+            for d in dists:
+                if d.version != v:
+                    d.delete()
+            os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -c dump > "
+                      "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/dist_"+v+".cypher")
+            import_all()
+            dists = self.ariane.distribution_service.get_all()
+

@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, shutil, argparse
+import sys, os, shutil, argparse, subprocess
 
 project_path = str(os.getcwd())
 print(project_path)
@@ -50,6 +50,36 @@ class Command(object):
         #                                                 "templates": "/ECHINOPSII/srenia/ariane_relmgr/tests/templates"})
         Command.g = generator.Generator(Command.ariane, {"outputs": project_path, "templates": project_path})
 
+    def import_data(self):
+        fnames = []
+        have_to_import = False
+        vlist = []
+        for (dirpath, dirnames, filenames) in os.walk('dependency_db'):
+            fnames = filenames
+            break
+        for f in fnames:
+            fv = f[len('distrib_'):]
+            fv = fv[:-len('.cypher')]
+            dist = Command.ariane.distribution_service.get_unique({"version": str(fv)})
+            if dist is None:
+                vlist.append(f)
+                have_to_import = True
+        if have_to_import:
+            dnames = []
+            graphDBpath = ""
+            for (dirpath, dirnames, filenames) in os.walk(project_path):
+                dnames = dirnames
+                break
+            for dname in dnames:
+                if str(dname).startswith('neo4j-community'):
+                    graphDBpath = project_path + '/' + dname
+            if graphDBpath != "":
+                for vl in vlist:
+                    os.system(graphDBpath+"/bin/neo4j-shell -file dependency_db/" + vl)
+                # os.system("./import_files.sh /ECHINOPSII/srenia/neo4j-community-2.2.3 /ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/tdistrib_0.6.1.cypher")
+                # print('You need to import more versioned distribution to the database')
+        return have_to_import
+
     def execute(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("command", help="File generation command")
@@ -71,10 +101,17 @@ class Command(object):
                         method = getattr(Command.g, method)
                         method(version)
                     else:
-                        method = getattr(Command.g, 'generate_'+cmd)
                         fnode = Command.ariane.get_one_file(distrib, cmd)
-                        if fnode is not None:
-                            method(version, fnode)
+                        if cmd == "json_plugins":
+                            if self.import_data():
+                                print("Importing missing data")
+                            if not Command.ariane.check_uniqueness():
+                                raise err.CommandError("Error while importing missing Distributions")
+                            Command.g.generate_json_plugins(fnode)
+                        else:
+                            method = getattr(Command.g, 'generate_'+cmd)
+                            if fnode is not None:
+                                method(version, fnode)
 
             elif cmd in Command.commands_mod:
                 if name is not None:
