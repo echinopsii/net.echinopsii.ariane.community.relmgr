@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, shutil, argparse, subprocess
+import sys, os, shutil, argparse, subprocess, json
 
 project_path = str(os.getcwd())
 print(project_path)
@@ -45,7 +45,15 @@ class Command(object):
     commands_mod = ["pom", "plan", "lib_json", "vsh"]
 
     def __init__(self):
-        Command.ariane = ariane_delivery.DeliveryTree({"login": "neo4j", "password": "admin", "type": "neo4j"})
+        logins = None
+        with open('neo4j_login.json', 'r') as target:
+            logins = json.load(target)
+        if logins is None:
+            raise err.CommandError("Error, the GraphDB login file can not be read. It should be '(GraphDB_name)_login.json")
+        for key in logins.keys():
+            if key not in ["login", "password"]:
+                raise err.CommandError("Error in neo4j_login.json")
+        Command.ariane = ariane_delivery.DeliveryTree({"login": logins["login"], "password": logins["password"], "type": "neo4j"})
         # Command.g = generator.Generator(Command.ariane, {"outputs": "/ECHINOPSII/srenia/ariane_relmgr/tests/outputs",
         #                                                 "templates": "/ECHINOPSII/srenia/ariane_relmgr/tests/templates"})
         Command.g = generator.Generator(Command.ariane, {"outputs": project_path, "templates": project_path})

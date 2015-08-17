@@ -735,7 +735,8 @@ class ArianeNode(object):
         return json.dumps(self._get_dir())
 
     def from_json(self, json_obj):
-        json_obj = json.loads(json_obj)
+        if isinstance(json_obj, str):
+            json_obj = json.loads(json_obj)
         args = None
         for key in json_obj.keys():
             if key in ["module", "plugin", "distrib", "submodule"]:
