@@ -84,8 +84,8 @@ class Command(object):
             if graphDBpath != "":
                 for vl in vlist:
                     os.system(graphDBpath+"/bin/neo4j-shell -file dependency_db/" + vl)
-                # os.system("./import_files.sh /ECHINOPSII/srenia/neo4j-community-2.2.3 /ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/tdistrib_0.6.1.cypher")
-                # print('You need to import more versioned distribution to the database')
+            else:
+                raise err.CommandError("Error, neo4j-community should be in the projet path: {}".format(project_path))
         return have_to_import
 
     def execute(self):

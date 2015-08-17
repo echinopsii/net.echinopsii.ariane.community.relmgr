@@ -20,6 +20,7 @@ plugin rabbitmq 0.2.4-SNAPSHOT directory jsonparser injector
 dependency:
 directory portal 0.6.0 0.7.0
 injector portal 0.6.0 0.7.0
+injector messaging 0.1.0 0.2.0
 portal idm 0.4.0 0.5.0
 mapping portal 0.6.0 0.7.0
 mapping idm 0.4.0 0.5.0
