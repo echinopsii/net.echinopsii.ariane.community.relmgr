@@ -757,13 +757,13 @@ class ArianeNode(object):
         if node_type == "Distribution":
             node = Distribution(args["name"], args["version"], args["nID"])
         elif node_type == "Module":
-            node = Module(args["name"], args["version"], args["type"], args["nID"])
+            node = Module(args["name"], args["version"], args["type"], args["nID"], order=args["order"])
         elif node_type == "Plugin":
             node = Plugin(args["name"], args["version"], args["nID"])
         elif node_type == "SubModule":
-            node = SubModule(args["name"], args["version"], args["groupId"], args["artifactId"], args["nID"])
+            node = SubModule(args["name"], args["version"], args["groupId"], args["artifactId"], args["nID"], order=args["order"])
         elif node_type == "SubModuleParent":
-            node = SubModuleParent(args["name"], args["version"], id=args["nID"])
+            node = SubModuleParent(args["name"], args["version"], args["groupId"], args["artifactId"], id=args["nID"])
         else:
             return None
 

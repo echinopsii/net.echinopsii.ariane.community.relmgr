@@ -391,7 +391,9 @@ class AppTest(unittest.TestCase):
         d = ariane_delivery.Distribution("d", "epic")
         A.add_submodule(d)
 
-    def test_export_all(self):
+    def export_all(self):
+        self.ariane.delete_all()
+
         def import_all():
             create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
             create_db_file('inputs/create_0.6.3.txt')
