@@ -54,11 +54,17 @@ $(document).ready(function() {
      */
 
     $("#btntest").click(function () {
-        input = {name: $("#name").val(), version: $("#version").val()}
+        input = {name: $("#name").val(), version: $("#version").val()};
+        if (input["name"] == {})
+            delete input["name"];
+        var nodetype = $("#selection").val();
         $.get(
-            "http://127.0.0.1:5000/rest/distrib/0.6.4-SNAPSHOT",
+            "http://127.0.0.1:5000/rest/"+nodetype+"?version="+input["version"],
             function (data) {
-                $("#response").text(data.distrib.name+", "+data.distrib.version+", "+data.distrib.nID)
+                if (data != null)
+                    $("#response").text(JSON.stringify(data.modules));
+                else
+                    $("#response").text("None");
             }
         );
     });

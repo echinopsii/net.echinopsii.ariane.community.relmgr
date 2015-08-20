@@ -413,7 +413,26 @@ class AppTest(unittest.TestCase):
                 if d.version != v:
                     d.delete()
             os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -c dump > "
-                      "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/dist_"+v+".cypher")
+                      "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/distrib_"+v+".cypher")
             import_all()
             dists = self.ariane.distribution_service.get_all()
 
+    def test_export_all(self):
+        self.export_all()
+
+    def test_export(self):
+        v = "0.6.4-SNAPSHOT"
+        os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -c dump > "
+                  "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/distrib_"+v+".cypher")
+
+    def test_import_for_UI(self):
+        self.ariane.delete_all()
+        create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        create_db_file('inputs/create_0.6.3.txt')
+        create_db_file('inputs/create_0.6.1.txt')
+        # create_db_file('inputs/create_0.6.4_test.txt')
+        d = self.ariane.distribution_service.get_unique({"version": "0.6.3"})
+        p = ariane_delivery.Plugin("Gyoza", "Nip2.0")
+        p.add_file(ariane_delivery.FileNode("gyoFile", "pom", "2.0", "/gyoza/files"))
+        p.save()
+        d.add_plugin(p)

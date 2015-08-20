@@ -7,13 +7,13 @@
 # module_name1 module_name2 version_min version_max
 
 distribution community 0.6.2
+installer 0.1.0 environment tools
 messaging 0.1.0 none api rabbitmq
 idm 0.4.1 core base
 portal 0.6.2 core base wat idmwat wab wresources
 mapping 0.6.2 core ds:_api_blueprints_rim_dsl wat taitale
 directory 0.6.2 core base wat
 injector 0.6.2 core base messaging wat
-installer 0.1.0 environment tools
 environment 0.6.2 environment
 plugin rabbitmq 0.2.2 directory jsonparser injector
 

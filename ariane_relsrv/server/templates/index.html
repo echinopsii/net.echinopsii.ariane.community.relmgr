@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ArianeUI</title>
+    <link rel="stylesheet" type="text/css" href="../static/style/index.css">
+</head>
+<body ng-app="ArianeUI">
+<div class="mainBody">
+    <div class="colBase">
+        <div class="colHeader">
+            <button class="btnPlusMin">+</button>
+            <button class="btnPlusMin">-</button>
+        </div>
+        <div class="colBody" ng-controller="DisplayColBaseCtrl">
+            <div class="listRoot">Distributions <button class="btnExtend" ng-click="toggleDistList()">+/-</button></div>
+            <div class="DistList" ng-show="isDistToggle()">
+            <ul ng-repeat="dist in dists">
+                {% raw %}
+                <li ng-class="dist.style=='selected' ? 'DistSelected' : 'DistNotSelected'" ng-click="clickDist(dist)"><label>{{ dist.version }}</label></li>
+                {% endraw %}
+            </ul>
+            </div>
+            <div class="listRoot">Plugins <button class="btnExtend" ng-click="togglePlugList()">+/-</button></div>
+            <div class="PlugList" ng-show="isPlugToggle()">
+                <ul ng-repeat="plugName in pluginsDict.Names">
+                    {% raw %}
+                    <li>{{ plugName.name }}<button class="btnExtend" ng-click="plugName.ShowHide()">+/-</button>
+                        <ul ng-repeat="plugSet in pluginsDict.PluginSet" ng-show="plugName.show">
+                            <li ng-if="plugSet.name == plugName.name" ng-class="plugSet.style=='selected' ? 'PlugSelected' : 'PlugNotSelected'" ng-click="clickPlug(plugSet)">{{ plugSet.version }}</li>
+                        </ul>
+                    </li>
+                    {% endraw %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="colNodes">
+        <div class="colHeader">
+            ColNodes
+            <button class="btnPlusMin" id="btnPlus">+</button>
+            <button class="btnPlusMin" id="btnMinus">-</button>
+        </div>
+        <div class="colBody" ng-controller="DisplayColNodesCtrl">
+        <div class="listRoot">Modules <button class="btnExtend" ng-click="toggleModList()">+/-</button></div>
+        <div class="ModList" ng-show="isModToggle()">
+            <ul ng-repeat="module in modules">
+                {% raw %}
+                <li ng-class="module.style=='selected' ? 'ModSelected' : 'ModNotSelected'" ng-click="clickMod(module)">{{ module.name }}   :{{ module.order }}</li>
+                {% endraw %}
+            </ul>
+        </div>
+        <div class="listRoot">SubModules <button class="btnExtend" ng-click="toggleSubList()">+/-</button></div>
+        <div class="SubList" ng-show="isSubToggle()">
+            <ul ng-repeat="submodule in submodules">
+                {% raw %}
+                <li ng-class="submodule.style=='selected' ? 'SubSelected' : 'SubNotSelected'" ng-click="clickSub(submodule)">{{ submodule.name }}   :{{ submodule.order }}</li>
+                {% endraw %}
+            </ul>
+        </div>
+            <div class="listRoot" ng-show="isElementSelected()">Files <button class="btnExtend" ng-click="toggleFileList()">+/-</button></div>
+            <div class="FileList" ng-show="isFileToggle()">
+                <ul ng-repeat="filenode in filenodes">
+                    {% raw %}
+                    <li ng-class="filenode.style=='selected' ? 'FileSelected' : 'FileNotSelected'" ng-click="clickFile(filenode)">{{ filenode.name | limitDisplay : limitLetterNum }}</li>
+                    {% endraw %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="colEdit" ng-controller="EditCtrl">
+        <div class="colHeader">
+            ColEdit
+            <button class="btnSave" ng-click="save()">Save</button>
+            <button class="btnSave" ng-click="cancel()">Cancel</button>
+        </div>
+        <div class="colBody">
+        <div ng-class="isEditEnable() ? 'editEnable' : 'editDisable'">
+            <!--<span class="editPropInput"><label ng-bind="prop"></label><input ng-model="selectedObj." ng-change="setActiveEdit()"></span>-->
+            <ul class="editPropList" ng-repeat="(prop, value) in selectedObj.node">
+                <li class="editPropInput" ng-if="isPropEditable(prop)">
+                    <label ng-bind="prop"></label><input type="text" ng-disabled="!enableEdit" ng-model="selectedObj.node[prop]" ng-change="setActiveEdit()">
+                </li>
+            </ul>
+        </div>
+        </div>
+    </div>
+</div>
+<!--<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular.min.js"></script>-->
+<script type="text/javascript" src="../static/js/lib/jquery-1.8.0.min.js"></script>
+<script type="text/javascript" src="../static/js/lib/angular.min.js"></script>
+<script type="text/javascript" src="../static/js/app.js"></script>
+<script type="text/javascript" src="../static/js/directives/jsonModel.js"></script>
+<script type="text/javascript" src="../static/js/services/rest.js"></script>
+<script type="text/javascript" src="../static/js/filters.js"></script>
+<script type="text/javascript" src="../static/js/controllers/DisplayColBase.js"></script>
+<script type="text/javascript" src="../static/js/controllers/DisplayColNodes.js"></script>
+<script type="text/javascript" src="../static/js/controllers/AddDelColBase.js"></script>
+<script type="text/javascript" src="../static/js/controllers/AddDelColNodes.js"></script>
+<script type="text/javascript" src="../static/js/controllers/Edit.js"></script>
+</body>
+</html>

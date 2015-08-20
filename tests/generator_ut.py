@@ -59,9 +59,9 @@ class GeneratorTest(unittest.TestCase):
 
     def test_import(self):
         create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
-        # create_db_from_file.create_db_file('inputs/create_0.6.3.txt')
+        create_db_from_file.create_db_file('inputs/create_0.6.3.txt')
         # create_db_from_file.create_db_file('inputs/create_0.6.2.txt')
-        # create_db_from_file.create_db_file('inputs/create_0.6.1.txt')
+        create_db_from_file.create_db_file('inputs/create_0.6.1.txt')
         # create_db_from_file.create_db_file('inputs/create_0.6.0.txt')
         # create_db_from_file.create_db_file('inputs/create_0.5.3.txt')
         # create_db_from_file.create_db_file('inputs/create_0.5.2.txt')

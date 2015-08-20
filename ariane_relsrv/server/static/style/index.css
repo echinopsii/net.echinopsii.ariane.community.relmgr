@@ -1,0 +1,91 @@
+ul {
+    list-style: none;
+}
+.colHeader{
+    background-color: #9196b2;
+}
+.colBase{
+    background-color: #87CEFA;
+    float: left;
+    width: 30%;
+    padding-right: 2%;
+}
+.DistList{
+    background-color: #75aad3;
+}
+.DistSelected{
+    background-color: red;
+}
+.DistNotSelected{
+    background-color: #3f6dff;
+}
+.PlugList{
+    background-color: #55bdd3;
+}
+.PlugSelected{
+    background-color: red;
+}
+.PlugNotSelected{
+    background-color: #3f6dff;
+}
+
+.colNodes{
+    background-color: #E0FFFF;
+    float: left;
+    width: 30%;
+    padding-right: 2%;
+}
+.ModList ul {
+    font-size: 0;
+}
+.ModList ul li {
+    font-size: 18px;
+    display: inline-block;
+}
+.SubList ul {
+    font-size: 0;
+}
+.SubList ul li {
+    font-size: 18px;
+    display: inline-block;
+}
+.FileList ul {
+    font-size: 0;
+}
+.FileList ul li {
+    font-size: 18px;
+    display: inline-block;
+}
+.ModSelected{
+    background-color: red;
+}
+.ModNotSelected{
+    background-color: #E0FFFF;
+}
+.SubSelected{
+    background-color: red;
+}
+.SubNotSelected{
+    background-color: #E0FFFF;
+}
+.FileSelected{
+    background-color: red;
+}
+.FileNotSelected{
+    background-color: #E0FFFF;
+}
+
+.colEdit{
+    background-color: #DA70D6;
+    float: left;
+    width: 30%;
+    padding-right: 2%;
+}
+
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+    display: none !important;
+}
+
+[deferred-cloak], [data-deferred-cloak], [x-deferred-cloak], .deferred-cloak {
+    display: none;
+}

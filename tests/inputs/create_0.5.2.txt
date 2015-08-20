@@ -7,12 +7,12 @@ create_0.5.3.txt# syntax expected:
 # module_name1 module_name2 version_min version_max
 
 distribution community 0.5.2
+installer 0.1.0 environment tools
 idm 0.4.0 core base
 portal 0.5.1 core base idmwat wab wat wresources
 mapping 0.5.1 core ds:_api_blueprints_dsl_rim taitale wat
 directory 0.5.1 core base wat
 injector 0.5.2 core base wat
-installer 0.1.0 environment tools
 environment 0.5.2 environment
 
 dependency:
