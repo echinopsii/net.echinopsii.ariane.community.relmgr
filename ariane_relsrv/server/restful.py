@@ -574,7 +574,7 @@ class RestDistributionList(Resource):
         self.reqparse.add_argument('name', type=str, help='Distribution name')
         self.reqparse.add_argument('version', type=str, help='Distribution version')
         self.reqparse.add_argument('nID', type=int, help='Distribution database ID named "nID"')
-        self.reqparse.add_argument('distrib')
+        self.reqparse.add_argument('distrib', location='json')
         # self.reqparse.add_argument('version', type=str)
         super(RestDistributionList, self).__init__()
 
@@ -644,8 +644,8 @@ api.add_resource(RestPlugin, '/rest/plugin/<int:unique_key>', '/rest/plugin/<uni
 api.add_resource(RestPluginList, '/rest/plugin')
 api.add_resource(RestSubModuleList, '/rest/submodule')
 api.add_resource(RestSubModule, '/rest/submodule/<int:unique_key>', '/rest/submodule/<unique_key>')
-api.add_resource(RestFileNodeList, '/rest/file/')
-api.add_resource(RestFileNode, '/rest/file/<int:unique_key>', '/rest/file/<unique_key>')
+api.add_resource(RestFileNodeList, '/rest/filenode')
+api.add_resource(RestFileNode, '/rest/filenode/<int:unique_key>', '/rest/filenode/<unique_key>')
 api.add_resource(UI, '/', "/index", "/index.html")
 api.add_resource(HelloHtml, '/hellohtml')
 

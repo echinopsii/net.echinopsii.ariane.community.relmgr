@@ -38,6 +38,7 @@ angular.module('ArianeUI')
                 if(res){
                     updateJSON(backupObj.node, $scope.selectedObj.node);
                 }
+                $scope.activeEdit = false;
                 serviceAjax.setState({obj: backupObj.obj, status: "done"});
             }
         };

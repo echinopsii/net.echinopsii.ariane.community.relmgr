@@ -249,6 +249,11 @@ class Generator(object):
 
     def generate_pom_dist(self, version, fpom):
         modules = self.get_modules_list(version)
+        mod_exception = self.get_module_file_gen_exceptions()
+        for m in modules.copy():
+            if m.name in mod_exception:
+                modules.remove(m)
+        modules = sorted(modules, key=lambda mod: mod.order)
         template = self.env.get_template(fpom.path + 'pom_distrib.xml.tpl')
         args = {"modules": modules, "version": version}
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:

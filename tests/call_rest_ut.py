@@ -42,7 +42,7 @@ class TestREST(unittest.TestCase):
         print(r.status_code, r.reason, 'data: ', r.json())
         countafter = ariane_delivery.DeliveryTree.graph_dao.count("nID")
         self.assertEqual(count+1, countafter)
-        dist = json.loads(r.json())
+        dist = r.json()
         dist = dist['distrib']
         self.assertEqual(dist["name"], "community")
         self.assertEqual(dist["version"], "0.6.5")
@@ -60,7 +60,7 @@ class TestREST(unittest.TestCase):
         dist['name'] = "yolo"
         r = requests.post("http://localhost:5000/rest/distrib", params=dist)
         print(r.status_code, r.reason, r.json())
-        dist = json.loads(r.json())
+        dist = r.json()
         dist = dist['distrib']
         self.assertEqual(dist["name"], "yolo")
 
@@ -68,6 +68,7 @@ class TestREST(unittest.TestCase):
         distrib = ariane_delivery.DeliveryTree.distribution_service.get_unique({"version": "0.6.3"})
         r = requests.get("http://localhost:5000/rest/distrib/0.6.3")
         print(r.json())
+        mr = r.json()
         dist = distrib.from_json(r.json())
         self.assertEqual(dist, distrib)
         r = requests.get("http://localhost:5000/rest/distrib/"+str(dist.id))
@@ -86,6 +87,7 @@ class TestREST(unittest.TestCase):
         r = requests.get("http://localhost:5000/rest/module", params={"version": "0.6.3"})
         print(r.json())
         r = requests.get('http://localhost:5000/rest/module/directory/0.6.3')
+        mr = r.json()
         mod = module.from_json(r.json())
         self.assertEqual(directory, mod)
         r = requests.get("http://localhost:5000/rest/module/"+str(mod.id))
@@ -126,6 +128,7 @@ class TestREST(unittest.TestCase):
         # mod2 = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'Kazuwa'})
         self.assertEqual(mod_res.name, "Kazuwa")
         mod_res.version = "0.6.1"
+        mod_res.order = 19
         r = requests.post("http://localhost:5000/rest/module", params=mod_res.get_properties())
         print(r.status_code, r.reason, r.json())
         self.assertEqual(mod_res, module.from_json(r.json()))
@@ -135,7 +138,7 @@ class TestREST(unittest.TestCase):
         plug_model = ariane_delivery.Plugin("model", "model")
         r = requests.get("http://localhost:5000/rest/plugin", params={"version": "0.6.3"})
         print(r.status_code, r.reason, r.json())
-        plist = json.loads(r.json())
+        plist = r.json()
         self.assertIsInstance(plist["plugins"], list)
         r = requests.get('http://localhost:5000/rest/plugin/rabbitmq/0.2.3')
         print(r.status_code, r.reason, r.json())
@@ -162,7 +165,7 @@ class TestREST(unittest.TestCase):
         print(r.status_code, r.reason, r.json())
         count_after = ariane_delivery.DeliveryTree.graph_dao.count("nID")
         self.assertEqual(count+1, count_after)
-        plug_res = json.loads(r.json())
+        plug_res = r.json()
         plug2 = ariane_delivery.DeliveryTree.plugin_service.get_unique({"name": 'rabbitmq'})
         plug2.version = "0.4.0"
         r = requests.post("http://localhost:5000/rest/plugin", params={"plugin": json.dumps(plug2.get_properties())})
@@ -173,7 +176,7 @@ class TestREST(unittest.TestCase):
         plug_res = plug_res["plugin"]
         r = requests.post("http://localhost:5000/rest/plugin", params={"name": "Bouyaka", "nID": plug_res["nID"]})
         print(r.status_code, r.reason, r.json())
-        plug_res = json.loads(r.json())
+        plug_res = r.json()
         plug_res = plug_res["plugin"]
         self.assertEqual(plug_res["name"], "Bouyaka")
         plug2 = ariane_delivery.DeliveryTree.plugin_service.find({"name": "Plying"})
@@ -190,7 +193,7 @@ class TestREST(unittest.TestCase):
         parent = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'directory'})
         r = requests.get("http://localhost:5000/rest/submodule", params={"parent": json.dumps(parent.get_properties())})
         print(r.status_code, r.reason, r.json())
-        sublist = json.loads(r.json())
+        sublist = r.json()
         sublist = sublist["submodules"]
         dirsubs = ariane_delivery.DeliveryTree.submodule_service.get_all(parent)
         cpt = 0
@@ -204,7 +207,7 @@ class TestREST(unittest.TestCase):
         self.assertEqual(cpt, len(sublist))
         r = requests.get("http://localhost:5000/rest/submodule", params={"parent": json.dumps({"name": 'idm'})})
         print(r.status_code, r.reason, r.json())
-        sublist = json.loads(r.json())
+        sublist = r.json()
         sublist = sublist["submodules"]
         sublist = [submodel.create_subclass(submodel.node_type, s) for s in sublist]
         for s in sublist:
@@ -254,6 +257,7 @@ class TestREST(unittest.TestCase):
         self.assertIsInstance(rsub, ariane_delivery.SubModuleParent)
         sub = ariane_delivery.DeliveryTree.submodule_service.get_unique({"name": 'wab'})
         sub.groupId = "roro.lolo.gato"
+        sub.order = 7
         r = requests.post("http://localhost:5000/rest/submodule", params={"submodule":
                                                                           json.dumps(sub.get_properties())})
         print(r.status_code, r.reason, r.json())
@@ -268,14 +272,14 @@ class TestREST(unittest.TestCase):
 
     def test_get_filenode(self):
         parent = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'directory'})
-        r = requests.get('http://localhost:5000/rest/file/', params={"parent": json.dumps(parent.get_properties())})
+        r = requests.get('http://localhost:5000/rest/filenode', params={"parent": json.dumps(parent.get_properties())})
         print(r.status_code, r.reason, r.json())
-        fnode = json.loads(r.json())
+        fnode = r.json()
         fnode = fnode["filenodes"][0]
-        r = requests.get('http://localhost:5000/rest/file/'+str(fnode["nID"]))
+        r = requests.get('http://localhost:5000/rest/filenode/'+str(fnode["nID"]))
         print(r.status_code, r.reason, r.json())
         parent = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'portal'})
-        r = requests.get('http://localhost:5000/rest/file/plan', params={"parent": json.dumps(parent.get_properties())})
+        r = requests.get('http://localhost:5000/rest/filenode/plan', params={"parent": json.dumps(parent.get_properties())})
         print(r.status_code, r.reason, r.json())
 
     def test_post_filenode(self):
@@ -283,28 +287,28 @@ class TestREST(unittest.TestCase):
         myfnode = ariane_delivery.FileNode("myfile", "custom", "ez", "/cute/path")
         myfnode = myfnode.get_properties()
         myfnode["parent"] = json.dumps(parent.get_properties())
-        r = requests.post('http://localhost:5000/rest/file/', params=myfnode)
+        r = requests.post('http://localhost:5000/rest/filenode', params=myfnode)
         print(r.status_code, r.reason, r.json())
         dir_file = ariane_delivery.DeliveryTree.get_one_file(parent, "pom")
         dir_file.path = "custom/path/"
-        r = requests.post('http://localhost:5000/rest/file/', params={"filenode": json.dumps(dir_file.get_properties())})
+        r = requests.post('http://localhost:5000/rest/filenode', params={"filenode": json.dumps(dir_file.get_properties())})
         print(r.status_code, r.reason, r.json())
         dir_file = ariane_delivery.DeliveryTree.get_one_file(parent, "json_build")
-        r = requests.post('http://localhost:5000/rest/file/', params={"version": 'toto', "nID": dir_file.id})
+        r = requests.post('http://localhost:5000/rest/filenode', params={"version": 'toto', "nID": dir_file.id})
         print(r.status_code, r.reason, r.json())
         dir_file.name = "jjj_ggg"
-        r = requests.post('http://localhost:5000/rest/file/', params=dir_file.get_properties())
+        r = requests.post('http://localhost:5000/rest/filenode', params=dir_file.get_properties())
         print(r.status_code, r.reason, r.json())
 
-    def test_delete_distrib(self):
-        r = requests.delete("http://localhost:5000/rest/distrib/0.6.3")
-        create_db_file('/Users/stanrenia/py_neo4j_db/tests/inputs/create_0.6.3.txt')
-        r = requests.delete("http://localhost:5000/rest/distrib/0.6.3/community")
-        create_db_file('/Users/stanrenia/py_neo4j_db/tests/inputs/create_0.6.3.txt')
-        r = requests.delete("http://localhost:5000/rest/distrib/0.6.3/community")
-        create_db_file('/Users/stanrenia/py_neo4j_db/tests/inputs/create_0.6.3.txt')
-        r = requests.delete("http://localhost:5000/rest/distrib/0.6.3/bouya")
-
-    def test_delete_all_distrib(self):
-        r = requests.delete("http://localhost:5000/rest/distrib", params={"version": "0.6.3"})
-        print(r.status_code, r.reason, r.json())
+    # def test_delete_distrib(self):
+    #     r = requests.delete("http://localhost:5000/rest/distrib/0.6.3")
+    #     create_db_file('/Users/stanrenia/py_neo4j_db/tests/inputs/create_0.6.3.txt')
+    #     r = requests.delete("http://localhost:5000/rest/distrib/0.6.3/community")
+    #     create_db_file('/Users/stanrenia/py_neo4j_db/tests/inputs/create_0.6.3.txt')
+    #     r = requests.delete("http://localhost:5000/rest/distrib/0.6.3/community")
+    #     create_db_file('/Users/stanrenia/py_neo4j_db/tests/inputs/create_0.6.3.txt')
+    #     r = requests.delete("http://localhost:5000/rest/distrib/0.6.3/bouya")
+    #
+    # def test_delete_all_distrib(self):
+    #     r = requests.delete("http://localhost:5000/rest/distrib", params={"version": "0.6.3"})
+    #     print(r.status_code, r.reason, r.json())

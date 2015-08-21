@@ -34,9 +34,10 @@ angular.module('ArianeUI')
                     state = newstate;
                     return true;
                 }
-                if(newstate.status == "done")
+                if(newstate.status == "done"){
+                    state = newstate;
                     state.status = "default";
-
+                }
                 return false;
             },
             setBaseObj: function(newbaseobj){
@@ -78,18 +79,22 @@ angular.module('ArianeUI')
                 if (element != {}){
                     var data = {"parent": element};
                     var config = {params: data};
-                    return $http.get("http://localhost:5000/rest/file", config);
+                    return $http.get("http://localhost:5000/rest/filenode", config);
                 }
             },
             save: function(element, type){
                 if(type == 'dist')
                     type = 'distrib';
+                if(type == 'file')
+                    type = 'filenode';
+                if(type == 'plug')
+                    type = 'plugin';
                 element = cleanElementAttr(element);
                 var data = {};
-                data[type] = element;
-                console.log('Data to Save:' + data, JSON.stringify(data));
-                var config = {data: data};
+                data[type] = JSON.stringify(element);
+                var config = {data: data, headers: {'Content-Type': 'application/json'}, dataType:'json'};
                 var res = $http.post("http://localhost:5000/rest/"+type, data);
+                return true;
                 // Handle res
             }
         };
