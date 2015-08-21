@@ -9,6 +9,20 @@ angular.module('ArianeUI')
         $scope.activeEdit = false; // User is editing
         var editables = ['name', 'version', 'groupId', 'artifactId', 'order', 'git_repos'];
 
+        $scope.$on('handleEdition', function(){
+            if(!$scope.activeEdit) {
+                backupObj = serviceAjax.getSelectedObj();
+                if (backupObj != -1){
+                    var baseObj = serviceAjax.getBaseObj();
+                    $scope.selectedObj = JSON.parse(JSON.stringify(backupObj)); // copy JSON object
+                    $scope.enableEdit = (baseObj.node.version.indexOf("SNAPSHOT") > -1);
+                }
+                else
+                    $scope.enableEdit = false;
+            }
+            return $scope.enableEdit;
+        });
+        /*
         $scope.isEditEnable = function(){
             if(!$scope.activeEdit) {
                 backupObj = serviceAjax.getSelectedObj();
@@ -21,7 +35,7 @@ angular.module('ArianeUI')
                     $scope.enableEdit = false;
             }
             return $scope.enableEdit;
-        };
+        };*/
 
         $scope.setActiveEdit = function(){
             if($scope.enableEdit){

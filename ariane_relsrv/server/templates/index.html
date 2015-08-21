@@ -46,8 +46,17 @@
         <div class="ModList" ng-show="isModToggle()">
             <ul ng-repeat="module in modules">
                 {% raw %}
-                <li ng-class="module.style=='selected' ? 'ModSelected' : 'ModNotSelected'" ng-click="clickMod(module)">{{ module.name }}   :{{ module.order }}</li>
+                <li ng-class="module.style=='selected' ? 'ModSelected' : 'ModNotSelected'"><label ng-click="clickMod(module)">{{ module.name }}   :{{ module.order }}</label>
                 {% endraw %}
+                    <button class="btnExtend" ng-click="toggleModSub(module)">+/-</button>
+                        <div class="ModSubList" ng-show="isModSubToggle(module)">
+                            <ul ng-repeat="sub in module.sublist">
+                                {% raw %}
+                                <li ng-class="sub.style=='selected' ? 'SubSelected' : 'SubdNotSelected'" ng-click="clickSub(sub)">{{ sub.name }}</li>
+                                {% endraw %}
+                            </ul>
+                        </div>
+                </li>
             </ul>
         </div>
         <div class="listRoot">SubModules <button class="btnExtend" ng-click="toggleSubList()">+/-</button></div>
@@ -58,7 +67,7 @@
                 {% endraw %}
             </ul>
         </div>
-            <div class="listRoot" ng-show="isElementSelected()">Files <button class="btnExtend" ng-click="toggleFileList()">+/-</button></div>
+            <div class="listRoot">Files <button class="btnExtend" ng-click="toggleFileList()">+/-</button></div>
             <div class="FileList" ng-show="isFileToggle()">
                 <ul ng-repeat="filenode in filenodes">
                     {% raw %}
@@ -91,7 +100,6 @@
 <script type="text/javascript" src="../static/js/lib/jquery-1.8.0.min.js"></script>
 <script type="text/javascript" src="../static/js/lib/angular.min.js"></script>
 <script type="text/javascript" src="../static/js/app.js"></script>
-<script type="text/javascript" src="../static/js/directives/jsonModel.js"></script>
 <script type="text/javascript" src="../static/js/services/rest.js"></script>
 <script type="text/javascript" src="../static/js/filters.js"></script>
 <script type="text/javascript" src="../static/js/controllers/DisplayColBase.js"></script>

@@ -2,7 +2,7 @@
  * Created by stanrenia on 14/08/15.
  */
 angular.module('ArianeUI')
-    .factory('serviceAjax', function serviceAjax($http) {
+    .factory('serviceAjax', function serviceAjax($http, $rootScope) {
         var state = {obj: "default", status: "none"};
         var baseObj = {obj:"default", node:{}};
         var nodeObj = {obj:"default", node:{}};
@@ -46,6 +46,18 @@ angular.module('ArianeUI')
             setNodeObj: function(newnodeobj){
                 nodeObj = newnodeobj;
             },
+            actionBroadcast: function(){
+                if(state.status.indexOf("new") > -1){
+                    if(state.status == 'newBase')
+                        $rootScope.$broadcast('newBaseSelected');
+                    $rootScope.$broadcast('handleEdition');
+                }
+                //else if(state.status == "newMod") ... eventually to handle each element with its own things
+                else{
+                    state.obj = "default";
+                    state.status = "default";
+                }
+            },
             getSelectedObj: function(){
                 if (((state.obj == "dist") || (state.obj == "plug")) && (baseObj.obj == state.obj))
                     return baseObj;
@@ -67,17 +79,16 @@ angular.module('ArianeUI')
                 if (version != "")
                     return $http.get("http://localhost:5000/rest/plugin?version="+version);
             },
-            submodule: function(plug){
-                if (plug.name != "" && plug.version != "") {
-                    var data = {"parent": {"name": plug.name, "version": plug.version}};
-                    var config = {params: data};
-                    return $http.get("http://localhost:5000/rest/submodule", config);
-                }
+            submodule: function(modplug){
+                var element = cleanElementAttr(modplug);
+                var data = {"parent": element};
+                var config = {params: data};
+                return $http.get("http://localhost:5000/rest/submodule", config);
             },
             file: function(element){
-                element = cleanElementAttr(element);
-                if (element != {}){
-                    var data = {"parent": element};
+                var c_element = cleanElementAttr(element);
+                if (c_element != {}){
+                    var data = {"parent": c_element};
                     var config = {params: data};
                     return $http.get("http://localhost:5000/rest/filenode", config);
                 }
@@ -89,9 +100,9 @@ angular.module('ArianeUI')
                     type = 'filenode';
                 if(type == 'plug')
                     type = 'plugin';
-                element = cleanElementAttr(element);
+                var c_element = cleanElementAttr(element);
                 var data = {};
-                data[type] = JSON.stringify(element);
+                data[type] = JSON.stringify(c_element);
                 var config = {data: data, headers: {'Content-Type': 'application/json'}, dataType:'json'};
                 var res = $http.post("http://localhost:5000/rest/"+type, data);
                 return true;

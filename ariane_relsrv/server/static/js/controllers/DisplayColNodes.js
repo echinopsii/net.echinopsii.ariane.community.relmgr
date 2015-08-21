@@ -15,20 +15,34 @@ angular.module('ArianeUI')
         var tmp_submodules = [];
         var curBaseObj = {};
 
-        function isStateChanged(){
-            state = serviceAjax.getState();
+        /*function isStateChanged(){
+            var state = serviceAjax.getState();
             if(state.status == "new"){
                 state.status = "none";
                 serviceAjax.setState(state);
                 return true;
             }
             return false;
-        }
+        }*/
+
         function DistSelected(baseObj){
             serviceAjax.module(baseObj["node"]).success(function(data){
                 data.modules.sort(sortOrder);
                 $scope.modules = data.modules;
                 $scope.togMod = true;
+                var modlen = $scope.modules.length;
+
+                for(var i=0; i<modlen; i++){
+                    var m = $scope.modules[i];
+                    m['togModSub'] = false;
+                    //m['sublist'] = [{name:'yolo'},{name:'ratata'}];
+                    (function(mod){ // Using closure function in order to update m['sublist'] inside of serviceAjax..success()
+                        serviceAjax.submodule(mod).success(function(data){
+                            data.submodules.sort(sortName);
+                            mod['sublist'] = data.submodules;
+                        });
+                    })(m);
+                }
             });
             tmp_submodules = $scope.submodules;
             $scope.submodules = [];
@@ -45,7 +59,28 @@ angular.module('ArianeUI')
             $scope.togMod = false;
         }
 
-        $scope.isElementSelected = function(){
+        $scope.$on('newBaseSelected', function(){
+            var flag_curBase = true;
+            var baseObj = serviceAjax.getBaseObj();
+            if (baseObj["obj"] == "dist" && baseObj != curBaseObj) {
+                DistSelected(baseObj);
+            }
+            else if (baseObj["obj"] == "plug" && baseObj != curBaseObj) {
+                PlugSelected(baseObj);
+            }
+            else {
+                flag_curBase = false;
+            }
+            if (flag_curBase) {
+                curBaseObj = baseObj;
+                serviceAjax.file(baseObj["node"]).success(function (data) {
+                    data.filenodes.sort(sortName);
+                    $scope.filenodes = data.filenodes;
+                    $scope.togFile = true;
+                });
+            }
+        });
+        /*$scope.isElementSelected = function(){
             var flag_error = false; // A utiliser pour gérer les erreurs.
             if(isStateChanged()) {
                 var flag_curBase = true;
@@ -70,13 +105,13 @@ angular.module('ArianeUI')
                 }
             }
             return flag_error != true;
-        };
+        };*/
 
         $scope.clickMod = function(module){
             var nodeObj = serviceAjax.getNodeObj();
             if((nodeObj["obj"] != "module")
                 ||((nodeObj["obj"] == "module") && (nodeObj["node"] != module))) {
-                if(serviceAjax.setState({obj: "module", status: "new"})) {
+                if(serviceAjax.setState({obj: "module", status: "newMod"})) {
                     if (typeof module.style != "undefined")
                         delete module.style;
                     serviceAjax.setNodeObj({obj: 'module', node: module});
@@ -84,6 +119,7 @@ angular.module('ArianeUI')
                         $scope.curNodeSelected["style"] = "none";
                     module.style = "selected";
                     $scope.curNodeSelected = module;
+                    serviceAjax.actionBroadcast();
                 }
             }
         };
@@ -99,6 +135,7 @@ angular.module('ArianeUI')
                         $scope.curNodeSelected["style"] = "none";
                     submodule.style = "selected";
                     $scope.curNodeSelected = submodule;
+                    serviceAjax.actionBroadcast();
                 }
             }
         };
@@ -114,6 +151,7 @@ angular.module('ArianeUI')
                         $scope.curNodeSelected["style"] = "none";
                     file.style = "selected";
                     $scope.curNodeSelected = file;
+                    serviceAjax.actionBroadcast();
                 }
             }
         };
@@ -122,6 +160,12 @@ angular.module('ArianeUI')
         };
         $scope.isModToggle = function(){
             return $scope.togMod;
+        };
+        $scope.toggleModSub = function(mod){
+            mod.togModSub = !mod.togModSub;
+        };
+        $scope.isModSubToggle = function(mod){
+            return mod.togModSub;
         };
         $scope.toggleSubList = function(){
             $scope.togSub = !$scope.togSub;

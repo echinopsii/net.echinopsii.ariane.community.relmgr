@@ -6,7 +6,7 @@ angular.module('ArianeUI')
         $scope.dists = [];
         var plugins = [];
         $scope.pluginsDict = {Names: [], PluginSet: []};
-        $scope.curSelected = 0;
+        $scope.curBaseSelected = 0;
         $scope.togDist = true;
         $scope.togPlug = true;
         serviceAjax.distrib('').success(function(data)
@@ -62,17 +62,18 @@ angular.module('ArianeUI')
 
         $scope.clickDist = function(dist){
             var baseObj = serviceAjax.getBaseObj();
-            if ((baseObj["obj"] != "dist")
-                ||((baseObj["obj"] == "dist") && (baseObj["node"] != dist))) {
-                if (serviceAjax.setState({obj: "dist", status: "new"})) {
+            var curSelected = serviceAjax.getSelectedObj();
+            if (curSelected['node'] != dist) {
+                if (serviceAjax.setState({obj: "dist", status: "newBase"})) {
                     if (typeof dist["style"] != "undefined")
                         delete dist["style"];
                     serviceAjax.setBaseObj({obj: 'dist', node: dist}); // Use of JSON.parse(JSON.stringify(obj)) to copy JSON object. This object must not contain any function.
                     serviceAjax.setNodeObj({obj: "default", node: {}});
-                    if ($scope.curSelected != 0)
-                        $scope.curSelected["style"] = "none";
+                    if ($scope.curBaseSelected != 0)
+                        $scope.curBaseSelected["style"] = "none";
                     dist["style"] = "selected";
-                    $scope.curSelected = dist;
+                    $scope.curBaseSelected = dist;
+                    serviceAjax.actionBroadcast();
                     /*$scope.test = serviceAjax.getTest();
                     console.log('1:' + JSON.stringify($scope.test));
                     console.log('1:' + JSON.stringify(serviceAjax.getTest()));
@@ -89,25 +90,22 @@ angular.module('ArianeUI')
             var baseObj = serviceAjax.getBaseObj();
             if  ((baseObj["obj"] != "plug")
                 ||((baseObj["obj"] == "plug") && (baseObj["node"] != PluginSet.plugin))) {
-                if (serviceAjax.setState({obj: "plug", status: "new"})) {
+                if (serviceAjax.setState({obj: "plug", status: "newBase"})) {
                     if (typeof PluginSet.plugin["dist_version"] != "undefined")
                         delete PluginSet.plugin["dist_version"];
                     serviceAjax.setBaseObj({obj: 'plug', node: PluginSet.plugin});
                     serviceAjax.setNodeObj({obj: "default", node: {}});
-                    if ($scope.curSelected != 0)
-                        $scope.curSelected["style"] = "none";
+                    if ($scope.curBaseSelected != 0)
+                        $scope.curBaseSelected["style"] = "none";
                     PluginSet["style"] = "selected";
-                    $scope.curSelected = PluginSet;
+                    $scope.curBaseSelected = PluginSet;
+                    serviceAjax.actionBroadcast();
                 }
             }
         };
 
         $scope.toggleDistList = function(){
             $scope.togDist = !$scope.togDist;
-            /*if ($scope.togDist == false){
-                serviceAjax.setState({obj: "default", status: "none"});
-                serviceAjax.setNodeObj({obj: "default", value: {}});
-            }*/
         };
         $scope.isDistToggle = function(){
             return $scope.togDist;
