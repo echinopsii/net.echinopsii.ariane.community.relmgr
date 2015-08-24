@@ -226,9 +226,9 @@ class Generator(object):
         sub.list_submod = self.ariane.submodule_service.get_all(sub)
         sub.list_submod.extend(self.ariane.submodule_parent_service.get_all(sub))
         for s in sub.list_submod:
-            self.__generate_pom_submodule(s, grId, artId)
+            s_grId, s_artId = self.__generate_pom_submodule(s, grId, artId)
             if type(s) is ariane_delivery.SubModuleParent:
-                self.__generate_pom_subparent(s, grId, artId)
+                self.__generate_pom_subparent(s, s_grId, s_artId)
 
     def __generate_pom_mod_plug(self, mod_plug, fpom):
         template = self.env.get_template(fpom.path + 'pom.xml.tpl')
@@ -267,7 +267,7 @@ class Generator(object):
             snapshot = True
 
         template = self.env.get_template(fplan.path+"plan_"+mod_plug.name+"_template.xml.tpl")
-        submodules = mod_plug.list_submod
+        submodules = [s for s in mod_plug.list_submod]
         # Remove each submodule which is in exceptions list.
         # Note that if submodule is a SubModuleParent which has a SubModule to be excluded,
         # this is done in the module template.
