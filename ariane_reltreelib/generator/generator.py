@@ -68,12 +68,12 @@ class Generator(object):
     def get_modules_list(self, version):
         if version not in self.modules_dict.keys():
             self.modules_dict[version] = self.ariane.module_service.get_all(self.get_distrib(version))
-        return self.modules_dict[version]
+        return [m for m in self.modules_dict[version]]
 
     def get_plugins_list(self, version):
         if version not in self.plugin_dict.keys():
             self.plugin_dict[version] = self.ariane.plugin_service.get_all(self.get_distrib(version))
-        return self.plugin_dict[version]
+        return [p for p in self.plugin_dict[version]]
 
     def get_submodule_lib_extensions(self):
         if self.extension_sub_lib.__len__() == 0:

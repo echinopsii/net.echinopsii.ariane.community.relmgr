@@ -451,3 +451,8 @@ class AppTest(unittest.TestCase):
         p.add_file(ariane_delivery.FileNode("gyoFile", "pom", "2.0", "/gyoza/files"))
         p.save()
         d.add_plugin(p)
+
+    def test_import_all_cypher(self):
+        self.ariane.delete_all()
+        os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "
+                  "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/alldistrib.cypher")

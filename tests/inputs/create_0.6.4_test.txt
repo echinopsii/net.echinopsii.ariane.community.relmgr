@@ -1,0 +1,32 @@
+# distribution distribution_name distribution_version
+# module_name module_version module_type sub_module_name1 sub_module_name2 etc
+# -------To create sub sub module, use this syntax--------> 'SubModuleParent:_sub1_sub2_sub3' # underscores to separate submodules
+# plugin plugin_name plugin_version sub_module_name1 sub_module_name2 etc
+#
+# dependency:
+# module_name1 module_name2 version_min version_max
+
+distribution community 0.6.4
+installer 0.1.0 environment tools
+messaging 0.1.1 none api rabbitmq
+idm 0.4.2 core base
+portal 0.6.4 core base wat idmwat wab wresources
+mapping 0.6.4 core ds:_api_blueprints_rim_dsl wat taitale
+directory 0.6.4 core base wat
+injector 0.6.4 core base messaging wat
+environment 0.6.4 environment
+plugin rabbitmq 0.2.4 directory jsonparser injector
+
+dependency:
+directory portal 0.6.0 0.7.0
+injector portal 0.6.0 0.7.0
+injector messaging 0.1.0 0.2.0
+portal idm 0.4.0 0.5.0
+mapping portal 0.6.0 0.7.0
+mapping idm 0.4.0 0.5.0
+
+plugin_dependency:
+rabbitmq mapping 0.6.0 0.7.0
+rabbitmq directory 0.6.0 0.7.0
+rabbitmq portal 0.6.0 0.7.0
+rabbitmq injector 0.6.0 0.7.0
