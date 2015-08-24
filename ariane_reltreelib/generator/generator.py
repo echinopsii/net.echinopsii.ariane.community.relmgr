@@ -308,6 +308,7 @@ class Generator(object):
 
     def generate_json_dist(self, version, fjson):
         elements = self.get_modules_list(version)
+        print(elements)
         dictio = {}
         snapshot = False
         if "SNAPSHOT" in version:
