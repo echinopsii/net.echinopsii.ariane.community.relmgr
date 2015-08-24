@@ -11,7 +11,7 @@ installer 0.1.0 environment tools
 messaging 0.1.1-SNAPSHOT none api rabbitmq
 idm 0.4.2-SNAPSHOT core base
 portal 0.6.4-SNAPSHOT core base wat idmwat wab wresources
-mapping 0.6.4-SNAPSHOT core ds:_api_blueprints_rim_dsl wat taitale
+mapping 0.6.4-SNAPSHOT core ds:_api_blueprints_rim_dsl taitale wat
 directory 0.6.4-SNAPSHOT core base wat
 injector 0.6.4-SNAPSHOT core base messaging wat
 environment 0.6.4-SNAPSHOT environment

@@ -646,7 +646,8 @@ class SubModuleParentService(DeliveryTree):
 
     def _create_ariane_node(self, node):
         args = DeliveryTree.graph_dao.get_node_properties(node)
-        return SubModuleParent(args["name"], args["version"], args["groupId"], args["artifactId"], args["nID"])
+        return SubModuleParent(args["name"], args["version"], args["groupId"], args["artifactId"], args["nID"],
+                               order=args["order"])
 
     def make_files(self, subpar, parent_path):
         self.__make_file_pom(subpar, parent_path)
@@ -762,9 +763,11 @@ class ArianeNode(object):
         elif node_type == "Plugin":
             node = Plugin(args["name"], args["version"], args["nID"])
         elif node_type == "SubModule":
-            node = SubModule(args["name"], args["version"], args["groupId"], args["artifactId"], args["nID"], order=args["order"])
+            node = SubModule(args["name"], args["version"], args["groupId"], args["artifactId"], args["nID"],
+                             order=args["order"])
         elif node_type == "SubModuleParent":
-            node = SubModuleParent(args["name"], args["version"], args["groupId"], args["artifactId"], id=args["nID"])
+            node = SubModuleParent(args["name"], args["version"], args["groupId"], args["artifactId"], id=args["nID"],
+                                   order=args["order"])
         else:
             return None
 
@@ -1296,20 +1299,21 @@ class Plugin(ArianeNode):
 
 class SubModuleParent(ArianeNode):
 
-    def __init__(self, name, version, groupId="", artifactId="", id=0):
+    def __init__(self, name, version, groupId="", artifactId="", id=0, order=0):
         super().__init__(name, version)
         self.node_type = self.__class__.__name__
         self.id = id
         self.list_submod = []
+        self.order = order
         self.artifactId = artifactId
         self.groupId = groupId
         self.dir = {"name": self.name, "version": self.version, "groupId": self.groupId, "artifactId": self.artifactId,
-                    "nID": self.id}
+                    "order": self.order, "nID": self.id}
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
     def _get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "groupId": self.groupId, "artifactId": self.artifactId,
-                    "nID": self.id}
+                    "order": self.order, "nID": self.id}
         return self.dir
 
     def update(self, args):
@@ -1324,6 +1328,8 @@ class SubModuleParent(ArianeNode):
                     self.groupId = args[key]
                 elif key == "artifactId" and self.artifactId != args[key]:
                     self.artifactId = args[key]
+                elif key == "order" and self.order != args[key]:
+                    self.order = args[key]
                 else:
                     continue
                 flag = True

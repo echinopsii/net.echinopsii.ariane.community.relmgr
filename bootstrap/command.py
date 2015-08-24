@@ -58,7 +58,11 @@ class Command(object):
         #                                                 "templates": "/ECHINOPSII/srenia/ariane_relmgr/tests/templates"})
         Command.g = generator.Generator(Command.ariane, {"outputs": project_path, "templates": project_path})
 
-    def import_data(self):
+    def import_all_distribs(self):
+        os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "
+                  "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/alldistrib.cypher")
+
+    def import_data_filebyfile(self):
         fnames = []
         have_to_import = False
         vlist = []
@@ -88,6 +92,14 @@ class Command(object):
                 raise err.CommandError("Error, neo4j-community should be in the projet path: {}".format(project_path))
         return have_to_import
 
+    def get_number_of_distribs(self):
+        fnames = []
+        for (dirpath, dirnames, filenames) in os.walk('dependency_db'):
+            fnames = filenames
+            break
+        fnames = [f for f in fnames if f.startswith("distrib_")]
+        return len(fnames)
+
     def execute(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("command", help="File generation command")
@@ -111,8 +123,14 @@ class Command(object):
                     else:
                         fnode = Command.ariane.get_one_file(distrib, cmd)
                         if cmd == "json_plugins":
-                            if self.import_data():
-                                print("Importing missing data")
+                            distribs = Command.ariane.distribution_service.get_all()
+                            number_distribs = self.get_number_of_distribs()
+                            if len(distribs) < number_distribs:
+                                if len(distribs) > 0:
+                                    Command.ariane.delete_all()
+                                self.import_all_distribs()
+                            # if self.import_data():
+                            #     print("Importing missing data")
                             if not Command.ariane.check_uniqueness():
                                 raise err.CommandError("Error while importing missing Distributions")
                             Command.g.generate_json_plugins(fnode)

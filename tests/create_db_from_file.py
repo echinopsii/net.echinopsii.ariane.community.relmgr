@@ -70,6 +70,8 @@ def create_db_file(filename):
                                         sub_order += 1
                                         sub_sub.set_groupid_artifact(mod, sub_parent)
                                         sub_parent.add_submodule(sub_sub)
+                                    sub_parent.order = sub_order
+                                    sub_order += 1
                                     mod.add_submodule(sub_parent)
                                 else:
                                     sub = ariane_delivery.SubModule(submod, mod.version)

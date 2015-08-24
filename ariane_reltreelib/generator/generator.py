@@ -22,6 +22,7 @@ from ariane_reltreelib.dao import ariane_delivery
 import os, json, ariane_reltreelib
 from os.path import join, exists, getmtime, realpath
 from os import getcwd
+from collections import OrderedDict
 __author__ = 'stanrenia'
 
 class MyLoader(BaseLoader):
@@ -237,7 +238,7 @@ class Generator(object):
         artifactId = groupId + "." + mod_plug.name
         version = mod_plug.version
         packaging = "pom"
-
+        mod_plug.list_submod = sorted(mod_plug.list_submod, key=lambda submod: submod.order)
         args = {"groupId": groupId, "artifactId": artifactId, "version": version,
                 "packaging": packaging, "modules": mod_plug.list_submod,
                 "dependencies": mod_plug.list_module_dependency}
@@ -328,6 +329,7 @@ class Generator(object):
     def generate_json_plugins(self, fjson):
         distribs = self.ariane.distribution_service.get_all()
         plugin_dict = {}
+        version_order = []
         for d in distribs:
             plugins = self.ariane.plugin_service.get_all(d)
             if plugins is not None:
@@ -340,6 +342,7 @@ class Generator(object):
                 p_name = "ariane.community.plugin." + p.name
                 if p_name not in plugin_dict.keys():
                     plugin_dict[p_name] = [{"pluginVersion": p.version, "distVersion": [d.version]}]
+                    version_order.append(p.version)
                 else:
                     flag_new_version = True
                     flag_append = False
@@ -370,10 +373,26 @@ class Generator(object):
                             plugin_dict[p_name].append({"pluginVersion": rel.properties["version_min"], "distVersion": [d.version]})
                     if flag_new_version:
                         plugin_dict[p_name].append({"pluginVersion": p.version, "distVersion": [d.version]})
+                        version_order.append(p.version)
 
         # each distrib has the same directories tree, here 'd' is the last distrib from the list.
+        version_order = sorted(version_order)
+        plugin_dict_order = {}
+        for dic in plugin_dict.keys():
+            new_list = [v for v in version_order]
+            ele_list = plugin_dict[dic]
+            for ldict in ele_list:
+                tuple_list = []
+                pversion = ""
+                for key, value in ldict.items():
+                    if key == "pluginVersion":
+                        pversion = value
+                    tuple_list.append((key, value))
+                tuple_list = sorted(tuple_list, key=lambda t: t[0], reverse=True)
+                new_list[version_order.index(pversion)] = OrderedDict(tuple_list)
+            plugin_dict_order[dic] = new_list
         with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
-            json.dump(plugin_dict, target, indent=4)
+            json.dump(plugin_dict_order, target, indent=4)
 
         return self.dir_output+fjson.path+fjson.name
 

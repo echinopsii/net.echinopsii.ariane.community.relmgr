@@ -391,7 +391,7 @@ class AppTest(unittest.TestCase):
         d = ariane_delivery.Distribution("d", "epic")
         A.add_submodule(d)
 
-    def export_all(self):
+    def export_eachfile(self):
         self.ariane.delete_all()
 
         def import_all():
@@ -417,8 +417,23 @@ class AppTest(unittest.TestCase):
             import_all()
             dists = self.ariane.distribution_service.get_all()
 
+    def test_export_eachfile(self):
+        self.export_eachfile()
+
     def test_export_all(self):
-        self.export_all()
+        self.ariane.delete_all()
+        create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        create_db_file('inputs/create_0.6.3.txt')
+        create_db_file('inputs/create_0.6.2.txt')
+        create_db_file('inputs/create_0.6.1.txt')
+        create_db_file('inputs/create_0.6.0.txt')
+        create_db_file('inputs/create_0.5.3.txt')
+        create_db_file('inputs/create_0.5.2.txt')
+        create_db_file('inputs/create_0.5.1.txt')
+        create_db_file('inputs/create_0.5.0.txt')
+
+        os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -c dump > "
+                  "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/alldistrib.cypher")
 
     def test_export(self):
         v = "0.6.4-SNAPSHOT"
