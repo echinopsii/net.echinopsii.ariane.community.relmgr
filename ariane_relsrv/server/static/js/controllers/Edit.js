@@ -2,18 +2,19 @@
  * Created by stanrenia on 14/08/15.
  */
 angular.module('ArianeUI')
-    .controller('EditCtrl', function ($scope, serviceAjax) {
+    .controller('EditCtrl', function ($scope, serviceAjax, serviceUI) {
         $scope.selectedObj = {};
         var backupObj = {obj: "default", node:{}};
         $scope.enableEdit = false; // User can start to edit
         $scope.activeEdit = false; // User is editing
+        $scope.enableAddDelete = false;
         var editables = ['name', 'version', 'groupId', 'artifactId', 'order', 'git_repos'];
 
         $scope.$on('handleEdition', function(){
             if(!$scope.activeEdit) {
-                backupObj = serviceAjax.getSelectedObj();
+                backupObj = serviceUI.getSelectedObj();
                 if (backupObj != -1){
-                    var baseObj = serviceAjax.getBaseObj();
+                    var baseObj = serviceUI.getBaseObj();
                     $scope.selectedObj = JSON.parse(JSON.stringify(backupObj)); // copy JSON object
                     $scope.enableEdit = (baseObj.node.version.indexOf("SNAPSHOT") > -1);
                 }
@@ -22,12 +23,12 @@ angular.module('ArianeUI')
             }
             return $scope.enableEdit;
         });
-        /*
-        $scope.isEditEnable = function(){
+
+        $scope.$on('AddDeleteBase', function(){
             if(!$scope.activeEdit) {
-                backupObj = serviceAjax.getSelectedObj();
+                backupObj = serviceUI.getSelectedObj();
                 if (backupObj != -1){
-                    var baseObj = serviceAjax.getBaseObj();
+                    var baseObj = serviceUI.getBaseObj();
                     $scope.selectedObj = JSON.parse(JSON.stringify(backupObj)); // copy JSON object
                     $scope.enableEdit = (baseObj.node.version.indexOf("SNAPSHOT") > -1);
                 }
@@ -35,12 +36,12 @@ angular.module('ArianeUI')
                     $scope.enableEdit = false;
             }
             return $scope.enableEdit;
-        };*/
+        });
 
         $scope.setActiveEdit = function(){
             if($scope.enableEdit){
                 $scope.activeEdit = true;
-                serviceAjax.setState({obj: "selectedObj", status:"editing"});
+                serviceUI.setState({obj: "selectedObj", status:"editing"});
             }
         };
         $scope.isPropEditable = function(prop){
@@ -53,7 +54,7 @@ angular.module('ArianeUI')
                     updateJSON(backupObj.node, $scope.selectedObj.node);
                 }
                 $scope.activeEdit = false;
-                serviceAjax.setState({obj: backupObj.obj, status: "done"});
+                serviceUI.setState({obj: backupObj.obj, status: "done"});
             }
         };
 
@@ -61,10 +62,9 @@ angular.module('ArianeUI')
           if($scope.activeEdit){
               $scope.selectedObj = JSON.parse(JSON.stringify(backupObj));
               $scope.activeEdit = false;
-              serviceAjax.setState({obj: backupObj.obj, status: "done"});
+              serviceUI.setState({obj: backupObj.obj, status: "done"});
           }
         };
-
         function updateJSON(obj, model){
             for (var key in model){
                 if(typeof obj[key] != "undefined"){

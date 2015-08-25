@@ -7,17 +7,17 @@
 </head>
 <body ng-app="ArianeUI">
 <div class="mainBody">
-    <div class="colBase">
+    <div class="colBase" ng-controller="DisplayColBaseCtrl">
         <div class="colHeader">
-            <button class="btnPlusMin">+</button>
-            <button class="btnPlusMin">-</button>
+            <button class="btnPlusMin" ng-click="clickAddBase()" ng-disabled="enableAddDel">+</button>
+            <button class="btnPlusMin" ng-click="clickDeleteBase()" ng-disabled="enableAddDel">-</button>
         </div>
-        <div class="colBody" ng-controller="DisplayColBaseCtrl">
-            <div class="listRoot">Distributions <button class="btnExtend" ng-click="toggleDistList()">+/-</button></div>
+        <div class="colBody">
+            <div class="listRoot"><label ng-class="enableAddDel ? labelSelected : labelNotSelected" ng-click="clickDistRoot()">Distributions</label><button class="btnExtend" ng-click="toggleDistList()">+/-</button></div>
             <div class="DistList" ng-show="isDistToggle()">
             <ul ng-repeat="dist in dists">
                 {% raw %}
-                <li ng-class="dist.style=='selected' ? 'DistSelected' : 'DistNotSelected'" ng-click="clickDist(dist)"><label>{{ dist.version }}</label></li>
+                <li ng-class="dist.selected ? 'DistSelected' : 'DistNotSelected'" ng-click="clickDist(dist)"><label>{{ dist.version }}</label></li>
                 {% endraw %}
             </ul>
             </div>
@@ -27,7 +27,7 @@
                     {% raw %}
                     <li>{{ plugName.name }}<button class="btnExtend" ng-click="plugName.ShowHide()">+/-</button>
                         <ul ng-repeat="plugSet in pluginsDict.PluginSet" ng-show="plugName.show">
-                            <li ng-if="plugSet.name == plugName.name" ng-class="plugSet.style=='selected' ? 'PlugSelected' : 'PlugNotSelected'" ng-click="clickPlug(plugSet)">{{ plugSet.version }}</li>
+                            <li ng-if="plugSet.name == plugName.name" ng-class="plugSet.selected ? 'PlugSelected' : 'PlugNotSelected'" ng-click="clickPlug(plugSet)">{{ plugSet.version }}</li>
                         </ul>
                     </li>
                     {% endraw %}
@@ -42,28 +42,34 @@
             <button class="btnPlusMin" id="btnMinus">-</button>
         </div>
         <div class="colBody" ng-controller="DisplayColNodesCtrl">
-        <div class="listRoot">Modules <button class="btnExtend" ng-click="toggleModList()">+/-</button></div>
+        <div class="listRoot">Components <button class="btnExtend" ng-click="toggleModList()">+/-</button></div>
         <div class="ModList" ng-show="isModToggle()">
             <ul ng-repeat="module in modules">
                 {% raw %}
-                <li ng-class="module.style=='selected' ? 'ModSelected' : 'ModNotSelected'"><label ng-click="clickMod(module)">{{ module.name }}   :{{ module.order }}</label>
+                <li ng-class="module.selected ? 'ModSelected' : 'ModNotSelected'">
+                    <span>
+                        <label ng-click="clickMod(module)">{{ module.name }} {{module.version}}</label><span ng-if="module.order"> --:{{ module.order }}</span>
+                        <span></span>
+                    </span>
                 {% endraw %}
-                    <button class="btnExtend" ng-click="toggleModSub(module)">+/-</button>
+                    <!--<button class="btnExtend" ng-click="toggleModSub(module)">+/-</button>
                         <div class="ModSubList" ng-show="isModSubToggle(module)">
                             <ul ng-repeat="sub in module.sublist">
                                 {% raw %}
-                                <li ng-class="sub.style=='selected' ? 'SubSelected' : 'SubdNotSelected'" ng-click="clickSub(sub)">{{ sub.name }}</li>
+                                <li ng-class="sub.selected ? 'SubSelected' : 'SubdNotSelected'" ng-click="clickSub(sub)">{{ sub.name }}</li>
                                 {% endraw %}
                             </ul>
-                        </div>
+                        </div>-->
                 </li>
             </ul>
         </div>
-        <div class="listRoot">SubModules <button class="btnExtend" ng-click="toggleSubList()">+/-</button></div>
+            {% raw %}
+        <div class="listRoot">Modules <span ng-if="subSet.parent">({{subSet.parent.name}})</span><button class="btnExtend" ng-click="toggleSubList()">+/-</button></div>
+            {% endraw %}
         <div class="SubList" ng-show="isSubToggle()">
-            <ul ng-repeat="submodule in submodules">
+            <ul ng-repeat="submodule in subSet.modules">
                 {% raw %}
-                <li ng-class="submodule.style=='selected' ? 'SubSelected' : 'SubNotSelected'" ng-click="clickSub(submodule)">{{ submodule.name }}   :{{ submodule.order }}</li>
+                <li ng-class="submodule.selected ? 'SubSelected' : 'SubNotSelected'" ng-click="clickSub(submodule)">{{ submodule.name }}   :{{ submodule.order }}</li>
                 {% endraw %}
             </ul>
         </div>
@@ -71,7 +77,7 @@
             <div class="FileList" ng-show="isFileToggle()">
                 <ul ng-repeat="filenode in filenodes">
                     {% raw %}
-                    <li ng-class="filenode.style=='selected' ? 'FileSelected' : 'FileNotSelected'" ng-click="clickFile(filenode)">{{ filenode.name | limitDisplay : limitLetterNum }}</li>
+                    <li ng-class="filenode.selected ? 'FileSelected' : 'FileNotSelected'" ng-click="clickFile(filenode)">{{ filenode.name | limitDisplay : limitLetterNum }}</li>
                     {% endraw %}
                 </ul>
             </div>
@@ -100,12 +106,11 @@
 <script type="text/javascript" src="../static/js/lib/jquery-1.8.0.min.js"></script>
 <script type="text/javascript" src="../static/js/lib/angular.min.js"></script>
 <script type="text/javascript" src="../static/js/app.js"></script>
-<script type="text/javascript" src="../static/js/services/rest.js"></script>
+<script type="text/javascript" src="../static/js/services/ajax.js"></script>
+<script type="text/javascript" src="../static/js/services/ui.js"></script>
 <script type="text/javascript" src="../static/js/filters.js"></script>
 <script type="text/javascript" src="../static/js/controllers/DisplayColBase.js"></script>
 <script type="text/javascript" src="../static/js/controllers/DisplayColNodes.js"></script>
-<script type="text/javascript" src="../static/js/controllers/AddDelColBase.js"></script>
-<script type="text/javascript" src="../static/js/controllers/AddDelColNodes.js"></script>
 <script type="text/javascript" src="../static/js/controllers/Edit.js"></script>
 </body>
 </html>

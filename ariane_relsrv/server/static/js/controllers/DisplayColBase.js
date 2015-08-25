@@ -2,14 +2,16 @@
  * Created by stanrenia on 14/08/15.
  */
 angular.module('ArianeUI')
-    .controller('DisplayColBaseCtrl', function ($scope, serviceAjax) {
+    .controller('DisplayColBaseCtrl', function ($scope, serviceAjax, serviceUI) {
         $scope.dists = [];
         var plugins = [];
         $scope.pluginsDict = {Names: [], PluginSet: []};
         $scope.curBaseSelected = 0;
         $scope.togDist = true;
         $scope.togPlug = true;
-        serviceAjax.distrib('').success(function(data)
+        $scope.enableAddDel = false;
+        $scope.distRootSelected = false;
+        serviceAjax.distrib('').success(function(data) // Init: loading data (distributions ans plugins)
         {
             data.distribs.sort(sortVersion);
             $scope.dists = data.distribs;
@@ -38,7 +40,7 @@ angular.module('ArianeUI')
                                 "ShowHide": function(){
                                     this.show = !this.show;
                                 }});
-                            $scope.pluginsDict.PluginSet.push({"name": p.name, "version": p.version, "style": "none","plugin": p});
+                            $scope.pluginsDict.PluginSet.push({"name": p.name, "version": p.version, "selected": false,"plugin": p});
                         }
                         else{
                             var flagVersion = false;
@@ -50,7 +52,7 @@ angular.module('ArianeUI')
                                 }
                             }
                             if (!flagVersion){
-                                $scope.pluginsDict.PluginSet.push({"name": p.name, "version": p.version, "style": "none","plugin": p});
+                                $scope.pluginsDict.PluginSet.push({"name": p.name, "version": p.version, "selected": false,"plugin": p});
                             }
                         }
                     }
@@ -58,49 +60,64 @@ angular.module('ArianeUI')
                     $scope.pluginsDict.PluginSet.sort(sortVersion);
                 });
             }
-        });
+        }); // end init
 
         $scope.clickDist = function(dist){
-            var baseObj = serviceAjax.getBaseObj();
-            var curSelected = serviceAjax.getSelectedObj();
+            var curSelected = serviceUI.getSelectedObj();
             if (curSelected['node'] != dist) {
-                if (serviceAjax.setState({obj: "dist", status: "newBase"})) {
-                    if (typeof dist["style"] != "undefined")
-                        delete dist["style"];
-                    serviceAjax.setBaseObj({obj: 'dist', node: dist}); // Use of JSON.parse(JSON.stringify(obj)) to copy JSON object. This object must not contain any function.
-                    serviceAjax.setNodeObj({obj: "default", node: {}});
+                if (serviceUI.setState({obj: "dist", status: "newBase"})) {
+                    if (typeof dist["selected"] != "undefined")
+                        delete dist["selected"];
+                    serviceUI.setBaseObj({obj: 'dist', node: dist}); // Use of JSON.parse(JSON.stringify(obj)) to copy JSON object. This object must not contain any function.
+                    serviceUI.setNodeObj({obj: "default", node: {}});
                     if ($scope.curBaseSelected != 0)
-                        $scope.curBaseSelected["style"] = "none";
-                    dist["style"] = "selected";
+                        $scope.curBaseSelected["selected"] = false;
+                    dist["selected"] = true;
                     $scope.curBaseSelected = dist;
-                    serviceAjax.actionBroadcast();
-                    /*$scope.test = serviceAjax.getTest();
+                    serviceUI.actionBroadcast();
+                    /*$scope.test = serviceUI.getTest();
                     console.log('1:' + JSON.stringify($scope.test));
-                    console.log('1:' + JSON.stringify(serviceAjax.getTest()));
+                    console.log('1:' + JSON.stringify(serviceUI.getTest()));
                     $scope.test.j="hoho";
                     console.log('2:' + JSON.stringify($scope.test));
-                    console.log('2:' + JSON.stringify(serviceAjax.getTest()));
-                    serviceAjax.setTest("azea");
+                    console.log('2:' + JSON.stringify(serviceUI.getTest()));
+                    serviceUI.setTest("azea");
                     console.log('3:' + JSON.stringify($scope.test));
-                    console.log('3:' + JSON.stringify(serviceAjax.getTest()));*/
+                    console.log('3:' + JSON.stringify(serviceUI.getTest()));*/
                 }
             }
         };
         $scope.clickPlug = function(PluginSet){
-            var baseObj = serviceAjax.getBaseObj();
-            if  ((baseObj["obj"] != "plug")
-                ||((baseObj["obj"] == "plug") && (baseObj["node"] != PluginSet.plugin))) {
-                if (serviceAjax.setState({obj: "plug", status: "newBase"})) {
+            var curSelected = serviceUI.getSelectedObj();
+            if  (curSelected["node"] != PluginSet.plugin){
+                if (serviceUI.setState({obj: "plug", status: "newBase"})) {
                     if (typeof PluginSet.plugin["dist_version"] != "undefined")
                         delete PluginSet.plugin["dist_version"];
-                    serviceAjax.setBaseObj({obj: 'plug', node: PluginSet.plugin});
-                    serviceAjax.setNodeObj({obj: "default", node: {}});
+                    serviceUI.setBaseObj({obj: 'plug', node: PluginSet.plugin});
+                    serviceUI.setNodeObj({obj: "default", node: {}});
                     if ($scope.curBaseSelected != 0)
-                        $scope.curBaseSelected["style"] = "none";
-                    PluginSet["style"] = "selected";
+                        $scope.curBaseSelected["selected"] = false;
+                    PluginSet["selected"] = true;
                     $scope.curBaseSelected = PluginSet;
-                    serviceAjax.actionBroadcast();
+                    serviceUI.actionBroadcast();
                 }
+            }
+        };
+
+        $scope.clickAddBase = function(){
+            if($scope.enableAddDel){
+
+            }
+        };
+        $scope.clickDeleteBase = function(){
+            if($scope.enableAddDel){
+
+            }
+        };
+
+        $scope.clickDistRoot = function(){
+            if(serviceUI.state({obj: "label", status: "adddel"})){
+                $scope.enableAddDel = true;
             }
         };
 
