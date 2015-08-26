@@ -355,10 +355,16 @@ class RestSubModuleList(Resource):
                 par = ariane.submodule_parent_service.get_unique(args["parent"])
             if par is not None:
                 slist = ariane.submodule_service.get_all(par)
-                if not isinstance(par, ariane_delivery.SubModuleParent):
-                    slist.extend(ariane.submodule_parent_service.get_all(par))
-                s = [s.get_properties() for s in slist]
-                return make_response(json.dumps({"submodules": s}), 200, headers_json)
+                slist.extend(ariane.submodule_parent_service.get_all(par))
+                slist_ret = []
+                for s in slist:
+                    sp = s.get_properties()
+                    if isinstance(s, ariane_delivery.SubModuleParent):
+                        sp["issubparent"] = True
+                    else:
+                        sp["issubparent"] = False
+                    slist_ret.append(sp)
+                return make_response(json.dumps({"submodules": slist_ret}), 200, headers_json)
             abort_error("BAD_REQUEST", "Given parameter 'parent' {} does not match any Submodule's parent".format(
                         args["parent"]))
         abort_error("BAD_REQUEST", "Missing parameter 'parent'")

@@ -36,6 +36,7 @@ angular.module('ArianeUI')
                     data.submodules.sort(sortOrder);
                     $scope.subSet.parent = baseObj["node"];
                     $scope.subSet.modules = data.submodules;
+                    loadSubmodParent($scope.subSet.modules);
                     $scope.curNodeSelected["selected"] = false;
                     curBaseObj = baseObj["node"];
                 });
@@ -54,6 +55,22 @@ angular.module('ArianeUI')
                 $scope.filenodes = data.filenodes;
                 $scope.togFile = true;
             });
+        }
+        function loadSubmodParent(submodList){
+            var len = submodList.length;
+            for(var i=0; i<len; i++){
+                var m = submodList[i];
+                (function(mod){
+                    if(mod.issubparent){
+                        serviceAjax.submodule(mod).success(function(data){
+                            data.submodules.sort(sortOrder);
+                            mod.sublist = data.submodules;
+                            mod.togModSub = false;
+                            loadSubmodParent(mod.sublist);
+                        });
+                    }
+                })(m)
+            }
         }
 
         $scope.$on('newBaseSelected', function(){
@@ -93,6 +110,7 @@ angular.module('ArianeUI')
                             data.submodules.sort(sortOrder);
                             $scope.subSet.parent = module;
                             $scope.subSet.modules = data.submodules;
+                            loadSubmodParent($scope.subSet.modules);
                             $scope.togSub = true;
                         });
                     }

@@ -1,0 +1,10 @@
+{% raw %}
+<li ng-class="sub.selected ? 'SubSelected' : 'SubdNotSelected'" ng-click="clickSub(sub)">{{ sub.name }}
+    <button class="btnExtend" ng-if="sub.issubparent" ng-click="toggleModSub(sub)">+/-</button>
+    <div class="ModSubList" ng-if="sub.issubparent" ng-show="isModSubToggle(sub)">
+        <ul ng-repeat="sub in sub.sublist">
+            <ar-subparent></ar-subparent>
+        </ul>
+    </div>
+</li>
+{% endraw %}

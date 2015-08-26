@@ -69,7 +69,17 @@
         <div class="SubList" ng-show="isSubToggle()">
             <ul ng-repeat="submodule in subSet.modules">
                 {% raw %}
-                <li ng-class="submodule.selected ? 'SubSelected' : 'SubNotSelected'" ng-click="clickSub(submodule)">{{ submodule.name }}   :{{ submodule.order }}</li>
+                <li>
+                    <span>
+                        <label ng-class="submodule.selected ? 'SubSelected' : 'SubNotSelected'" ng-click="clickSub(submodule)">{{ submodule.name }}   :{{ submodule.order }}</label>
+                        <button class="btnExtend" ng-if="submodule.issubparent" ng-click="toggleModSub(submodule)">+/-</button>
+                    </span>
+                        <div class="ModSubList" ng-if="submodule.issubparent" ng-show="isModSubToggle(submodule)">
+                            <ul ng-repeat="sub in submodule.sublist">
+                                <div ng-include="'field_renderer.html'"></div>
+                            </ul>
+                        </div>
+                </li>
                 {% endraw %}
             </ul>
         </div>
@@ -112,5 +122,20 @@
 <script type="text/javascript" src="../static/js/controllers/DisplayColBase.js"></script>
 <script type="text/javascript" src="../static/js/controllers/DisplayColNodes.js"></script>
 <script type="text/javascript" src="../static/js/controllers/Edit.js"></script>
+<script type="text/ng-template" id="field_renderer.html">
+    {% raw %}
+    <li>
+        <span>
+            <label ng-class="sub.selected ? 'SubSelected' : 'SubdNotSelected'" ng-click="clickSub(sub)">{{ sub.name }}  :{{ sub.order }}</label>
+            <button class="btnExtend" ng-if="sub.issubparent" ng-click="toggleModSub(sub)">+/-</button>
+        </span>
+        <div class="ModSubList" ng-if="sub.issubparent" ng-show="isModSubToggle(sub)">
+            <ul ng-repeat="sub in sub.sublist">
+                <div ng-include="'field_renderer.html'"></div>
+            </ul>
+        </div>
+    </li>
+    {% endraw %}
+</script>
 </body>
 </html>
