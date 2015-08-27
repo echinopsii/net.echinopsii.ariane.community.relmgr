@@ -637,11 +637,13 @@ class SubModuleParentService(DeliveryTree):
 
     def get_parent(self, submod):
         grid = submod.groupId
-        i = grid.rfinf('.')
+        i = str(grid).rfind('.')
         parent_name = grid[i+1:]
-        parent = DeliveryTree.module_service.get_unique({"name": parent_name})
+        parent = DeliveryTree.module_service.get_unique({"name": parent_name, "version": submod.version})
         if parent is None:
-            parent = DeliveryTree.plugin_service.get_unique({"name": parent_name})
+            parent = DeliveryTree.plugin_service.get_unique({"name": parent_name, "version": submod.version})
+            if parent is None:
+                parent = DeliveryTree.submodule_parent_service.get_unique({"artifactId": submod.artifactId, "version": submod.version})
         return parent
 
     def _create_ariane_node(self, node):
@@ -1388,9 +1390,12 @@ class SubModuleParent(ArianeNode):
             submod.id = nid
 
     def set_groupid_artifact(self, mod_plug):
-        # Handle SubmoduleParent->SubmoduleParent
-        self.groupId = '' + self.pom_attr + mod_plug.get_directory_name()
-        self.artifactId = self.groupId + '.' + self.name
+        if (isinstance(mod_plug, Module) or isinstance(mod_plug, Plugin)):
+            self.groupId = '' + self.pom_attr + mod_plug.get_directory_name()
+            self.artifactId = self.groupId + '.' + self.name
+        elif isinstance(mod_plug, SubModuleParent):  # Handling SubmoduleParent->SubmoduleParent
+            self.groupId = mod_plug.artifactId
+            self.artifactId = self.groupId + '.' + self.name
 
     def __repr__(self):
         out = "SubModuleParent( name = "+self.name+", version = "+self.version+", nID = "+str(self.id)+")"

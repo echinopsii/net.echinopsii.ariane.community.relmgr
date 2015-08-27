@@ -12,7 +12,20 @@ angular.module('ArianeUI')
             }
             return copy;
         }
+
         return {
+            createEmptyNode: function(type){
+                if(type == "distrib" || type == "plugin"){
+                    return {name: "", version: ""};
+                }
+                else if(type == "module"){
+                    return {name: "", version: "", git_repos: "", type: "", order: "", nID: 0};
+                }
+                else if(type == "submodule")
+                    return {name: "", version: "", groupId: "", artifactId: "", order: ""};
+                else if(type == "filenode")
+                    return {name: "", version: "", type: ""};
+            },
             distrib: function(version){
                 if (version == "")
                     return $http.get("http://localhost:5000/rest/distrib");
@@ -42,12 +55,6 @@ angular.module('ArianeUI')
                 }
             },
             save: function(element, type){
-                if(type == 'dist')
-                    type = 'distrib';
-                if(type == 'file')
-                    type = 'filenode';
-                if(type == 'plug')
-                    type = 'plugin';
                 var c_element = cleanElementAttr(element);
                 var data = {};
                 data[type] = JSON.stringify(c_element);
@@ -55,6 +62,23 @@ angular.module('ArianeUI')
                 var res = $http.post("http://localhost:5000/rest/"+type, data);
                 return true;
                 // Handle res
+            },
+            create: function(element, type, parent){
+                var c_element = cleanElementAttr(element);
+                var data = {};
+                for (var key in c_element){
+                    data[key] = c_element[key];
+                }
+                if(type == "submodule" || type == "filenode"){
+                    if(typeof element.issubparent != "undefined") { data["isSubModuleParent"] = element.issubparent ? 'yes' : 'no';}
+                    var c_parent = cleanElementAttr(parent);
+                    data["parent"] = JSON.stringify(c_parent);
+                    return $http.post("http://localhost:5000/rest/"+type, data);
+                }
+                else{
+                    data["dist_version"] = parent.version;
+                    return $http.post("http://localhost:5000/rest/"+type, data);
+                }
             }
         };
     });

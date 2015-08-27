@@ -1,9 +1,12 @@
 {% raw %}
-<li ng-class="sub.selected ? 'SubSelected' : 'SubdNotSelected'" ng-click="clickSub(sub)">{{ sub.name }}
-    <button class="btnExtend" ng-if="sub.issubparent" ng-click="toggleModSub(sub)">+/-</button>
+<li>
+        <span>
+            <label ng-class="sub.selected ? 'SubSelected' : 'SubdNotSelected'" ng-click="clickSub(sub)">{{ sub.name }} ({{ sub.order }})</label>
+            <button class="btnExtend" ng-if="sub.issubparent" ng-click="toggleModSub(sub)">+/-</button>
+        </span>
     <div class="ModSubList" ng-if="sub.issubparent" ng-show="isModSubToggle(sub)">
         <ul ng-repeat="sub in sub.sublist">
-            <ar-subparent></ar-subparent>
+            <div ng-include="'field_renderer.html'"></div>
         </ul>
     </div>
 </li>

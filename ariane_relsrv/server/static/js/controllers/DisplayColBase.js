@@ -65,10 +65,10 @@ angular.module('ArianeUI')
         $scope.clickDist = function(dist){
             var curSelected = serviceUI.getSelectedObj();
             if (curSelected['node'] != dist) {
-                if (serviceUI.setState({obj: "dist", status: "newBase"})) {
+                if (serviceUI.setState({obj: "distrib", status: "newBase"})) {
                     if (typeof dist["selected"] != "undefined")
                         delete dist["selected"];
-                    serviceUI.setBaseObj({obj: 'dist', node: dist}); // Use of JSON.parse(JSON.stringify(obj)) to copy JSON object. This object must not contain any function.
+                    serviceUI.setBaseObj({obj: 'distrib', node: dist}); // Use of JSON.parse(JSON.stringify(obj)) to copy JSON object. This object must not contain any function.
                     serviceUI.setNodeObj({obj: "default", node: {}});
                     if ($scope.curBaseSelected != 0)
                         $scope.curBaseSelected["selected"] = false;
@@ -90,10 +90,10 @@ angular.module('ArianeUI')
         $scope.clickPlug = function(PluginSet){
             var curSelected = serviceUI.getSelectedObj();
             if  (curSelected["node"] != PluginSet.plugin){
-                if (serviceUI.setState({obj: "plug", status: "newBase"})) {
+                if (serviceUI.setState({obj: "plugin", status: "newBase"})) {
                     if (typeof PluginSet.plugin["dist_version"] != "undefined")
                         delete PluginSet.plugin["dist_version"];
-                    serviceUI.setBaseObj({obj: 'plug', node: PluginSet.plugin});
+                    serviceUI.setBaseObj({obj: 'plugin', node: PluginSet.plugin});
                     serviceUI.setNodeObj({obj: "default", node: {}});
                     if ($scope.curBaseSelected != 0)
                         $scope.curBaseSelected["selected"] = false;
@@ -116,7 +116,7 @@ angular.module('ArianeUI')
         };
 
         $scope.clickDistRoot = function(){
-            if(serviceUI.state({obj: "label", status: "adddel"})){
+            if(serviceUI.state({obj: "distrib", status: "adddel"})){
                 $scope.enableAddDel = true;
             }
         };

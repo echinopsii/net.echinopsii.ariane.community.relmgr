@@ -7,6 +7,7 @@ angular.module('ArianeUI')
         var baseObj = {obj:"default", node:{}};
         var nodeObj = {obj:"default", node:{}};
         var addDelObj = {obj: "default", node: {}};
+        var enableEdit = false;
         // var loup = {j:"lol"}; // for test:
         return {
             getState: function(){
@@ -17,6 +18,9 @@ angular.module('ArianeUI')
             },
             getNodeObj: function(){
                 return nodeObj;
+            },
+            getEnableEdit: function(){
+                return enableEdit;
             },
             getAddDelObj: function(){
                 return addDelObj;
@@ -40,25 +44,37 @@ angular.module('ArianeUI')
             setNodeObj: function(newnodeobj){
                 nodeObj = newnodeobj;
             },
+            setEnableEdit: function(enableFlag){
+                enableEdit = enableFlag;
+            },
             setAddDelObj: function (newAddDelObj) {
                 addDelObj = newAddDelObj;
             },
-            actionBroadcast: function(){
-                if(state.status.indexOf("new") > -1){
-                    if(state.status == 'newBase')
-                        $rootScope.$broadcast('newBaseSelected');
-                    $rootScope.$broadcast('handleEdition');
+            actionBroadcast: function(optionalEvent){
+                if (typeof optionalEvent === 'undefined') { optionalEvent = 'default'; }
+                if(optionalEvent == "default"){
+                    if(state.status.indexOf("new") > -1){
+                        if(state.status == 'newBase')
+                            $rootScope.$broadcast('newBaseSelected');
+                        $rootScope.$broadcast('handleEdition');
+                    }
+                    else if(state.status == "addDel"){
+                        $rootScope.$broadcast('addDelEdit');
+                    }
+                    //else if(state.status == "newMod") ... eventually to handle each element with its own things
+                    else{
+                        state.obj = "default";
+                        state.status = "default";
+                    }
                 }
-                //else if(state.status == "newMod") ... eventually to handle each element with its own things
                 else{
-                    state.obj = "default";
-                    state.status = "default";
+                    $rootScope.$broadcast(optionalEvent);
                 }
             },
             getSelectedObj: function(){
-                if (((state.obj == "dist") || (state.obj == "plug")) && (baseObj.obj == state.obj))
+                if (((state.obj == "distrib") || (state.obj == "plugin")) && (baseObj.obj == state.obj))
                     return baseObj;
-                if(((state.obj == "module") || (state.obj == "submodule") || (state.obj == "file")) && (nodeObj.obj == state.obj))
+                if(((state.obj == "module") || (state.obj == "submodule") || (state.obj == "filenode")) && (nodeObj.obj == state.obj))
                     return nodeObj;
                 return -1;
             }

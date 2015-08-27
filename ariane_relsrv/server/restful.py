@@ -417,17 +417,16 @@ class RestSubModuleList(Resource):
                     abort_error("BAD_REQUEST", "Given Submodule named '{}' already exists in parent '{}'".format(
                                 args["name"], args["parent"]))
             if str(args["isSubModuleParent"]).lower() == "yes":
-                sub = ariane_delivery.SubModuleParent(args["name"], par.version)
-                if not isinstance(par, ariane_delivery.SubModuleParent):
-                    sub.set_groupid_artifact(par)
-                    # Handle SubModuleParent->SubModuleParent
+                sub = ariane_delivery.SubModuleParent(args["name"], par.version, order=args["order"])
+                sub.set_groupid_artifact(par)
             else:
-                sub = ariane_delivery.SubModule(args["name"], par.version)
+                sub = ariane_delivery.SubModule(args["name"], par.version, order=args["order"])
                 if not isinstance(par, ariane_delivery.SubModuleParent):
                     sub.set_groupid_artifact(par)
                 else:
                     parpar = ariane.submodule_parent_service.get_parent(par)
                     sub.set_groupid_artifact(parpar, par)
+            sub.save()
             par.add_submodule(sub)
 
             return make_response(json.dumps({"submodule": sub.get_properties()}), 201, headers_json)

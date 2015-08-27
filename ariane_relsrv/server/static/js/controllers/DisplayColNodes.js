@@ -6,11 +6,13 @@ angular.module('ArianeUI')
         $scope.modules = [];
         $scope.subSet = {parent: {}, modules: []};
         $scope.filenodes = [];
+        $scope.isPlugin = false;
         $scope.curNodeSelected = 0;
         $scope.togMod = true;
         $scope.togSub = true;
         $scope.togFile = true;
         $scope.limitLetterNum = 60;
+        $scope.enableEdit = false; // User can start to edit
         var updatedData = false; // flag set when data have been updated
         var tmp_modules = [];
         var tmp_subSet = {parent: {}, modules: []};
@@ -29,6 +31,7 @@ angular.module('ArianeUI')
             $scope.subSet = {parent: {}, modules: []};
             $scope.togSub = false;
             $scope.curNodeSelected["selected"] = false;
+            $scope.isPlugin = false;
         }
         function PlugSelected(baseObj){
             if(updatedData || baseObj["node"] != curBaseObj){
@@ -48,6 +51,7 @@ angular.module('ArianeUI')
             $scope.togSub = true;
             $scope.togMod = true;
             $scope.curNodeSelected["selected"] = false;
+            $scope.isPlugin = true;
         }
         function loadFiles(node){
             serviceAjax.file(node).success(function (data) {
@@ -76,10 +80,10 @@ angular.module('ArianeUI')
         $scope.$on('newBaseSelected', function(){
             var flag_curBase = true;
             var baseObj = serviceUI.getBaseObj();
-            if (baseObj["obj"] == "dist") {
+            if (baseObj["obj"] == "distrib") {
                 DistSelected(baseObj);
             }
-            else if (baseObj["obj"] == "plug") {
+            else if (baseObj["obj"] == "plugin") {
                 PlugSelected(baseObj);
             }
             else {
@@ -88,6 +92,10 @@ angular.module('ArianeUI')
             if (flag_curBase) {
                 loadFiles(baseObj["node"]);
             }
+        });
+
+        $scope.$on('setEnableEdit', function(){
+            $scope.enableEdit = serviceUI.getEnableEdit();
         });
 
         $scope.clickMod = function(module){
@@ -138,12 +146,12 @@ angular.module('ArianeUI')
         };
         $scope.clickFile = function(file){
             var nodeObj = serviceUI.getNodeObj();
-            if((nodeObj["obj"] != "file")
-                ||((nodeObj["obj"] == "file") && (nodeObj["node"] != file))){
-                if(serviceUI.setState({obj: "file", status: "new"})) {
+            if((nodeObj["obj"] != "filenode")
+                ||((nodeObj["obj"] == "filenode") && (nodeObj["node"] != file))){
+                if(serviceUI.setState({obj: "filenode", status: "new"})) {
                     if (typeof file.selected != "undefined")
                         delete file.selected;
-                    serviceUI.setNodeObj({obj: 'file', node: file});
+                    serviceUI.setNodeObj({obj: 'filenode', node: file});
                     if ($scope.curNodeSelected != 0)
                         $scope.curNodeSelected["selected"] = false;
                     file.selected = true;
@@ -151,6 +159,21 @@ angular.module('ArianeUI')
                     serviceUI.actionBroadcast();
                 }
             }
+        };
+
+        $scope.addElement = function(type){
+            var element = serviceAjax.createEmptyNode(type);
+            if(type == 'module')
+                var parent = serviceUI.getBaseObj();
+            else
+                var parent = serviceUI.getSelectedObj();
+            if(serviceUI.setState({obj: type, status: 'addDel'})){
+                serviceUI.setAddDelObj({obj: type, node: element, parent: JSON.parse(JSON.stringify(parent.node))});
+                serviceUI.actionBroadcast();
+            }
+        };
+        $scope.delElement = function(element){
+
         };
         $scope.toggleModList = function(){
             $scope.togMod = !$scope.togMod;
@@ -176,6 +199,7 @@ angular.module('ArianeUI')
         $scope.isFileToggle = function(){
             return $scope.togFile;
         };
+
         function sortOrder(a,b){
             return a.order - b.order;
         }
