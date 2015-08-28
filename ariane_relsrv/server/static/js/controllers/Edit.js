@@ -5,8 +5,8 @@ angular.module('ArianeUI')
     .controller('EditCtrl', function ($scope, serviceAjax, serviceUI) {
         $scope.selectedObj = {};
         var backupObj = {obj: "default", node:{}};
-        $scope.enableEdit = false; // User can start to edit
-        $scope.activeEdit = false; // User is editing
+        $scope.enableEdit = false; // User can start to edit (only SNAPSHOT versions are editable)
+        $scope.activeEdit = false; // User is editing (after changing input property or after click on Add/Delete)
         $scope.isDeleting = false;
         $scope.isNewNode = false;
         $scope.choice = {isNewSubParent: "no", deleting: "no"};
@@ -27,7 +27,7 @@ angular.module('ArianeUI')
                 if (backupObj != -1){
                     var baseObj = serviceUI.getBaseObj();
                     $scope.selectedObj = JSON.parse(JSON.stringify(backupObj)); // copy JSON object
-                    $scope.enableEdit = (baseObj.node.version.indexOf("SNAPSHOT") > -1);
+                    $scope.enableEdit = serviceUI.checkEditable();
                     $scope.isNewNode = false;
                     $scope.isDeleting = false;
                     $scope.parent = {};
@@ -36,8 +36,7 @@ angular.module('ArianeUI')
                     $scope.enableEdit = false;
 
                 if(old_enableEdit != $scope.enableEdit)
-                    serviceUI.setEnableEdit($scope.enableEdit);
-                    serviceUI.actionBroadcast('setEnableEdit'); // talks to Composition Column
+                    setScopeAndNotify('enableEdit', $scope.enableEdit);
             }
 
             return $scope.enableEdit;
@@ -65,8 +64,8 @@ angular.module('ArianeUI')
 
         $scope.setActiveEdit = function(){
             if($scope.enableEdit){
-                $scope.activeEdit = true;
                 serviceUI.setState({obj: "selectedObj", status:"editing"});
+                setScopeAndNotify('activeEdit', true);
             }
         };
         $scope.isPropEditable = function(prop){
@@ -80,7 +79,7 @@ angular.module('ArianeUI')
 
         $scope.save = function(){
             if($scope.activeEdit){
-                if($scope.isNewNode){
+                if($scope.isNewNode){ // CREATING
                     if($scope.selectedObj.obj == "submodule"){
                             $scope.selectedObj.node.issubparent = ($scope.choice.isNewSubParent=="yes");
                     }
@@ -92,7 +91,7 @@ angular.module('ArianeUI')
                     });
                     $scope.isNewNode = false;
                 }
-                else if($scope.isDeleting){
+                else if($scope.isDeleting){ // DELETING
                     if($scope.choice.deleting == "yes"){
                         serviceAjax.delete($scope.selectedObj.node).success(function(data){
                             backupObj.node = {};
@@ -103,22 +102,22 @@ angular.module('ArianeUI')
                     }
                     $scope.isDeleting = false;
                 }
-                else{
+                else{ // UPDATING
                     var res = serviceAjax.save($scope.selectedObj.node, $scope.selectedObj.obj);
                     if(res){
                         updateJSON(backupObj.node, $scope.selectedObj.node);
                     }
                 }
-                $scope.activeEdit = false;
                 serviceUI.setState({obj: backupObj.obj, status: "done"});
+                setScopeAndNotify('activeEdit', false);
             }
         };
 
         $scope.cancel = function(){
           if($scope.activeEdit){
               $scope.selectedObj = JSON.parse(JSON.stringify(backupObj));
-              $scope.activeEdit = false;
               serviceUI.setState({obj: backupObj.obj, status: "done"});
+              setScopeAndNotify('activeEdit', false);
           }
         };
         function updateJSON(obj, model){
@@ -127,5 +126,16 @@ angular.module('ArianeUI')
                     obj[key] = model[key];
                 }
             }
+        }
+        function setScopeAndNotify(key_scope, value){
+            $scope[key_scope] = value;
+
+            if(key_scope == "enableEdit"){
+                serviceUI.setEnableEdit(value);
+            }
+            else if(key_scope == "activeEdit")
+                serviceUI.setActiveEdit(value);
+            else { return; }
+            serviceUI.actionBroadcast(key_scope);
         }
     });

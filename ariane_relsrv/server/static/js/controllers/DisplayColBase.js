@@ -9,8 +9,8 @@ angular.module('ArianeUI')
         $scope.curBaseSelected = 0;
         $scope.togDist = true;
         $scope.togPlug = true;
+        $scope.activeEdit = false;
         $scope.enableAddDel = false;
-        $scope.distRootSelected = false;
         serviceAjax.distrib('').success(function(data) // Init: loading data (distributions ans plugins)
         {
             data.distribs.sort(sortVersion);
@@ -70,6 +70,7 @@ angular.module('ArianeUI')
                         delete dist["selected"];
                     serviceUI.setBaseObj({obj: dist.node_type, node: dist}); // Use of JSON.parse(JSON.stringify(obj)) to copy JSON object. This object must not contain any function.
                     serviceUI.setNodeObj({obj: "default", node: {}});
+                    $scope.enableAddDel = serviceUI.checkEditable();
                     if ($scope.curBaseSelected != 0)
                         $scope.curBaseSelected["selected"] = false;
                     dist["selected"] = true;
@@ -96,6 +97,7 @@ angular.module('ArianeUI')
                         delete PluginSet.plugin["dist_version"];
                     serviceUI.setBaseObj({obj: node_type, node: PluginSet.plugin});
                     serviceUI.setNodeObj({obj: "default", node: {}});
+                    $scope.enableAddDel = false;
                     if ($scope.curBaseSelected != 0)
                         $scope.curBaseSelected["selected"] = false;
                     PluginSet["selected"] = true;
@@ -104,17 +106,23 @@ angular.module('ArianeUI')
                 }
             }
         };
-
-        $scope.clickAddBase = function(){
-            if($scope.enableAddDel){
-
+        $scope.addElement = function(type){ // type: node type to add into database
+            if(serviceUI.setState({obj: type, status: 'addEdit'})){
+                var element = serviceAjax.createEmptyNode(type);
+                var parent = {obj: "", node: {}};
+                if(type == 'plugin')
+                    parent = serviceUI.getBaseObj();
+                else {
+                    // adding new distribution
+                }
+                serviceUI.setAddDelObj({obj: type, node: element, parent: JSON.parse(JSON.stringify(parent.node))});
+                serviceUI.actionBroadcast();
             }
         };
-        $scope.clickDeleteBase = function(){
-            if($scope.enableAddDel){
 
-            }
-        };
+        $scope.$on('activeEdit', function (){
+            $scope.activeEdit = serviceUI.getActiveEdit();
+        });
 
         $scope.clickDistRoot = function(){
         };

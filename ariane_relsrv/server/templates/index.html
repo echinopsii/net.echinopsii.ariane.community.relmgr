@@ -10,7 +10,7 @@
     <!-- ****************************************************** COLUMN DISTRIBUTION ****************************************************** -->
     <div class="colBase" ng-controller="DisplayColBaseCtrl">
         <div class="colHeader">
-            <span>Distribution <button class="btnRelease" ng-click="clickRelease()" ng-disabled="enableAddDel">Release</button></span>
+            <span>Distribution <button class="btnRelease" ng-disabled="activeEdit" ng-click="clickRelease()">Release</button></span>
         </div>
         <div class="colBody">
             <span class="listRoot"><label ng-class="enableAddDel ? labelSelected : labelNotSelected" ng-click="clickDistRoot()">Distributions</label><button class="btnExtend" ng-click="toggleDistList()">+/-</button></span>
@@ -22,7 +22,9 @@
             </ul>
             </div>
             <hr class="separateur">
-            <div class="listRoot">Plugins <button class="btnExtend" ng-click="togglePlugList()">+/-</button></div>
+            <div class="listRoot">Plugins <button class="btnExtend" ng-click="togglePlugList()">+/-</button>
+                <button ng-disabled="!enableAddDel || activeEdit" ng-click="addElement('plugin')">Add</button>
+            </div>
             <div class="PlugList" ng-show="isPlugToggle()">
                 <ul ng-repeat="plugName in pluginsDict.Names">
                     {% raw %}
@@ -44,7 +46,7 @@
         <div class="colBody" ng-controller="DisplayColNodesCtrl">
         <span class="listRoot">Components <!-- ****************** Components ****************** -->
             <button class="btnExtend" ng-click="toggleModList()">+/-</button>
-            <button class="btnAddDel" ng-if="!isPlugin" ng-disabled="!enableEdit" ng-click="addElement('module')">Add</button>
+            <button class="btnAddDel" ng-if="!isPlugin" ng-disabled="!enableEdit || activeEdit" ng-click="addElement('module')">Add</button>
         </span>
         <div class="ModList" ng-show="isModToggle()">
             <ul ng-repeat="module in modules">
@@ -54,7 +56,7 @@
                         <label ng-click="clickMod(module)">{{ module.name }} {{module.version}}</label><span ng-if="module.order"> ({{ module.order }})</span>
                         <span ng-if="module.selected && enableEdit">
                             <!--<button class="btnAddDel" ng-click="addElement('submodule')">Add</button>-->
-                            <button class="btnAddDel" ng-click="delElement(module)">Delete</button>
+                            <button class="btnAddDel" ng-disabled="activeEdit" ng-click="delElement(module)">Delete</button>
                         </span>
                     </span>
                 {% endraw %}
@@ -66,7 +68,7 @@
         <div class="listRoot">Modules
             (<span ng-if="subSet.parent">{{subSet.parent.name}}</span>)
             <button class="btnExtend" ng-click="toggleSubList()">+/-</button>
-            <button class="btnAddDel" ng-if="subSet.parent && enableEdit" ng-click="addElement('submodule')">Add</button>
+            <button class="btnAddDel" ng-if="subSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('submodule')">Add</button>
         </div>
             {% endraw %}
         <div class="SubList" ng-show="isSubToggle()">
@@ -77,9 +79,9 @@
                         <label ng-class="submodule.selected ? 'SubSelected' : 'SubNotSelected'" ng-click="clickSub(submodule)">{{ submodule.name }} ({{ submodule.order }})</label>
                         <button class="btnExtend" ng-if="submodule.issubparent" ng-click="toggleModSub(submodule)">+/-</button>
                         <span ng-if="submodule.issubparent && submodule.selected && enableEdit">
-                            <button class="btnAddDel" ng-click="addElement('submodule')">Add</button>
+                            <button class="btnAddDel" ng-disabled="activeEdit" ng-click="addElement('submodule')">Add</button>
                         </span>
-                        <button class="btnAddDel" ng-if="submodule.selected" ng-click="delElement(submodule)">Delete</button>
+                        <button class="btnAddDel" ng-if="submodule.selected" ng-disabled="activeEdit" ng-click="delElement(submodule)">Delete</button>
                     </span>
                         <div class="ModSubList" ng-if="submodule.issubparent" ng-show="isModSubToggle(submodule)">
                             <ul ng-repeat="sub in submodule.sublist" ng-include="'field_renderer.html'">
@@ -95,13 +97,13 @@
             (<span ng-if="fileSet.parent">{{fileSet.parent.name}}</span>)
             {% endraw %}
             <button class="btnExtend" ng-disabled="0" ng-click="toggleFileList()">+/-</button>
-            <button class="btnAddDel" ng-if="fileSet.parent" ng-disabled="!fileSet.parent" ng-click="addElement('filenode')">Add</button>
+            <button class="btnAddDel" ng-if="fileSet.parent" ng-disabled="!fileSet.parent || activeEdit" ng-click="addElement('filenode')">Add</button>
         </div>
         <div class="FileList" ng-show="isFileToggle()">
             <ul ng-repeat="filenode in fileSet.filenodes">
             {% raw %}
                 <li ng-class="filenode.selected ? 'FileSelected' : 'FileNotSelected'" ng-click="clickFile(filenode)">{{ filenode.name | limitDisplay : limitLetterNum }}
-                    <button class="btnAddDel" ng-if="filenode.selected" ng-disabled="0" ng-click="delElement(filenode)">Delete</button>
+                    <button class="btnAddDel" ng-if="filenode.selected" ng-disabled="activeEdit" ng-click="delElement(filenode)">Delete</button>
                 </li>
             {% endraw %}
             </ul>
@@ -155,8 +157,8 @@
         <span>
             <label ng-class="sub.selected ? 'SubSelected' : 'SubdNotSelected'" ng-click="clickSub(sub)">{{ sub.name }} ({{ sub.order }})</label>
             <button class="btnExtend" ng-if="sub.issubparent" ng-click="toggleModSub(sub)">+/-</button>
-            <span ng-if="sub.issubparent && sub.selected && enableEdit"><button class="btnAddDel" ng-click="addElement('submodule')">Add</button></span>
-            <button class="btnAddDel" ng-if="sub.selected" ng-click="delElement(sub)">Delete</button>
+            <span ng-if="sub.issubparent && sub.selected && enableEdit"><button class="btnAddDel" ng-disabled="activeEdit" ng-click="addElement('submodule')">Add</button></span>
+            <button class="btnAddDel" ng-if="sub.selected" ng-disabled="activeEdit" ng-click="delElement(sub)">Delete</button>
         </span>
         <div class="ModSubList" ng-if="sub.issubparent" ng-show="isModSubToggle(sub)">
             <ul ng-repeat="sub in sub.sublist">

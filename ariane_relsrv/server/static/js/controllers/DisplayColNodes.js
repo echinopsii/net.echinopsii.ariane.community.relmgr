@@ -13,13 +13,12 @@ angular.module('ArianeUI')
         $scope.togFile = true;
         $scope.limitLetterNum = 60;
         $scope.enableEdit = false; // User can start to edit
-        var updatedData = false; // flag set when data have been updated
-        var tmp_modules = [];
+        $scope.activeEdit = false;
         var tmp_subSet = {parent: {}, modules: []};
         var curBaseObj = {};
 
         function DistSelected(baseObj){
-            if(updatedData || baseObj["node"] != curBaseObj ){
+            if(baseObj["node"] != curBaseObj ){
                 serviceAjax.module(baseObj["node"]).success(function(data){
                     data.modules.sort(sortOrder);
                     $scope.modules = data.modules;
@@ -34,7 +33,7 @@ angular.module('ArianeUI')
             $scope.isPlugin = false;
         }
         function PlugSelected(baseObj){
-            if(updatedData || baseObj["node"] != curBaseObj){
+            if(baseObj["node"] != curBaseObj){
                 serviceAjax.submodule(baseObj["node"]).success(function(data){
                     data.submodules.sort(sortOrder);
                     $scope.subSet.parent = baseObj["node"];
@@ -97,8 +96,11 @@ angular.module('ArianeUI')
             }
         });
 
-        $scope.$on('setEnableEdit', function(){
+        $scope.$on('enableEdit', function(){
             $scope.enableEdit = serviceUI.getEnableEdit();
+        });
+        $scope.$on('activeEdit', function (){
+            $scope.activeEdit = serviceUI.getActiveEdit();
         });
         $scope.$on('deleteNode', function(){
             var delObj = serviceUI.getAddDelObj();
@@ -189,18 +191,18 @@ angular.module('ArianeUI')
         };
 
         $scope.addElement = function(type){ // type: node type to add into database
-            var element = serviceAjax.createEmptyNode(type);
-            var parent = {obj: "", node: {}};
-            if(type == 'module')
-                parent = serviceUI.getBaseObj();
-            else if (type == 'submodule')
-            {
-                parent.node = $scope.subSet.parent;
-                parent.obj = type;
-            }
-            else if (type == 'filenode')
-                parent = serviceUI.getSelectedObj();
             if(serviceUI.setState({obj: type, status: 'addEdit'})){
+                var element = serviceAjax.createEmptyNode(type);
+                var parent = {obj: "", node: {}};
+                if(type == 'module')
+                    parent = serviceUI.getBaseObj();
+                else if (type == 'submodule')
+                {
+                    parent.node = $scope.subSet.parent;
+                    parent.obj = type;
+                }
+                else if (type == 'filenode')
+                    parent = serviceUI.getSelectedObj();
                 serviceUI.setAddDelObj({obj: type, node: element, parent: JSON.parse(JSON.stringify(parent.node))});
                 serviceUI.actionBroadcast();
             }
