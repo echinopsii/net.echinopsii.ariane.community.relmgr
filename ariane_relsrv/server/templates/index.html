@@ -30,7 +30,9 @@
                     {% raw %}
                     <li>{{ plugName.name }}<button class="btnExtend" ng-click="plugName.ShowHide()">+/-</button>
                         <ul ng-repeat="plugSet in pluginsDict.PluginSet" ng-show="plugName.show">
-                            <li ng-if="plugSet.name == plugName.name" ng-class="plugSet.selected ? 'PlugSelected' : 'PlugNotSelected'" ng-click="clickPlug(plugSet)">{{ plugSet.version }}</li>
+                            <li ng-class="plugSet.selected ? 'PlugSelected' : 'PlugNotSelected'" ng-if="plugSet.name == plugName.name" ng-click="clickPlug(plugSet)">
+                                {{ plugSet.version }} <!--Plugin Delete button-->
+                            </li>
                         </ul>
                     </li>
                     {% endraw %}
@@ -46,7 +48,7 @@
         <div class="colBody" ng-controller="DisplayColNodesCtrl">
         <span class="listRoot">Components <!-- ****************** Components ****************** -->
             <button class="btnExtend" ng-click="toggleModList()">+/-</button>
-            <button class="btnAddDel" ng-if="!isPlugin" ng-disabled="!enableEdit || activeEdit" ng-click="addElement('module')">Add</button>
+            <button class="btnAddDel" ng-if="!isPlugin && enableEdit" ng-disabled="activeEdit" ng-click="addElement('module')">Add</button>
         </span>
         <div class="ModList" ng-show="isModToggle()">
             <ul ng-repeat="module in modules">
@@ -97,7 +99,7 @@
             (<span ng-if="fileSet.parent">{{fileSet.parent.name}}</span>)
             {% endraw %}
             <button class="btnExtend" ng-disabled="0" ng-click="toggleFileList()">+/-</button>
-            <button class="btnAddDel" ng-if="fileSet.parent" ng-disabled="!fileSet.parent || activeEdit" ng-click="addElement('filenode')">Add</button>
+            <button class="btnAddDel" ng-if="fileSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('filenode')">Add</button>
         </div>
         <div class="FileList" ng-show="isFileToggle()">
             <ul ng-repeat="filenode in fileSet.filenodes">

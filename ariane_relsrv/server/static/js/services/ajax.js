@@ -3,7 +3,7 @@
  */
 angular.module('ArianeUI')
     .factory('serviceAjax', function serviceAjax($http, $rootScope) {
-        var nodeKeys = ['name', 'version', 'groupId', 'artifactId', 'order', 'git_repos','nID', 'type'];
+        var nodeKeys = ['name', 'version', 'groupId', 'artifactId', 'order', 'git_repos','nID', 'type', 'path'];
         function cleanElementAttr(element){
             var copy = JSON.parse(JSON.stringify(element));
             for(var key in element){
@@ -26,7 +26,7 @@ angular.module('ArianeUI')
                 else if(type == "submodule")
                     return {name: "", version: "", groupId: "", artifactId: "", order: "", node_type:"submodule", nID:0};
                 else if(type == "filenode")
-                    return {name: "", version: "", type: "", node_type:"filenode", nID:0};
+                    return {name: "", version: "", type: "", path: "",node_type:"filenode", nID:0};
             },
             distrib: function(version){
                 if (version == "")
@@ -71,8 +71,13 @@ angular.module('ArianeUI')
                 for (var key in c_element){
                     data[key] = c_element[key];
                 }
-                if(type == "submodule" || type == "filenode"){
+                if(type == "submodule"){
                     if(typeof element.issubparent != "undefined") { data["isSubModuleParent"] = element.issubparent ? 'yes' : 'no';}
+                    var c_parent = cleanElementAttr(parent);
+                    data["parent"] = JSON.stringify(c_parent);
+                    return $http.post("http://localhost:5000/rest/"+type, data);
+                }
+                else if(type == "filenode"){
                     var c_parent = cleanElementAttr(parent);
                     data["parent"] = JSON.stringify(c_parent);
                     return $http.post("http://localhost:5000/rest/"+type, data);

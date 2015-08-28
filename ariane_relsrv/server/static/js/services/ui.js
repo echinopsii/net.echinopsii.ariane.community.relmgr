@@ -7,6 +7,7 @@ angular.module('ArianeUI')
         var baseObj = {obj:"default", node:{}};
         var nodeObj = {obj:"default", node:{}};
         var addDelObj = {obj: "default", node: {}};
+        var selectedObj = {obj: "default", node: {}};
         var enableEdit = false;
         var activeEdit = false;
         // var loup = {j:"lol"}; // for test:
@@ -44,9 +45,12 @@ angular.module('ArianeUI')
             },
             setBaseObj: function(newbaseobj){
                 baseObj = newbaseobj;
+                selectedObj = baseObj;
             },
             setNodeObj: function(newnodeobj){
                 nodeObj = newnodeobj;
+                if(newnodeobj.obj != "default")
+                    selectedObj = nodeObj;
             },
             setEnableEdit: function(enableFlag){
                 enableEdit = enableFlag;
@@ -79,11 +83,10 @@ angular.module('ArianeUI')
                 }
             },
             getSelectedObj: function(){
-                if (((state.obj == "distrib") || (state.obj == "plugin")) && (baseObj.obj == state.obj))
-                    return baseObj;
-                if(((state.obj == "module") || (state.obj == "submodule") || (state.obj == "filenode")) && (nodeObj.obj == state.obj))
-                    return nodeObj;
-                return -1;
+                if (selectedObj.obj != "default")
+                    return selectedObj;
+                else
+                    return -1;
             },
             checkEditable: function(){
                 return(baseObj.node.version.indexOf("SNAPSHOT") > -1);

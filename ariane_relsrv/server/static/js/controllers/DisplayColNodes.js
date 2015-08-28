@@ -117,7 +117,7 @@ angular.module('ArianeUI')
         });
         $scope.$on('addNode', function(){
             var addObj = serviceUI.getAddDelObj();
-            if(addObj.obj == "module" || addObj.obj == "plugin")
+            if(addObj.obj == "module")
                 $scope.modules.push(addObj.node);
 
             else if(addObj.obj == "submodule")

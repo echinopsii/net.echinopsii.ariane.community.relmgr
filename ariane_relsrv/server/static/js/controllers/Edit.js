@@ -16,7 +16,7 @@ angular.module('ArianeUI')
             module: editables,
             plugin: ["name", "version"],
             submodule: ["name", "order"],
-            filenode: ["name", "version", "type"],
+            filenode: ["name", "version", "type", "path"],
             distrib: ["name", "version"]
         };
 

@@ -15,7 +15,9 @@ angular.module('ArianeUI')
         {
             data.distribs.sort(sortVersion);
             $scope.dists = data.distribs;
-
+            loadPlugins();
+        });
+        function loadPlugins(){
             var dlen = $scope.dists.length;
             for (var i=0; i < dlen; i++) {
                 var d = $scope.dists[i];
@@ -60,8 +62,7 @@ angular.module('ArianeUI')
                     $scope.pluginsDict.PluginSet.sort(sortVersion);
                 });
             }
-        }); // end init
-
+        }
         $scope.clickDist = function(dist){
             var curSelected = serviceUI.getSelectedObj();
             if (curSelected['node'] != dist) {
@@ -124,8 +125,17 @@ angular.module('ArianeUI')
             $scope.activeEdit = serviceUI.getActiveEdit();
         });
 
-        $scope.clickDistRoot = function(){
-        };
+        $scope.$on('deleteNode', function(){
+            var delObj = serviceUI.getAddDelObj();
+            if(delObj.obj == "plugin")
+                loadPlugins();
+            $scope.curNodeSelected = 0;
+        });
+        $scope.$on('addNode', function(){
+            var addObj = serviceUI.getAddDelObj();
+            if(addObj.obj == "plugin")
+                loadPlugins();
+        });
 
         $scope.toggleDistList = function(){
             $scope.togDist = !$scope.togDist;
