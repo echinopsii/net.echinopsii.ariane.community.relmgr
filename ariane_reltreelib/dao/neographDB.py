@@ -249,7 +249,11 @@ class NeoGraph(object):
         for record in listrecord:
             list_found.append(record.n)
         if len(list_found) == 0:
-            return None
+            other_try = self.get_by_nid(args["nID"])
+            if other_try is not None:
+                list_found.append(other_try)
+            else:
+                return None
         return list_found
 
     def get_unique(self, args):

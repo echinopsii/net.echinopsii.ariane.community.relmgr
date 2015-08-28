@@ -85,7 +85,7 @@ class RestFileNode(Resource):
     def get(self, unique_key):
         f = self.__get_file(unique_key)
         if f is not None:
-            return make_response(json.dumps({"filenode": f.get_properties()}), 200, headers_json)
+            return make_response(json.dumps({"filenode": f.get_properties(gettype=True)}), 200, headers_json)
         else:
             abort_error("NOT_FOUND", "Error, Wrong URL")
 
@@ -116,7 +116,7 @@ class RestFileNodeList(Resource):
             parent = ariane.find_without_label(parent)
             if issubclass(parent.__class__, ariane_delivery.ArianeNode):
                 flist = ariane.get_files(parent)
-                flist = [f.get_properties() for f in flist]
+                flist = [f.get_properties(gettype=True) for f in flist]
                 return make_response(json.dumps({"filenodes": flist}), 200, headers_json)
             else:
                 abort_error("BAD_REQUEST", "Given parameters does not match to a FileNode's parent")
@@ -131,7 +131,7 @@ class RestFileNodeList(Resource):
                 clear_args(args)
                 if f.update(args):
                     f.save()
-                    f = f.get_properties()
+                    f = f.get_properties(gettype=True)
                     return make_response(json.dumps({"filenode": f}), 200, headers_json)
                 else:
                     abort_error("BAD_REQUEST", "FileNode {} already exists".format(args))
@@ -144,7 +144,7 @@ class RestFileNodeList(Resource):
                 if f.update(arg_p):
                     f.save()
 
-                    return make_response(json.dumps({"filenode": f.get_properties()}), 200, headers_json)
+                    return make_response(json.dumps({"filenode": f.get_properties(gettype=True)}), 200, headers_json)
                 else:
                     abort_error("BAD_REQUEST", "FileNode {} already exists".format(f.get_properties()))
             else:
@@ -152,7 +152,7 @@ class RestFileNodeList(Resource):
         else:
             fmodel = ariane_delivery.FileNode("", "", "", "")
             for key in args.keys():
-                if key != "filenode" and args[key] is None:
+                if key not in ["filenode", "nID"] and args[key] is None:
                     abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
                                 fmodel.get_properties().keys()))
             file_exists = ariane.find_without_label({"name": args["name"], "version": args["version"],
@@ -168,7 +168,7 @@ class RestFileNodeList(Resource):
                         f = ariane_delivery.FileNode.create(args)
                         parent.add_file(f)
                         parent.save()
-                        return make_response(json.dumps({"filenode": f.get_properties()}), 201, headers_json)
+                        return make_response(json.dumps({"filenode": f.get_properties(gettype=True)}), 201, headers_json)
                     else:
                         abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
                                     fmodel.get_properties().keys()))
@@ -195,7 +195,7 @@ class RestPlugin(Resource):
     def get(self, unique_key, unique_key2=None):
         p = self.__get_plugin(unique_key, unique_key2)
         if p is not None:
-            return make_response(json.dumps({"plugin": p.get_properties()}), 200, headers_json)
+            return make_response(json.dumps({"plugin": p.get_properties(gettype=True)}), 200, headers_json)
         else:
             if unique_key2 is None:
                 abort_error("BAD_REQUEST", "No Module found with given parameters {}".format(unique_key))
@@ -225,7 +225,7 @@ class RestPluginList(Resource):
         if args["version"] is not None:
             d = ariane.distribution_service.get_unique({"version": args["version"]})
             plist = ariane.plugin_service.get_all(d)
-            p = [p.get_properties() for p in plist]
+            p = [p.get_properties(gettype=True) for p in plist]
             return make_response(json.dumps({"plugins": p}), 200, headers_json)
         else:
             abort_error("BAD_REQUEST", "Missing parameter 'version'")
@@ -238,7 +238,7 @@ class RestPluginList(Resource):
                 clear_args(args)
                 if p.update(args):
                     p.save()
-                    p = p.get_properties()
+                    p = p.get_properties(gettype=True)
                     return make_response(json.dumps({"plugin": p}), 200, headers_json)
                 else:
                     abort_error("BAD_REQUEST", "Plugin {} already exists".format(args))
@@ -250,13 +250,13 @@ class RestPluginList(Resource):
             if isinstance(p, ariane_delivery.Plugin):
                 if p.update(arg_p):
                     p.save()
-                    return make_response(json.dumps({"plugin": p.get_properties()}), 200, headers_json)
+                    return make_response(json.dumps({"plugin": p.get_properties(gettype=True)}), 200, headers_json)
             else:
                 abort_error("BAD_REQUEST", "Given parameters {} don't match any Plugin in database".format(arg_p))
         else:
             p = ariane_delivery.Plugin("", "")
             for key in args.keys():
-                if key != "plugin" and args[key] is None:
+                if key not in ["plugin", "nID"] and args[key] is None:
                     abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
                         p.get_properties().keys()))
             plug_exists = ariane.plugin_service.get_unique({"name": args["name"], "version": args["version"]})
@@ -269,7 +269,7 @@ class RestPluginList(Resource):
                         p = ariane_delivery.ArianeNode.create_subclass("Plugin", args)
                         dist.add_plugin(p)
                         dist.save()
-                        p = p.get_properties()
+                        p = p.get_properties(gettype=True)
                         return make_response(json.dumps({"plugin": p}), 201, headers_json)
                     else:
                         abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
@@ -318,7 +318,7 @@ class RestSubModule(Resource):
     def get(self, unique_key):
         s = self.__get_submodule(unique_key)
         if s is not None:
-            return make_response(json.dumps({"submodule": s.get_properties()}), 200, headers_json)
+            return make_response(json.dumps({"submodule": s.get_properties(gettype=True)}), 200, headers_json)
         else:
             abort_error("NOT_FOUND", "Error, Wrong URL")
 
@@ -358,7 +358,7 @@ class RestSubModuleList(Resource):
                 slist.extend(ariane.submodule_parent_service.get_all(par))
                 slist_ret = []
                 for s in slist:
-                    sp = s.get_properties()
+                    sp = s.get_properties(gettype=True)
                     if isinstance(s, ariane_delivery.SubModuleParent):
                         sp["issubparent"] = True
                     else:
@@ -379,7 +379,7 @@ class RestSubModuleList(Resource):
                 clear_args(args)
                 if s.update(args):
                     s.save()
-                    s = s.get_properties()
+                    s = s.get_properties(gettype=True)
                     return make_response(json.dumps({"submodule": s}), 200, headers_json)
                 else:
                     abort_error("BAD_REQUEST", "Submodule {} already exists".format(args))
@@ -393,7 +393,7 @@ class RestSubModuleList(Resource):
             if isinstance(s, ariane_delivery.SubModule) or isinstance(s, ariane_delivery.SubModuleParent):
                 if s.update(arg_s):
                     s.save()
-                    return json.dumps({"submodule": s.get_properties()}), 200
+                    return json.dumps({"submodule": s.get_properties(gettype=True)}), 200
                 else:
                     abort_error("BAD_REQUEST", "Nothing to update, values are the same")
             else:
@@ -429,7 +429,7 @@ class RestSubModuleList(Resource):
             sub.save()
             par.add_submodule(sub)
 
-            return make_response(json.dumps({"submodule": sub.get_properties()}), 201, headers_json)
+            return make_response(json.dumps({"submodule": sub.get_properties(gettype=True)}), 201, headers_json)
 
 class RestModule(Resource):
     def __init__(self):
@@ -451,7 +451,7 @@ class RestModule(Resource):
     def get(self, unique_key, unique_key2=None):
         m = self.__get_module(unique_key, unique_key2)
         if m is not None:
-            return make_response(json.dumps({"module": m.get_properties()}), 200, headers_json)
+            return make_response(json.dumps({"module": m.get_properties(gettype=True)}), 200, headers_json)
         else:
             if unique_key2 is None:
                 abort_error("BAD_REQUEST", "No Module found with given parameters {}".format(unique_key))
@@ -486,7 +486,7 @@ class RestModuleList(Resource):
             d = ariane.distribution_service.get_unique({"version": args["version"]})
             if d is not None:
                 mlist = ariane.module_service.get_all(d)
-                m = [m.get_properties() for m in mlist]
+                m = [m.get_properties(gettype=True) for m in mlist]
                 return make_response(json.dumps({"modules": m}), 200, headers_json)
             else:
                 abort_error("BAD_REQUST", "Given parameter {} does not match any Distribution version".format(
@@ -502,7 +502,7 @@ class RestModuleList(Resource):
                 clear_args(args)
                 if m.update(args):
                     m.save()
-                    m = m.get_properties()
+                    m = m.get_properties(gettype=True)
                     return make_response(json.dumps({"module": m}), 200, headers_json)
                 else:
                     abort_error("BAD_REQUEST", "Module {} already exists".format(args))
@@ -514,11 +514,11 @@ class RestModuleList(Resource):
             if isinstance(m, ariane_delivery.Module):
                 if m.update(arg_m):
                     m.save()
-                    return make_response(json.dumps({"module": m.get_properties()}), 200, headers_json)
+                    return make_response(json.dumps({"module": m.get_properties(gettype=True)}), 200, headers_json)
         else:
             m = ariane_delivery.Module("", "", "")
             for key in args.keys():
-                if key != "module" and args[key] is None:
+                if key not in ["module", "nID"] and args[key] is None:
                     abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
                         m.get_properties().keys()))
             mod_exists = ariane.module_service.get_unique({"name": args["name"], "version": args["version"], "type": args["type"]})
@@ -531,7 +531,7 @@ class RestModuleList(Resource):
                         m = ariane_delivery.ArianeNode.create_subclass("Module", args)
                         dist.add_module(m)
                         dist.save()
-                        m = m.get_properties()
+                        m = m.get_properties(gettype=True)
                         return make_response(json.dumps({"module": m}), 201, headers_json)
                     else:
                         abort_error("BAD_REQUEST", "Parameters are missing or incorrect. You must provide: {}".format(
@@ -560,7 +560,7 @@ class RestDistribution(Resource):
     def get(self, unique_key):
         d = self.__get_distrib(unique_key)
         if d is not None:
-            return make_response(json.dumps({"distrib": d.get_properties()}), 200, headers_json)
+            return make_response(json.dumps({"distrib": d.get_properties(gettype=True)}), 200, headers_json)
         else:
             abort_error("NOT_FOUND", "Error, Wrong URL")
 
@@ -585,7 +585,7 @@ class RestDistributionList(Resource):
 
     def get(self):
         dlist = ariane.distribution_service.get_all()
-        d = [d.get_properties() for d in dlist]
+        d = [d.get_properties(gettype=True) for d in dlist]
         return make_response(json.dumps({"distribs": d}), 200, headers_json)
 
     def post(self):
@@ -596,7 +596,7 @@ class RestDistributionList(Resource):
                 args.pop("nID")
                 if d.update(args):
                     d.save()
-                    d = d.get_properties()
+                    d = d.get_properties(gettype=True)
                     return make_response(json.dumps({"distrib": d}), 200, headers_json)
                 else:
                     abort_error("BAD_REQUEST", "Distribution {} already exists".format(args))
@@ -609,7 +609,7 @@ class RestDistributionList(Resource):
                 arg_d.pop("nID")
                 if d.update(arg_d):
                     d.save()
-                    return make_response(json.dumps({"distrib": d.get_properties()}), 200, headers_json)
+                    return make_response(json.dumps({"distrib": d.get_properties(gettype=True)}), 200, headers_json)
         else:
             dist_exists = ariane.distribution_service.get_unique({"name": args["name"], "version": args["version"]})
             if dist_exists is None:
@@ -619,7 +619,7 @@ class RestDistributionList(Resource):
                     args["nID"] = 0
                     d = ariane_delivery.ArianeNode.create_subclass("Distribution", args)
                     d.save()
-                    d = d.get_properties()
+                    d = d.get_properties(gettype=True)
                     return make_response(json.dumps({"distrib": d}), 201, headers_json)
                 else:
                     d = d.get_properties()

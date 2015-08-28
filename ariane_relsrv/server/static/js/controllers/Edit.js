@@ -7,8 +7,9 @@ angular.module('ArianeUI')
         var backupObj = {obj: "default", node:{}};
         $scope.enableEdit = false; // User can start to edit
         $scope.activeEdit = false; // User is editing
+        $scope.isDeleting = false;
         $scope.isNewNode = false;
-        $scope.choiceSubParent = {isNewSubParent: "no"};
+        $scope.choice = {isNewSubParent: "no", deleting: "no"};
         $scope.parent = {};
         var editables = ['name', 'version', 'groupId', 'artifactId', 'order', 'git_repos'];
         var editablesForNewNode = {
@@ -28,6 +29,7 @@ angular.module('ArianeUI')
                     $scope.selectedObj = JSON.parse(JSON.stringify(backupObj)); // copy JSON object
                     $scope.enableEdit = (baseObj.node.version.indexOf("SNAPSHOT") > -1);
                     $scope.isNewNode = false;
+                    $scope.isDeleting = false;
                     $scope.parent = {};
                 }
                 else
@@ -41,14 +43,24 @@ angular.module('ArianeUI')
             return $scope.enableEdit;
         });
 
-        $scope.$on('addDelEdit', function(){
+        $scope.$on('addEdit', function(){
             $scope.setActiveEdit();
             var newElement = serviceUI.getAddDelObj();
             $scope.parent = newElement.parent;
+            backupObj = {obj: "default", node:{}};
             backupObj.obj = newElement.obj;
             backupObj.node = newElement.node;
             $scope.selectedObj = JSON.parse(JSON.stringify(backupObj));
             $scope.isNewNode = true;
+        });
+        $scope.$on('delEdit', function(){
+            $scope.setActiveEdit();
+            var newElement = serviceUI.getAddDelObj();
+            backupObj = {obj: "default", node:{}};
+            backupObj.obj = newElement.obj;
+            backupObj.node = newElement.node;
+            $scope.selectedObj = JSON.parse(JSON.stringify(backupObj));
+            $scope.isDeleting = true;
         });
 
         $scope.setActiveEdit = function(){
@@ -60,8 +72,7 @@ angular.module('ArianeUI')
         $scope.isPropEditable = function(prop){
             if($scope.isNewNode)
             {
-                var ret = (editablesForNewNode[$scope.selectedObj.obj].indexOf(prop) > -1);
-                return ret;
+                return (editablesForNewNode[$scope.selectedObj.obj].indexOf(prop) > -1);
             }
             else
                 return (editables.indexOf(prop) > -1);
@@ -71,12 +82,26 @@ angular.module('ArianeUI')
             if($scope.activeEdit){
                 if($scope.isNewNode){
                     if($scope.selectedObj.obj == "submodule"){
-                            $scope.selectedObj.node.issubparent = ($scope.choiceSubParent.isNewSubParent=="yes");
+                            $scope.selectedObj.node.issubparent = ($scope.choice.isNewSubParent=="yes");
                     }
                     serviceAjax.create($scope.selectedObj.node, $scope.selectedObj.obj, $scope.parent).success(function(data){
-                        console.log("created");
+                        $scope.selectedObj.node = data[$scope.selectedObj.obj];
+                        updateJSON(backupObj.node, $scope.selectedObj.node); // also updates serviceUI's addDelObj
+                        serviceUI.actionBroadcast('addNode');
+                        //TODO print success into UI
                     });
                     $scope.isNewNode = false;
+                }
+                else if($scope.isDeleting){
+                    if($scope.choice.deleting == "yes"){
+                        serviceAjax.delete($scope.selectedObj.node).success(function(data){
+                            backupObj.node = {};
+                            backupObj.obj = "default";
+                            $scope.selectedObj = backupObj;
+                            serviceUI.actionBroadcast('deleteNode');
+                        });
+                    }
+                    $scope.isDeleting = false;
                 }
                 else{
                     var res = serviceAjax.save($scope.selectedObj.node, $scope.selectedObj.obj);

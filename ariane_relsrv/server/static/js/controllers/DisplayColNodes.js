@@ -4,8 +4,8 @@
 angular.module('ArianeUI')
     .controller('DisplayColNodesCtrl', function ($scope, serviceAjax, serviceUI) {
         $scope.modules = [];
-        $scope.subSet = {parent: {}, modules: []};
-        $scope.filenodes = [];
+        $scope.subSet = {parent: null, modules: []};
+        $scope.fileSet = {parent: null, filenodes: []};
         $scope.isPlugin = false;
         $scope.curNodeSelected = 0;
         $scope.togMod = true;
@@ -28,7 +28,7 @@ angular.module('ArianeUI')
                 });
             }
             tmp_subSet = $scope.subSet;
-            $scope.subSet = {parent: {}, modules: []};
+            $scope.subSet = {parent: null, modules: []};
             $scope.togSub = false;
             $scope.curNodeSelected["selected"] = false;
             $scope.isPlugin = false;
@@ -54,9 +54,12 @@ angular.module('ArianeUI')
             $scope.isPlugin = true;
         }
         function loadFiles(node){
+            $scope.fileSet.parent = node;
+            if (node.node_type == "distrib")
+                $scope.fileSet.parent.name = "distrib_" + node.version;
             serviceAjax.file(node).success(function (data) {
                 data.filenodes.sort(sortName);
-                $scope.filenodes = data.filenodes;
+                $scope.fileSet.filenodes = data.filenodes;
                 $scope.togFile = true;
             });
         }
@@ -97,15 +100,39 @@ angular.module('ArianeUI')
         $scope.$on('setEnableEdit', function(){
             $scope.enableEdit = serviceUI.getEnableEdit();
         });
+        $scope.$on('deleteNode', function(){
+            var delObj = serviceUI.getAddDelObj();
+            if(delObj.obj == "module" || delObj.obj == "plugin")
+                $scope.modules = $scope.modules.filter(function(e){ return e != delObj.node});
+
+            else if(delObj.obj == "submodule")
+                $scope.subSet.modules = $scope.subSet.modules.filter(function(e){return e != delObj.node});
+
+            else if(delObj.obj == "filenode")
+                $scope.fileSet.filenodes = $scope.fileSet.filenodes.filter(function(e){ return e != delObj.node});
+
+            $scope.curNodeSelected = 0;
+        });
+        $scope.$on('addNode', function(){
+            var addObj = serviceUI.getAddDelObj();
+            if(addObj.obj == "module" || addObj.obj == "plugin")
+                $scope.modules.push(addObj.node);
+
+            else if(addObj.obj == "submodule")
+                $scope.subSet.modules.push(addObj.node);
+
+            else if(addObj.obj == "filenode")
+                $scope.fileSet.filenodes.push(addObj.node);
+        });
 
         $scope.clickMod = function(module){
             var nodeObj = serviceUI.getNodeObj();
-            if((nodeObj["obj"] != "module")
-                ||((nodeObj["obj"] == "module") && (nodeObj["node"] != module))) {
-                if(serviceUI.setState({obj: "module", status: "newMod"})) {
+            if((nodeObj["obj"] != module.node_type)
+                ||((nodeObj["obj"] == module.node_type) && (nodeObj["node"] != module))) {
+                if(serviceUI.setState({obj: module.node_type, status: "newMod"})) {
                     if (typeof module.selected != "undefined")
                         delete module.selected;
-                    serviceUI.setNodeObj({obj: 'module', node: module});
+                    serviceUI.setNodeObj({obj: module.node_type, node: module});
                     if ($scope.curNodeSelected != 0)
                         $scope.curNodeSelected["selected"] = false;
                     module.selected = true;
@@ -129,12 +156,12 @@ angular.module('ArianeUI')
         };
         $scope.clickSub = function(submodule){
             var nodeObj = serviceUI.getNodeObj();
-            if((nodeObj["obj"] != "submodule")
-                ||((nodeObj["obj"] == "submodule") && (nodeObj["node"] != submodule))) {
-                if(serviceUI.setState({obj: "submodule", status: "new"})) {
+            if((nodeObj["obj"] != submodule.node_type)
+                ||((nodeObj["obj"] == submodule.node_type) && (nodeObj["node"] != submodule))) {
+                if(serviceUI.setState({obj: submodule.node_type, status: "new"})) {
                     if (typeof submodule.selected != "undefined")
                         delete submodule.selected;
-                    serviceUI.setNodeObj({obj: 'submodule', node: submodule});
+                    serviceUI.setNodeObj({obj: submodule.node_type, node: submodule});
                     if ($scope.curNodeSelected != 0)
                         $scope.curNodeSelected["selected"] = false;
                     submodule.selected = true;
@@ -146,12 +173,12 @@ angular.module('ArianeUI')
         };
         $scope.clickFile = function(file){
             var nodeObj = serviceUI.getNodeObj();
-            if((nodeObj["obj"] != "filenode")
-                ||((nodeObj["obj"] == "filenode") && (nodeObj["node"] != file))){
-                if(serviceUI.setState({obj: "filenode", status: "new"})) {
+            if((nodeObj["obj"] != file.node_type)
+                ||((nodeObj["obj"] == file.node_type) && (nodeObj["node"] != file))){
+                if(serviceUI.setState({obj: file.node_type, status: "new"})) {
                     if (typeof file.selected != "undefined")
                         delete file.selected;
-                    serviceUI.setNodeObj({obj: 'filenode', node: file});
+                    serviceUI.setNodeObj({obj: file.node_type, node: file});
                     if ($scope.curNodeSelected != 0)
                         $scope.curNodeSelected["selected"] = false;
                     file.selected = true;
@@ -161,19 +188,28 @@ angular.module('ArianeUI')
             }
         };
 
-        $scope.addElement = function(type){
+        $scope.addElement = function(type){ // type: node type to add into database
             var element = serviceAjax.createEmptyNode(type);
+            var parent = {obj: "", node: {}};
             if(type == 'module')
-                var parent = serviceUI.getBaseObj();
-            else
-                var parent = serviceUI.getSelectedObj();
-            if(serviceUI.setState({obj: type, status: 'addDel'})){
+                parent = serviceUI.getBaseObj();
+            else if (type == 'submodule')
+            {
+                parent.node = $scope.subSet.parent;
+                parent.obj = type;
+            }
+            else if (type == 'filenode')
+                parent = serviceUI.getSelectedObj();
+            if(serviceUI.setState({obj: type, status: 'addEdit'})){
                 serviceUI.setAddDelObj({obj: type, node: element, parent: JSON.parse(JSON.stringify(parent.node))});
                 serviceUI.actionBroadcast();
             }
         };
         $scope.delElement = function(element){
-
+            if(serviceUI.setState({obj: element.node_type, status: 'delEdit'})){
+                serviceUI.setAddDelObj({obj: element.node_type, node: element});
+                serviceUI.actionBroadcast();
+            }
         };
         $scope.toggleModList = function(){
             $scope.togMod = !$scope.togMod;

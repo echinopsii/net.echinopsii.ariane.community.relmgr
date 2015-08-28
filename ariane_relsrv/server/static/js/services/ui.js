@@ -48,7 +48,7 @@ angular.module('ArianeUI')
                 enableEdit = enableFlag;
             },
             setAddDelObj: function (newAddDelObj) {
-                addDelObj = newAddDelObj;
+                 addDelObj = newAddDelObj;
             },
             actionBroadcast: function(optionalEvent){
                 if (typeof optionalEvent === 'undefined') { optionalEvent = 'default'; }
@@ -58,8 +58,8 @@ angular.module('ArianeUI')
                             $rootScope.$broadcast('newBaseSelected');
                         $rootScope.$broadcast('handleEdition');
                     }
-                    else if(state.status == "addDel"){
-                        $rootScope.$broadcast('addDelEdit');
+                    else if(state.status == "addEdit" || state.status == "delEdit"){
+                        $rootScope.$broadcast(state.status);
                     }
                     //else if(state.status == "newMod") ... eventually to handle each element with its own things
                     else{

@@ -695,8 +695,11 @@ class ArianeNode(object):
         self.list_files = []
         self.list_relation = []
 
-    def get_properties(self):
-        return self._get_dir()
+    def get_properties(self, gettype=False):
+        prop = self._get_dir()
+        if gettype:
+            prop["node_type"] = self.get_rest_endpoint()
+        return prop
 
     def add_file(self, file_node):
         if isinstance(file_node, FileNode):
@@ -886,6 +889,9 @@ class Distribution(ArianeNode):
             self.directory_name = 'ariane.community.distrib'
         return self.directory_name
 
+    def get_rest_endpoint(self):
+        return "distrib"
+
     def __repr__(self):
         out = "Distribution( name = "+self.name+", version = "+self.version+", nID = "+str(self.id)+")"
         return out
@@ -1067,6 +1073,9 @@ class Module(ArianeNode):
             self.directory_name = dname + self.name
         return self.directory_name
 
+    def get_rest_endpoint(self):
+        return "module"
+
     def __repr__(self):
         out = "Module( name = "+self.name+", version = "+self.version+", type = "+self.type+", nID = "+str(self.id)+")"
         return out
@@ -1147,6 +1156,9 @@ class SubModule(ArianeNode):
         else:
             self.groupId = '' + self.pom_attr + mod_plug.get_directory_name()
             self.artifactId = self.groupId + '.' + self.name
+
+    def get_rest_endpoint(self):
+        return "submodule"
 
     def __repr__(self):
         out = "SubModule(name = "+self.name+", version = "+self.version+", groupId = "+self.groupId+", " \
@@ -1294,6 +1306,9 @@ class Plugin(ArianeNode):
             self.directory_name = 'ariane.community.plugin.' + self.name
         return self.directory_name
 
+    def get_rest_endpoint(self):
+        return "plugin"
+
     def __repr__(self):
         out = "Plugin( name = "+self.name+", version = "+self.version+", nID = "+str(self.id)+")"
         return out
@@ -1397,6 +1412,9 @@ class SubModuleParent(ArianeNode):
             self.groupId = mod_plug.artifactId
             self.artifactId = self.groupId + '.' + self.name
 
+    def get_rest_endpoint(self):
+        return "submodule"
+
     def __repr__(self):
         out = "SubModuleParent( name = "+self.name+", version = "+self.version+", nID = "+str(self.id)+")"
         return out
@@ -1481,11 +1499,17 @@ class FileNode(object):
                     return fnode
         return None
 
-    def get_properties(self):
-        return self._get_dir()
+    def get_properties(self, gettype=False):
+        prop = self._get_dir()
+        if gettype:
+            prop["node_type"] = self.get_rest_endpoint()
+        return prop
 
     def __get_relation(self):
         return DeliveryTree.graph_dao.get_relations({"relation": ["CONTAINS"], "node": self.node})
+
+    def get_rest_endpoint(self):
+        return "filenode"
 
     def __repr__(self):
         out = "FileNode(name = "+self.name+", version = "+self.version+", type = "+self.type+", path = "+self.path+"," \

@@ -15,16 +15,18 @@ angular.module('ArianeUI')
 
         return {
             createEmptyNode: function(type){
-                if(type == "distrib" || type == "plugin"){
-                    return {name: "", version: ""};
+                if(type == "distrib"){
+                    return {name: "", version: "", node_type:"distrib", nID:0};
                 }
+                else if(type == 'plugin')
+                    return {name: "", version: "", node_type:"plugin", nID:0};
                 else if(type == "module"){
-                    return {name: "", version: "", git_repos: "", type: "", order: "", nID: 0};
+                    return {name: "", version: "", git_repos: "", type: "", order: "", node_type:"module", nID:0};
                 }
                 else if(type == "submodule")
-                    return {name: "", version: "", groupId: "", artifactId: "", order: ""};
+                    return {name: "", version: "", groupId: "", artifactId: "", order: "", node_type:"submodule", nID:0};
                 else if(type == "filenode")
-                    return {name: "", version: "", type: ""};
+                    return {name: "", version: "", type: "", node_type:"filenode", nID:0};
             },
             distrib: function(version){
                 if (version == "")
@@ -79,6 +81,14 @@ angular.module('ArianeUI')
                     data["dist_version"] = parent.version;
                     return $http.post("http://localhost:5000/rest/"+type, data);
                 }
+            },
+            delete: function(element){
+                if (typeof element.nID === "undefined" || typeof element.node_type === "undefined")
+                    return false; // false means error
+                if(element.nID <= 0 || element.node_type == "")
+                    return false;
+                var type = element.node_type;
+                return $http.delete("http://localhost:5000/rest/"+type+'/'+element.nID.toString());
             }
         };
     });
