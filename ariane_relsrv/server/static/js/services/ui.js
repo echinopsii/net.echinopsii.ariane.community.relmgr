@@ -8,6 +8,8 @@ angular.module('ArianeUI')
         var nodeObj = {obj:"default", node:{}};
         var addDelObj = {obj: "default", node: {}};
         var selectedObj = {obj: "default", node: {}};
+        var pageList = ["edition", "releaseA", "releaseB"];
+        var page = "edition";
         var enableEdit = false;
         var activeEdit = false;
         // var loup = {j:"lol"}; // for test:
@@ -29,6 +31,9 @@ angular.module('ArianeUI')
             },
             getAddDelObj: function(){
                 return addDelObj;
+            },
+            getPage: function(){
+                return page;
             },
             setState: function(newstate){
                 if(newstate.status == "editing")
@@ -60,6 +65,26 @@ angular.module('ArianeUI')
             },
             setAddDelObj: function (newAddDelObj) {
                  addDelObj = newAddDelObj;
+            },
+            setPage: function(newpage){
+                page = newpage;
+            },
+            changePage: function(buttonType){
+                var oldPage = page;
+                if(buttonType == "release"){
+                    if(page == "edition"){
+                        page = "releaseA";
+                    }
+                    else if(page == "releaseA"){
+                        page = "releaseB";
+                    }
+                }
+                else if (buttonType == "edition")
+                {
+                    if(page == "releaseA")
+                        page = "edition";
+                }
+                return oldPage != page;
             },
             actionBroadcast: function(optionalEvent){
                 if (typeof optionalEvent === 'undefined') { optionalEvent = 'default'; }

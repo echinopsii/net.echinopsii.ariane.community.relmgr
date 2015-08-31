@@ -9,14 +9,26 @@ angular.module('ArianeUI')
         $scope.curBaseSelected = 0;
         $scope.togDist = true;
         $scope.togPlug = true;
+        $scope.enableEdit = false;
         $scope.activeEdit = false;
-        $scope.enableAddDel = false;
-        serviceAjax.distrib('').success(function(data) // Init: loading data (distributions ans plugins)
-        {
-            data.distribs.sort(sortVersion);
-            $scope.dists = data.distribs;
-            loadPlugins();
-        });
+        var templates = [{name: 'edition', url:'edition.html'}, {name:'releaseA', url:'releaseA.html'}];
+        $scope.template = templates[0];
+        $scope.page = 'edition';
+        var templateErr = "err.html";
+        /* ********************* Main FUNCTIONS ********************* */
+        (function init(){
+            loadDistribs();
+        })();
+        function loadDistribs(filter){
+            serviceAjax.distrib('').success(function(data) // Init: loading data (distributions ans plugins)
+            {
+                data.distribs.sort(sortVersion);
+                $scope.dists = data.distribs;
+                loadPlugins();
+                if (typeof filter !== "undefined")
+                    filter();
+            });
+        }
         function loadPlugins(){
             var dlen = $scope.dists.length;
             for (var i=0; i < dlen; i++) {
@@ -46,7 +58,7 @@ angular.module('ArianeUI')
                         }
                         else{
                             var flagVersion = false;
-                            pvlen = $scope.pluginsDict.PluginSet.length;
+                            var pvlen = $scope.pluginsDict.PluginSet.length;
                             for (var k=0; k < pvlen; k++){
                                 if (p.version == $scope.pluginsDict.PluginSet[k].version && p.name == $scope.pluginsDict.PluginSet[k].name){
                                     flagVersion = true;
@@ -63,6 +75,11 @@ angular.module('ArianeUI')
                 });
             }
         }
+        function keepSNAPSHOT(){
+            $scope.dists = $scope.dists.filter(function(d){ return d.version.indexOf("SNAPSHOT") > -1});
+            console.assert($scope.dists.length == 1, "Multiple SNAPSHOT Distribution versions");
+        }
+        /* *********** Main Scope Functions ************ */
         $scope.clickDist = function(dist){
             var curSelected = serviceUI.getSelectedObj();
             if (curSelected['node'] != dist) {
@@ -71,7 +88,6 @@ angular.module('ArianeUI')
                         delete dist["selected"];
                     serviceUI.setBaseObj({obj: dist.node_type, node: dist}); // Use of JSON.parse(JSON.stringify(obj)) to copy JSON object. This object must not contain any function.
                     serviceUI.setNodeObj({obj: "default", node: {}});
-                    $scope.enableAddDel = serviceUI.checkEditable();
                     if ($scope.curBaseSelected != 0)
                         $scope.curBaseSelected["selected"] = false;
                     dist["selected"] = true;
@@ -98,7 +114,6 @@ angular.module('ArianeUI')
                         delete PluginSet.plugin["dist_version"];
                     serviceUI.setBaseObj({obj: node_type, node: PluginSet.plugin});
                     serviceUI.setNodeObj({obj: "default", node: {}});
-                    $scope.enableAddDel = false;
                     if ($scope.curBaseSelected != 0)
                         $scope.curBaseSelected["selected"] = false;
                     PluginSet["selected"] = true;
@@ -120,11 +135,40 @@ angular.module('ArianeUI')
                 serviceUI.actionBroadcast();
             }
         };
-
+        $scope.clickReleaseMod = function(){
+            if(serviceUI.setState({obj: "baseRelease", state: "nextPage"})){
+                loadDistribs(keepSNAPSHOT);
+                if(serviceUI.changePage('release'))
+                    serviceUI.actionBroadcast('changePage');
+            }
+        };
+        $scope.clickEditionMod = function(){
+            // TODO from Release mod, click to go back to Edition mod.
+            if(serviceUI.setState({obj: "baseRelease", state: "nextPage"})){
+                loadDistribs();
+                if(serviceUI.changePage('edition'))
+                    serviceUI.actionBroadcast('changePage');
+            }
+        };
+        /* ********************* EVENTS ********************* */
+        $scope.$on('enableEdit', function(){
+            $scope.enableEdit = serviceUI.getEnableEdit();
+        });
         $scope.$on('activeEdit', function (){
             $scope.activeEdit = serviceUI.getActiveEdit();
         });
-
+        $scope.$on('changePage', function(){
+            $scope.page = serviceUI.getPage();
+            for(var i= 0, len=templates.length, flagErr=true; i<len; i++){
+                if(templates[i].name == $scope.page){
+                    $scope.template = templates[i];
+                    flagErr = false;
+                    break;
+                }
+            }
+            if(flagErr)
+                $scope.template = templateErr;
+        });
         $scope.$on('deleteNode', function(){
             var delObj = serviceUI.getAddDelObj();
             if(delObj.obj == "plugin")
@@ -137,6 +181,7 @@ angular.module('ArianeUI')
                 loadPlugins();
         });
 
+        /* **** Small Functions and Small Scope Functions **** */
         $scope.toggleDistList = function(){
             $scope.togDist = !$scope.togDist;
         };

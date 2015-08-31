@@ -16,8 +16,13 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import os
+project_path = os.getcwd()
+project_path = project_path[:-len('/ariane_relsrv/server')]
+import sys
+sys.path.append(project_path)
 
-from flask import Flask, make_response, jsonify, render_template
+from flask import Flask, make_response, render_template
 from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import ariane_delivery
 import json
@@ -51,15 +56,20 @@ def after_request(response):
     return response
 
 headers_json = {'Content-Type': 'application/json'}
+headers_html = {'Content-Type': 'text/html'}
 
 class UI(Resource):
     def get(self):
-        headers = {'Content-Type': 'text/html'}
-        return make_response(render_template('index.html'), 200, headers)
+        return make_response(render_template('index.html'), 200, headers_html)
 class HelloHtml(Resource):
     def get(self):
-        headers = {'Content-Type': 'text/html'}
-        return make_response(render_template('helloworld.html'), 200, headers)
+        return make_response(render_template('helloworld.html'), 200, headers_html)
+class Temp1(Resource):
+    def get(self):
+        return make_response(render_template('baseEdition.html'), 200, headers_html)
+class Temp2(Resource):
+    def get(self):
+        return make_response(render_template('baseReleaseA.html'), 200, headers_html)
 
 class RestFileNode(Resource):
     def __init__(self):
@@ -653,6 +663,8 @@ api.add_resource(RestFileNodeList, '/rest/filenode')
 api.add_resource(RestFileNode, '/rest/filenode/<int:unique_key>', '/rest/filenode/<unique_key>')
 api.add_resource(UI, '/', "/index", "/index.html")
 api.add_resource(HelloHtml, '/hellohtml')
+api.add_resource(Temp1, '/edition.html')
+api.add_resource(Temp2, '/releaseA.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

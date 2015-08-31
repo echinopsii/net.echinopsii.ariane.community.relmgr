@@ -11,6 +11,7 @@ angular.module('ArianeUI')
         $scope.isNewNode = false;
         $scope.choice = {isNewSubParent: "no", deleting: "no"};
         $scope.parent = {};
+        $scope.page = 'edition';
         var editables = ['name', 'version', 'groupId', 'artifactId', 'order', 'git_repos'];
         var editablesForNewNode = {
             module: editables,

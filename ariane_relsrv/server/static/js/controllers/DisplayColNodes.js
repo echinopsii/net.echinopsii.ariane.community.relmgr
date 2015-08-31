@@ -11,9 +11,10 @@ angular.module('ArianeUI')
         $scope.togMod = true;
         $scope.togSub = true;
         $scope.togFile = true;
-        $scope.limitLetterNum = 60;
+        $scope.limitLetterNum = 50;
         $scope.enableEdit = false; // User can start to edit
         $scope.activeEdit = false;
+        $scope.page = 'edition';
         var tmp_subSet = {parent: {}, modules: []};
         var curBaseObj = {};
 
@@ -101,6 +102,9 @@ angular.module('ArianeUI')
         });
         $scope.$on('activeEdit', function (){
             $scope.activeEdit = serviceUI.getActiveEdit();
+        });
+        $scope.$on('changePage', function(){
+            $scope.page = serviceUI.getPage();
         });
         $scope.$on('deleteNode', function(){
             var delObj = serviceUI.getAddDelObj();
