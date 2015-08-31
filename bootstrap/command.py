@@ -110,6 +110,8 @@ class Command(object):
         version = args.version
         name = args.name
         print(cmd, version)
+        shutil.copy(project_path+"/ariane.community.distrib/resources/maven/plan_module_parent_tpl.xml",
+                    project_path)
         distrib = Command.ariane.distribution_service.get_unique({"version": version})
         if isinstance(distrib, ariane_delivery.Distribution):
             if cmd in Command.commands_dist:
@@ -177,8 +179,6 @@ class Command(object):
                             elif cmd == "plan":
                                 fnode = Command.ariane.get_one_file(m, "plan")
                                 if fnode is not None:
-                                    shutil.copy(project_path+"/ariane.community.distrib/resources/maven/plan_module_parent_tpl.xml",
-                                                project_path)
                                     Command.g.generate_plan(m, fnode)
                             elif cmd == "lib_json":
                                 fnode = Command.ariane.get_one_file(m, "json_build")
