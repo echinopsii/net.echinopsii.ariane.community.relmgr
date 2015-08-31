@@ -210,7 +210,7 @@ class Generator(object):
 
     def __generate_pom_submodule(self, sub, grId, artId):
         fpom = self.ariane.get_one_file(sub, 'pom')
-        template = self.env.get_template(fpom.path + 'pom.xml.tpl')
+        template = self.env.get_template(fpom.path + 'pom.yml')
 
         args = {"version": sub.version, "groupId": grId, "artifactId": artId, "name": sub.name}
 
@@ -231,7 +231,7 @@ class Generator(object):
                 self.__generate_pom_subparent(s, s_grId, s_artId)
 
     def __generate_pom_mod_plug(self, mod_plug, fpom):
-        template = self.env.get_template(fpom.path + 'pom.xml.tpl')
+        template = self.env.get_template(fpom.path + 'pom.yml')
 
         groupId = mod_plug.pom_attr + mod_plug.get_directory_name()
         groupId = str(groupId).replace('.'+mod_plug.name, '')
@@ -255,7 +255,7 @@ class Generator(object):
             if m.name in mod_exception:
                 modules.remove(m)
         modules = sorted(modules, key=lambda mod: mod.order)
-        template = self.env.get_template(fpom.path + 'pom_distrib.xml.tpl')
+        template = self.env.get_template(fpom.path + 'pom_distrib.yml')
         args = {"modules": modules, "version": version}
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
             target.write(template.render(args))
