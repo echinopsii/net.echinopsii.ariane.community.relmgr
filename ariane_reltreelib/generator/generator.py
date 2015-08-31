@@ -266,7 +266,7 @@ class Generator(object):
         if "SNAPSHOT" in mod_plug.version:
             snapshot = True
 
-        template = self.env.get_template(fplan.path+"plan_"+mod_plug.name+"_template.xml.tpl")
+        template = self.env.get_template(fplan.path+"plan_"+mod_plug.name+"_template.yml")
         submodules = [s for s in mod_plug.list_submod]
         # Remove each submodule which is in exceptions list.
         # Note that if submodule is a SubModuleParent which has a SubModule to be excluded,
