@@ -115,7 +115,7 @@ class TestREST(unittest.TestCase):
         mod_res = module.from_json(r.json())
         self.assertEqual(tango, mod_res)
 
-        mod2 = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'injector'})
+        mod2 = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'injector', "version": "0.6.3"})
         mod2.version = "0.6.0"
         r = requests.post("http://localhost:5000/rest/module", params={"module": json.dumps(mod2.get_properties())})
         print(r.status_code, r.reason, r.json())
@@ -300,7 +300,61 @@ class TestREST(unittest.TestCase):
         r = requests.post('http://localhost:5000/rest/filenode', params=dir_file.get_properties())
         print(r.status_code, r.reason, r.json())
 
-    # def test_delete_distrib(self):
+    def test_update_dev_version(self):
+        create_db_file('/Users/stanrenia/py_neo4j_db/tests/inputs/create_0.6.4-SNAPSHOT.txt')
+        m = ariane_delivery.DeliveryTree.module_service.get_unique({"name": "portal", "version": "0.6.4-SNAPSHOT"})
+        m2 = ariane_delivery.DeliveryTree.module_service.get_unique({"name": "portal", "version": "0.6.3"})
+        m.name = "ogal"
+        m2.name = "ddodal"
+        r = requests.post('http://localhost:5000/rest/module', params={"module": m.to_json()})
+        r2 = requests.post('http://localhost:5000/rest/module', params={"module": m2.to_json()})
+        mr = m.from_json(r.json())
+        print(r.status_code, r.reason, r.json())
+        print(r2.status_code, r2.reason, r2.json())
+        print(mr)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r2.status_code, 400)
+
+        m = ariane_delivery.DeliveryTree.plugin_service.get_unique({"name": "rabbitmq", "version": "0.2.4-SNAPSHOT"})
+        m2 = ariane_delivery.DeliveryTree.plugin_service.get_unique({"name": "rabbitmq", "version": "0.2.3"})
+        m.name = "ogal"
+        m2.name = "ddodal"
+        r = requests.post('http://localhost:5000/rest/plugin', params={"plugin": m.to_json()})
+        r2 = requests.post('http://localhost:5000/rest/plugin', params={"plugin": m2.to_json()})
+        mr = m.from_json(r.json())
+        print(r.status_code, r.reason, r.json())
+        print(r2.status_code, r2.reason, r2.json())
+        print(mr)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r2.status_code, 400)
+
+        m = ariane_delivery.DeliveryTree.submodule_service.get_unique({"name": "wab", "version": "0.6.4-SNAPSHOT"})
+        m2 = ariane_delivery.DeliveryTree.submodule_service.get_unique({"name": "wab", "version": "0.6.3"})
+        m.name = "ogal"
+        m2.name = "ddodal"
+        r = requests.post('http://localhost:5000/rest/submodule', params={"submodule": m.to_json()})
+        r2 = requests.post('http://localhost:5000/rest/submodule', params={"submodule": m2.to_json()})
+        mr = m.from_json(r.json())
+        print(r.status_code, r.reason, r.json())
+        print(r2.status_code, r2.reason, r2.json())
+        print(mr)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r2.status_code, 400)
+
+        mod = ariane_delivery.DeliveryTree.module_service.get_unique({"name": "injector", "version": "0.6.4-SNAPSHOT"})
+        m = ariane_delivery.DeliveryTree.get_one_file(mod, 'pom')
+        mod = ariane_delivery.DeliveryTree.module_service.get_unique({"name": "injector", "version": "0.6.3"})
+        m2 = ariane_delivery.DeliveryTree.get_one_file(mod, 'pom')
+        m.name = "ogal"
+        m2.name = "ddodal"
+        r = requests.post('http://localhost:5000/rest/filenode', params={"filenode": json.dumps(m.get_properties())})
+        r2 = requests.post('http://localhost:5000/rest/filenode', params={"filenode": json.dumps(m2.get_properties())})
+        print(r.status_code, r.reason, r.json())
+        print(r2.status_code, r2.reason, r2.json())
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r2.status_code, 400)
+
+        # def test_delete_distrib(self):
     #     r = requests.delete("http://localhost:5000/rest/distrib/0.6.3")
     #     create_db_file('/Users/stanrenia/py_neo4j_db/tests/inputs/create_0.6.3.txt')
     #     r = requests.delete("http://localhost:5000/rest/distrib/0.6.3/community")

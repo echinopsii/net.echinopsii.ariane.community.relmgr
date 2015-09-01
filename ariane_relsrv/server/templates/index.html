@@ -83,7 +83,7 @@
             <!--<hr class="separateur">      ****************** Files ****************** -->
         <div class="listRoot">Files
             {% raw %}
-            (<span ng-if="fileSet.parent">{{fileSet.parent.name}}</span>)
+            (<span ng-if="fileSet.parent">{{fileSet.parent.name | prefix:'Distrib_':fileSet.parent:'node_type':'distrib' | sufix:'version':fileSet.parent:'node_type':'distrib'}}</span>)
             {% endraw %}
             <button class="btnExtend" ng-disabled="0" ng-click="toggleFileList()">+/-</button>
             <button class="btnAddDel" ng-if="page=='edition' && fileSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('filenode')">Add</button>

@@ -76,8 +76,9 @@ angular.module('ArianeUI')
             }
         }
         function keepSNAPSHOT(){
-            $scope.dists = $scope.dists.filter(function(d){ return d.version.indexOf("SNAPSHOT") > -1});
+            $scope.dists = $scope.dists.filter(function(d){ return d.version.indexOf("SNAPSHOT") > -1 || d.snapshot});
             console.assert($scope.dists.length == 1, "Multiple SNAPSHOT Distribution versions");
+            serviceUI.setBaseObj({obj: $scope.dists[0].node_type, node: $scope.dists[0]});
         }
         /* *********** Main Scope Functions ************ */
         $scope.clickDist = function(dist){
@@ -148,6 +149,13 @@ angular.module('ArianeUI')
                 loadDistribs();
                 if(serviceUI.changePage('edition'))
                     serviceUI.actionBroadcast('changePage');
+            }
+        };
+        $scope.clickValidate = function(release){
+            if(release == "relA"){
+                if(serviceUI.setState({obj: "release", state:"generation"})){
+                    serviceAjax.generate('module_only', $scope.dists[0].version);
+                }
             }
         };
         /* ********************* EVENTS ********************* */

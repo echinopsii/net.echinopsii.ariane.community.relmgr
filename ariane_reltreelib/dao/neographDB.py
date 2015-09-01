@@ -294,6 +294,10 @@ class NeoGraph(object):
 
         return unique_node
 
-
-
-
+    def shortest_path(self, start_id, end_id):
+        listrecord = self.graph.cypher.execute("MATCH (s {nID:"+str(start_id)+"}), (e {nID:"+str(end_id)+" }),"
+                                        "p = shortestPath((s)-[*..10]-(e)) RETURN p")
+        path = None
+        for rec in listrecord:
+            path = rec.p
+        return path

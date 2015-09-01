@@ -94,6 +94,10 @@ angular.module('ArianeUI')
                     return false;
                 var type = element.node_type;
                 return $http.delete("http://localhost:5000/rest/"+type+'/'+element.nID.toString());
+            },
+            generate: function (command, version) {
+                var data = {command: command + ' ' + version};
+                return $http.post("http://localhost:5000/rest/generation", data);
             }
         };
     });

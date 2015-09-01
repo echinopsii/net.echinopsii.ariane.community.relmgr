@@ -20,6 +20,10 @@ import sys, os, shutil, argparse, subprocess, json
 
 project_path = str(os.getcwd())
 print(project_path)
+if project_path.endswith("ariane_relsrv/server"):
+    os.chdir(project_path[:-len("ariane_relsrv/server")] + 'bootstrap')
+    project_path = str(os.getcwd())
+    print("Working in subprocess, changing subprocess path to: ", project_path)
 if project_path.endswith('/bootstrap'):
     module_path = project_path[:-len('/bootstrap')]
     sys.path.append(module_path)

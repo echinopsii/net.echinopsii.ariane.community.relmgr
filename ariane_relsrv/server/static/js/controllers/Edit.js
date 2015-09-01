@@ -12,9 +12,15 @@ angular.module('ArianeUI')
         $scope.choice = {isNewSubParent: "no", deleting: "no"};
         $scope.parent = {};
         $scope.page = 'edition';
-        var editables = ['name', 'version', 'groupId', 'artifactId', 'order', 'git_repos'];
+        var editablesView = {
+            module: ['name', 'version', 'order', 'git_repos', 'type'],
+            plugin: ["name", "version"],
+            submodule: ['name', 'version', 'groupId', 'artifactId', 'order'],
+            filenode: ["name", "type", "path"],
+            distrib: ["name", "version"]
+        };
         var editablesForNewNode = {
-            module: editables,
+            module: ['name', 'version', 'order', 'git_repos', 'type'],
             plugin: ["name", "version"],
             submodule: ["name", "order"],
             filenode: ["name", "version", "type", "path"],
@@ -74,8 +80,9 @@ angular.module('ArianeUI')
             {
                 return (editablesForNewNode[$scope.selectedObj.obj].indexOf(prop) > -1);
             }
-            else
-                return (editables.indexOf(prop) > -1);
+            else{
+                return (editablesView[$scope.selectedObj.obj].indexOf(prop) > -1);
+            }
         };
 
         $scope.save = function(){

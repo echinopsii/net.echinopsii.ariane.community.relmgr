@@ -170,6 +170,13 @@ class DeliveryTree(object):
         count_node = self.graph_dao.count("Node")
         return count_nid == count_node
 
+    def is_dev_version(self, arnode):
+        dev = self.distribution_service.get_dev_distrib()
+        rel = self.graph_dao.shortest_path(arnode.id, dev.id)
+        if rel is None:
+            rel = self.graph_dao.shortest_path(dev.id, arnode.id)
+        return rel is not None
+
     def _get_relations(self, args, relations):
         ret = []
         if type(args) is list:
@@ -279,6 +286,14 @@ class DistributionService(DeliveryTree):
 
     def get_relations(self, args):
         return self._get_relations(args, ["COMPATIBLE WITH", "DEPENDS ON"])
+
+    def get_dev_distrib(self):
+        distribs = self.get_all()
+        dev = Distribution('dev', '0.0.0')
+        for d in distribs:
+            if d.version > dev.version:
+                dev = d
+        return dev
 
     @staticmethod
     def _create_ariane_node(node):
@@ -914,7 +929,7 @@ class Module(ArianeNode):
         self._len_list_mod_dep = 0
         self._len_list_submod = 0
         self._len_list_files = 0
-        self._old_version = ""
+        self._old_version = version
 
     def _get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "type": self.type, "git_repos": self.git_repos,
@@ -972,15 +987,6 @@ class Module(ArianeNode):
             dir["node"] = self.node
             self.node = DeliveryTree.graph_dao.save_node(dir)
 
-            if self._old_version != self.version:
-                for s in self.list_submod:
-                    s.version = self.version
-                    s.save()
-                for f in self.list_files:
-                    f.version = self.version
-                    f.save()
-                self._old_version = self.version
-
             if len(self.list_module_dependency) > self._len_list_mod_dep:
                 for dep in self.list_module_dependency:
                     self.__create_dependency(dep)
@@ -996,6 +1002,17 @@ class Module(ArianeNode):
                         fnode.save()
                     self._create_file(fnode)
                 self._len_list_files = len(self.list_files)
+
+            # Update submodules and files version to be the same as the current Module.
+            if self._old_version != self.version:
+                DeliveryTree.module_service.update_arianenode_lists(self)
+                for s in self.list_submod:
+                    s.version = self.version
+                    s.save()
+                for f in self.list_files:
+                    f.version = self.version
+                    f.save()
+                self._old_version = self.version
 
     def delete(self):
         """
@@ -1190,7 +1207,7 @@ class Plugin(ArianeNode):
         self.list_module_dependency = []
         self._len_list_submod = 0
         self._len_list_mod_dep = 0
-        self._old_version = ""
+        self._old_version = version
         self.dir = {"name": self.name, "version": self.version, "nID": self.id}
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
@@ -1238,15 +1255,6 @@ class Plugin(ArianeNode):
             dir["node"] = self.node
             self.node = DeliveryTree.graph_dao.save_node(dir)
 
-            if self._old_version != self.version:
-                for s in self.list_submod:
-                    s.version = self.version
-                    s.save()
-                for f in self.list_files:
-                    f.version = self.version
-                    f.save()
-                self._old_version = self.version
-
             if len(self.list_module_dependency) > self._len_list_mod_dep:
                 for dep in self.list_module_dependency:
                     self.__create_dependency(dep)
@@ -1256,6 +1264,16 @@ class Plugin(ArianeNode):
                     submod.save()
                     self.__create_relation(submod)
                 self._len_list_submod = len(self.list_submod)
+
+            if self._old_version != self.version:
+                DeliveryTree.plugin_service.update_arianenode_lists(self)
+                for s in self.list_submod:
+                    s.version = self.version
+                    s.save()
+                for f in self.list_files:
+                    f.version = self.version
+                    f.save()
+                self._old_version = self.version
 
     def delete(self):
         """

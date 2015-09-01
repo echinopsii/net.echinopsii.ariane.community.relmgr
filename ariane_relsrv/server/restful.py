@@ -26,6 +26,7 @@ from flask import Flask, make_response, render_template
 from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import ariane_delivery
 import json
+import subprocess
 
 app = Flask(__name__)
 api = Api(app)
@@ -137,28 +138,34 @@ class RestFileNodeList(Resource):
         args = self.reqparse.parse_args()
         if args["nID"] is not None and args["nID"] > 0:
             f = ariane_delivery.FileNode.get_file_by_nid(args["nID"])
-            if isinstance(f, ariane_delivery.FileNode):
-                clear_args(args)
-                if f.update(args):
-                    f.save()
-                    f = f.get_properties(gettype=True)
-                    return make_response(json.dumps({"filenode": f}), 200, headers_json)
+            if ariane.is_dev_version(f):
+                if isinstance(f, ariane_delivery.FileNode):
+                    clear_args(args)
+                    if f.update(args):
+                        f.save()
+                        f = f.get_properties(gettype=True)
+                        return make_response(json.dumps({"filenode": f}), 200, headers_json)
+                    else:
+                        abort_error("BAD_REQUEST", "FileNode {} already exists".format(args))
                 else:
-                    abort_error("BAD_REQUEST", "FileNode {} already exists".format(args))
+                    abort_error("BAD_REQUEST", "Given parameters {} does not match any FileNode in database".format(args))
             else:
-                abort_error("BAD_REQUEST", "Given parameters {} does not match any FileNode in database".format(args))
+                abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         elif args["filenode"] is not None and args["parent"] is None:
             arg_p = json.loads(args["filenode"])
             f = ariane_delivery.FileNode.get_file_by_nid(arg_p["nID"])
-            if isinstance(f, ariane_delivery.FileNode):
-                if f.update(arg_p):
-                    f.save()
+            if ariane.is_dev_version(f):
+                if isinstance(f, ariane_delivery.FileNode):
+                    if f.update(arg_p):
+                        f.save()
 
-                    return make_response(json.dumps({"filenode": f.get_properties(gettype=True)}), 200, headers_json)
+                        return make_response(json.dumps({"filenode": f.get_properties(gettype=True)}), 200, headers_json)
+                    else:
+                        abort_error("BAD_REQUEST", "FileNode {} already exists".format(f.get_properties()))
                 else:
-                    abort_error("BAD_REQUEST", "FileNode {} already exists".format(f.get_properties()))
+                    abort_error("BAD_REQUEST", "Given parameter 'filenode' is not a FileNode")
             else:
-                abort_error("BAD_REQUEST", "Given parameter 'filenode' is not a FileNode")
+                abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         else:
             fmodel = ariane_delivery.FileNode("", "", "", "")
             for key in args.keys():
@@ -244,25 +251,31 @@ class RestPluginList(Resource):
         args = self.reqparse.parse_args()
         if args["nID"] is not None and args["nID"] > 0:
             p = ariane.plugin_service.get_unique({"nID": args["nID"]})
-            if isinstance(p, ariane_delivery.Plugin):
-                clear_args(args)
-                if p.update(args):
-                    p.save()
-                    p = p.get_properties(gettype=True)
-                    return make_response(json.dumps({"plugin": p}), 200, headers_json)
+            if ariane.is_dev_version(p):
+                if isinstance(p, ariane_delivery.Plugin):
+                    clear_args(args)
+                    if p.update(args):
+                        p.save()
+                        p = p.get_properties(gettype=True)
+                        return make_response(json.dumps({"plugin": p}), 200, headers_json)
+                    else:
+                        abort_error("BAD_REQUEST", "Plugin {} already exists".format(args))
                 else:
-                    abort_error("BAD_REQUEST", "Plugin {} already exists".format(args))
+                    abort_error("BAD_REQUEST", "Given parameters {} don't match any Plugin in database".format(args))
             else:
-                abort_error("BAD_REQUEST", "Given parameters {} don't match any Plugin in database".format(args))
+                abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         elif args["plugin"] is not None:
             arg_p = json.loads(args["plugin"])
             p = ariane.plugin_service.get_unique(arg_p)
-            if isinstance(p, ariane_delivery.Plugin):
-                if p.update(arg_p):
-                    p.save()
-                    return make_response(json.dumps({"plugin": p.get_properties(gettype=True)}), 200, headers_json)
+            if ariane.is_dev_version(p):
+                if isinstance(p, ariane_delivery.Plugin):
+                    if p.update(arg_p):
+                        p.save()
+                        return make_response(json.dumps({"plugin": p.get_properties(gettype=True)}), 200, headers_json)
+                else:
+                    abort_error("BAD_REQUEST", "Given parameters {} don't match any Plugin in database".format(arg_p))
             else:
-                abort_error("BAD_REQUEST", "Given parameters {} don't match any Plugin in database".format(arg_p))
+                abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         else:
             p = ariane_delivery.Plugin("", "")
             for key in args.keys():
@@ -385,29 +398,35 @@ class RestSubModuleList(Resource):
             s = ariane.submodule_service.get_unique({"nID": args["nID"]})
             if s is None:
                 s = ariane.submodule_parent_service.get_unique({"nID": args["nID"]})
-            if isinstance(s, ariane_delivery.SubModule) or isinstance(s, ariane_delivery.SubModuleParent):
-                clear_args(args)
-                if s.update(args):
-                    s.save()
-                    s = s.get_properties(gettype=True)
-                    return make_response(json.dumps({"submodule": s}), 200, headers_json)
+            if ariane.is_dev_version(s):
+                if isinstance(s, ariane_delivery.SubModule) or isinstance(s, ariane_delivery.SubModuleParent):
+                    clear_args(args)
+                    if s.update(args):
+                        s.save()
+                        s = s.get_properties(gettype=True)
+                        return make_response(json.dumps({"submodule": s}), 200, headers_json)
+                    else:
+                        abort_error("BAD_REQUEST", "Submodule {} already exists".format(args))
                 else:
-                    abort_error("BAD_REQUEST", "Submodule {} already exists".format(args))
+                    abort_error("BAD_REQUEST", "Given parameters {} does not match any Submodule in database".format(args))
             else:
-                abort_error("BAD_REQUEST", "Given parameters {} does not match any Submodule in database".format(args))
+                abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         elif args["submodule"] is not None:
             arg_s = json.loads(args["submodule"])
             s = ariane.submodule_service.get_unique(arg_s)
             if s is None:
                 s = ariane.submodule_parent_service.get_unique(arg_s)
-            if isinstance(s, ariane_delivery.SubModule) or isinstance(s, ariane_delivery.SubModuleParent):
-                if s.update(arg_s):
-                    s.save()
-                    return json.dumps({"submodule": s.get_properties(gettype=True)}), 200
+            if ariane.is_dev_version(s):
+                if isinstance(s, ariane_delivery.SubModule) or isinstance(s, ariane_delivery.SubModuleParent):
+                    if s.update(arg_s):
+                        s.save()
+                        return json.dumps({"submodule": s.get_properties(gettype=True)}), 200
+                    else:
+                        abort_error("BAD_REQUEST", "Nothing to update, values are the same")
                 else:
-                    abort_error("BAD_REQUEST", "Nothing to update, values are the same")
+                    abort_error("BAD_REQUEST", "Given parameter {} does not match any submodule".format(arg_s))
             else:
-                abort_error("BAD_REQUEST", "Given parameter {} does not match any submodule".format(arg_s))
+                abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         else:
             for key in args.keys():
                 if key in ["isSubModuleParent", "name", "parent"] and args[key] is None:
@@ -508,23 +527,29 @@ class RestModuleList(Resource):
         args = self.reqparse.parse_args()
         if args["nID"] is not None and args["nID"] > 0:
             m = ariane.module_service.get_unique({"nID": args["nID"]})
-            if isinstance(m, ariane_delivery.Module):
-                clear_args(args)
-                if m.update(args):
-                    m.save()
-                    m = m.get_properties(gettype=True)
-                    return make_response(json.dumps({"module": m}), 200, headers_json)
+            if ariane.is_dev_version(m):
+                if isinstance(m, ariane_delivery.Module):
+                    clear_args(args)
+                    if m.update(args):
+                        m.save()
+                        m = m.get_properties(gettype=True)
+                        return make_response(json.dumps({"module": m}), 200, headers_json)
+                    else:
+                        abort_error("BAD_REQUEST", "Module {} already exists".format(args))
                 else:
-                    abort_error("BAD_REQUEST", "Module {} already exists".format(args))
+                    abort_error("BAD_REQUEST", "Given parameters {} does not match any Module in database".format(args))
             else:
-                abort_error("BAD_REQUEST", "Given parameters {} does not match any Module in database".format(args))
+                abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         elif args["module"] is not None:
             arg_m = json.loads(args["module"])
             m = ariane.module_service.get_unique(arg_m)
-            if isinstance(m, ariane_delivery.Module):
-                if m.update(arg_m):
-                    m.save()
-                    return make_response(json.dumps({"module": m.get_properties(gettype=True)}), 200, headers_json)
+            if ariane.is_dev_version(m):
+                if isinstance(m, ariane_delivery.Module):
+                    if m.update(arg_m):
+                        m.save()
+                        return make_response(json.dumps({"module": m.get_properties(gettype=True)}), 200, headers_json)
+            else:
+                abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         else:
             m = ariane_delivery.Module("", "", "")
             for key in args.keys():
@@ -595,31 +620,45 @@ class RestDistributionList(Resource):
 
     def get(self):
         dlist = ariane.distribution_service.get_all()
-        d = [d.get_properties(gettype=True) for d in dlist]
-        return make_response(json.dumps({"distribs": d}), 200, headers_json)
+        dev = ariane.distribution_service.get_dev_distrib()
+        dprop = [d.get_properties(gettype=True) for d in dlist]
+        for d in dprop:
+            if d["nID"] == dev.id:
+                d["snapshot"] = True
+            else:
+                d["snapshot"] = False
+        return make_response(json.dumps({"distribs": dprop}), 200, headers_json)
 
     def post(self):
         args = self.reqparse.parse_args()
         if args["nID"] is not None:
             d = ariane.distribution_service.get_unique({"nID": args["nID"]})
-            if isinstance(d, ariane_delivery.Distribution):
-                args.pop("nID")
-                if d.update(args):
-                    d.save()
-                    d = d.get_properties(gettype=True)
-                    return make_response(json.dumps({"distrib": d}), 200, headers_json)
+            dev = ariane.distribution_service.get_dev_distrib()
+            if d == dev:
+                if isinstance(d, ariane_delivery.Distribution):
+                    args.pop("nID")
+                    if d.update(args):
+                        d.save()
+                        d = d.get_properties(gettype=True)
+                        return make_response(json.dumps({"distrib": d}), 200, headers_json)
+                    else:
+                        abort_error("BAD_REQUEST", "Distribution {} already exists".format(args))
                 else:
-                    abort_error("BAD_REQUEST", "Distribution {} already exists".format(args))
+                    abort_error("BAD_REQUEST", "Given parameters {} does not match any Distribition in database".format(args))
             else:
-                abort_error("BAD_REQUEST", "Given parameters {} does not match any Distribition in database".format(args))
+                abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         elif args["distrib"] is not None:
             arg_d = json.loads(args["distrib"])
             d = ariane.distribution_service.get_unique(arg_d)
-            if isinstance(d, ariane_delivery.Distribution):
-                arg_d.pop("nID")
-                if d.update(arg_d):
-                    d.save()
-                    return make_response(json.dumps({"distrib": d.get_properties(gettype=True)}), 200, headers_json)
+            dev = ariane.distribution_service.get_dev_distrib()
+            if d == dev:
+                if isinstance(d, ariane_delivery.Distribution):
+                    arg_d.pop("nID")
+                    if d.update(arg_d):
+                        d.save()
+                        return make_response(json.dumps({"distrib": d.get_properties(gettype=True)}), 200, headers_json)
+            else:
+                abort_error("BAD_REQUEST", "Can not modifiy Distribution which is not in SNAPSHOT Version")
         else:
             dist_exists = ariane.distribution_service.get_unique({"name": args["name"], "version": args["version"]})
             if dist_exists is None:
@@ -650,6 +689,22 @@ class RestDistributionList(Resource):
     #     else:
     #         abort_error("BAD_REQUEST", "Distribution {} does not exist".format(args))
 
+class RestGeneration(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('command', type=str, help='Command of File Generation')
+        super(RestGeneration, self).__init__()
+
+    def post(self):
+        """
+        Use a subprocess calling "bootstrap/command.py 'command (arguments for command.py)'" to execute the File Generation.
+        command.py handles the change of working directory
+        :return:
+        """
+        args = self.reqparse.parse_args()
+        if args["command"] is not None:
+            subprocess.call('python3 ../../bootstrap/command.py ' + args["command"], shell=True)
+
 
 api.add_resource(RestDistributionList, '/rest/distrib')
 api.add_resource(RestDistribution, '/rest/distrib/<int:unique_key>', '/rest/distrib/<unique_key>')
@@ -661,6 +716,7 @@ api.add_resource(RestSubModuleList, '/rest/submodule')
 api.add_resource(RestSubModule, '/rest/submodule/<int:unique_key>', '/rest/submodule/<unique_key>')
 api.add_resource(RestFileNodeList, '/rest/filenode')
 api.add_resource(RestFileNode, '/rest/filenode/<int:unique_key>', '/rest/filenode/<unique_key>')
+api.add_resource(RestGeneration, '/rest/generation')
 api.add_resource(UI, '/', "/index", "/index.html")
 api.add_resource(HelloHtml, '/hellohtml')
 api.add_resource(Temp1, '/edition.html')

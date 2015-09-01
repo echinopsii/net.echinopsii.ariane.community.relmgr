@@ -55,8 +55,6 @@ angular.module('ArianeUI')
         }
         function loadFiles(node){
             $scope.fileSet.parent = node;
-            if (node.node_type == "distrib")
-                $scope.fileSet.parent.name = "distrib_" + node.version;
             serviceAjax.file(node).success(function (data) {
                 data.filenodes.sort(sortName);
                 $scope.fileSet.filenodes = data.filenodes;
