@@ -914,6 +914,7 @@ class Module(ArianeNode):
         self._len_list_mod_dep = 0
         self._len_list_submod = 0
         self._len_list_files = 0
+        self._old_version = ""
 
     def _get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "type": self.type, "git_repos": self.git_repos,
@@ -942,13 +943,16 @@ class Module(ArianeNode):
     def save(self):
         if self._is_saved() is False:
             for submod in self.list_submod:
+                submod.version = self.version
                 submod.save()
 
             for fnode in self.list_files:
                 if fnode.id == 0:
+                    fnode.version = self.version
                     fnode.save()
 
             self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
+            self._old_version = self.version
 
             for submod in self.list_submod:
                 self.__create_relation(submod)
@@ -967,6 +971,15 @@ class Module(ArianeNode):
             dir = self._get_dir()
             dir["node"] = self.node
             self.node = DeliveryTree.graph_dao.save_node(dir)
+
+            if self._old_version != self.version:
+                for s in self.list_submod:
+                    s.version = self.version
+                    s.save()
+                for f in self.list_files:
+                    f.version = self.version
+                    f.save()
+                self._old_version = self.version
 
             if len(self.list_module_dependency) > self._len_list_mod_dep:
                 for dep in self.list_module_dependency:
@@ -1177,6 +1190,7 @@ class Plugin(ArianeNode):
         self.list_module_dependency = []
         self._len_list_submod = 0
         self._len_list_mod_dep = 0
+        self._old_version = ""
         self.dir = {"name": self.name, "version": self.version, "nID": self.id}
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
@@ -1206,6 +1220,7 @@ class Plugin(ArianeNode):
                 fnode.save()
 
             self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
+            self._old_version = self.version
 
             for submod in self.list_submod:
                 self.__create_relation(submod)
@@ -1222,6 +1237,15 @@ class Plugin(ArianeNode):
             dir = self._get_dir()
             dir["node"] = self.node
             self.node = DeliveryTree.graph_dao.save_node(dir)
+
+            if self._old_version != self.version:
+                for s in self.list_submod:
+                    s.version = self.version
+                    s.save()
+                for f in self.list_files:
+                    f.version = self.version
+                    f.save()
+                self._old_version = self.version
 
             if len(self.list_module_dependency) > self._len_list_mod_dep:
                 for dep in self.list_module_dependency:

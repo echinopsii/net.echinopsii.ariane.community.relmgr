@@ -187,6 +187,10 @@ class AppTest(unittest.TestCase):
     def test_ModuleService(self):
         self.mod.version = "newmew"
         self.mod.save()
+        for s in self.mod.list_submod:
+            self.assertEqual(s.version, self.mod.version)
+        for f in self.mod.list_files:
+            self.assertEqual(f.version, self.mod.version)
 
         #   ModuleService:
         listmod = self.ariane.module_service.get_all(self.distrib)
