@@ -461,7 +461,7 @@ class Generator(object):
             if mod["name"] in vsh_exceptions:
                 modlist.remove(mod)
 
-        template = self.env.get_template(fvsh.path+'installer_vsh.tpl')
+        template = self.env.get_template(fvsh.path+'installer_vsh.yml')
         args = {"modules": modlist}
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
             target.write(template.render(args))
@@ -470,7 +470,7 @@ class Generator(object):
         if "-SNAPSHOT" in p.version:
             v = p.version
             v = str(v).replace('-', '.')
-        template = self.env.get_template(fvsh.path+'plugin_vsh.tpl')
+        template = self.env.get_template(fvsh.path+'plugin_vsh.yml')
         args = {"plugin": {"name": p.name, "version": v}}
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
             target.write(template.render(args))
