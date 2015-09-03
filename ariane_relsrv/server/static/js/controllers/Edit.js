@@ -13,7 +13,7 @@ angular.module('ArianeUI')
         $scope.parent = {};
         $scope.page = 'edition';
         var editionTemplates = [{name: 'edition', url:'editionViewEdit.html'}, {name:'releaseA', url:'editionViewEdit.html'}, {name:'releaseB', url:'editionDiff.html'}];
-        $scope.editionTemplate = editionTemplates[2];
+        $scope.editionTemplate = editionTemplates[0];
         var templateErr = "err.html";
         var editablesView = {
             module: ['name', 'version', 'order', 'git_repos', 'type'],
@@ -29,7 +29,7 @@ angular.module('ArianeUI')
             filenode: ["name", "version", "type", "path"],
             distrib: ["name", "version"]
         };
-
+        $scope.filediff = {diff: [{line: "", color: ""}], message: ""};
         /* ********************* EVENTS ********************* */
         $scope.$on('handleEdition', function(){
             if(!$scope.activeEdit) {
@@ -57,15 +57,20 @@ angular.module('ArianeUI')
                     $scope.selectedObj = fileObj;
                     serviceAjax.getFileDiff(fileObj.node)
                         .success(function(data){
-                            $scope.filediff = data.filediff;
+                            $scope.filediff.diff = [{line:"", color:""}];
+                            for (var i= 0, len=data.diff.length; i<len; i++){
+                                $scope.filediff.diff.push({line: data.diff[i], color: ""})
+                            }
+                            colorDiffLines();
+                            console.log(data.diff);
                         })
                         .error(function(data){
-                            $scope.filediff = "** Error while searching for differences **";
+                            $scope.filediff.diff = "** Error while searching for differences **";
                         })
                 }
                 else{
                     $scope.selectedObj = null;
-                    $scope.filediff = "";
+                    $scope.filediff.diff = "";
                 }
         });
 
@@ -174,6 +179,21 @@ angular.module('ArianeUI')
                 serviceUI.setActiveEdit(value);
             else { return; }
             serviceUI.actionBroadcast(key_scope);
+        }
+
+        function colorDiffLines(){
+            var lines = $scope.filediff.diff;
+            for (var i= 0, len=lines.length ; i<len; i++){
+                var line = String(lines[i].line);
+                if(line.indexOf('+') == 0)
+                    lines[i].color = "DiffGreen";
+                else if(line.indexOf('-') == 0)
+                    lines[i].color = "DiffRed";
+                else if (line.indexOf('---') == 0 || line.indexOf('+++') == 0 || line.indexOf('index') == 0 || line.indexOf('diff') == 0)
+                    lines[i].color = "DiffWhite";
+                else if (line.indexOf('@@') == 0)
+                    lines[i].color = "DiffBlue";
+            }
         }
 
         function updateJSON(obj, model){

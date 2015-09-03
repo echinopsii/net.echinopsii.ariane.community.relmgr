@@ -4,6 +4,10 @@
 <div class="colBody">
     {% raw %}
     <span ng-if="selectedObj"> File: {{ selectedObj.node.name }}</span>
-    <div ng-if="selectedOBj">{{ filediff }}</div>
+    <div>Differences:
+        <ul ng-repeat="line in filediff.diff">
+            <li ng-class="line.color">{{ line.line }}</li>
+        </ul>
+    </div>
     {% endraw %}
 </div>

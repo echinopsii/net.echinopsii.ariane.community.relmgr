@@ -76,7 +76,7 @@ ul {
 }
 
 .colEdit{
-    background-color: #DA70D6;
+    background-color: #4e7878;
     float: left;
     width: 30%;
     padding-right: 2%;
@@ -109,6 +109,19 @@ ul {
 }
 .centerize{
     text-align: center;
+}
+
+.DiffGreen{
+    color: #3cfc4f;
+}
+.DiffRed{
+    color: #fc0f21;
+}
+.DiffWhite{
+    color: white;
+}
+.DiffBlue{
+    color: aqua;
 }
 
 [ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {

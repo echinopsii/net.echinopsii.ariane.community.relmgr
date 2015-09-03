@@ -737,7 +737,7 @@ class RestFileDiff(Resource):
                     os.chdir(backup_path)
                     diffrec = ""
                     with open(project_path+srv_var_path+self.diffrec_filename, "r") as openfile:
-                        diffrec = openfile.read()
+                        diffrec = openfile.readlines()
                     return make_response(json.dumps({"diff": diffrec}), 200, headers_json)
                 else:
                     abort_error("BAD_REQUEST", "Path of file {} does not exist in project arborescence".format(f))

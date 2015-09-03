@@ -81,7 +81,7 @@ angular.module('ArianeUI')
                 }
                 else if (buttonType == "edition")
                 {
-                    if(page == "releaseA")
+                    if(page == "releaseA" || page =="releaseB")
                         page = "edition";
                 }
                 return oldPage != page;
