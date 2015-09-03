@@ -21,6 +21,7 @@ project_path = os.getcwd()
 project_path = project_path[:project_path.index('/ariane.community.relmgr')]
 import sys
 sys.path.append(project_path)
+sys.path.append(project_path+"/ariane.community.relmgr")
 import shutil
 from flask import Flask, make_response, render_template, send_from_directory
 from flask_restful import reqparse, abort, Api, Resource
@@ -34,6 +35,7 @@ from datetime import datetime
 app = Flask(__name__)
 api = Api(app)
 ariane = ariane_delivery.DeliveryTree({"login": "neo4j", "password": "admin", "type": "neo4j"})
+srv_var_path = "/ariane.community.relmgr/ariane_relsrv/server/var/"
 
 def abort_error(error, msg):
     if error == "BAD_REQUEST":
@@ -711,6 +713,36 @@ class FilesInfo(object):
     def __init__(self):
         pass
 
+class RestFileDiff(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('filenode', help="Filenode from which you get diff")
+        self.diffrec_filename = "gitdiff.txt"
+        super(RestFileDiff, self).__init__()
+
+    def get(self):
+        args = self.reqparse.parse_args()
+        if args["filenode"] is not None:
+            fnode = args["filenode"]
+            f = ariane.find_without_label({"nID": fnode["nID"]})
+            if f is not None:
+                if os.path.exists(project_path + f.path):
+                    backup_path = os.getcwd()
+                    os.chdir(project_path + f.path)
+                    if os.path.isfile(project_path+srv_var_path+self.diffrec_filename):
+                        os.remove(project_path+srv_var_path+self.diffrec_filename)
+                    os.system("touch "+project_path+srv_var_path+self.diffrec_filename)
+                    os.system("git diff " + f.name + " > " + project_path + srv_var_path + self.diffrec_filename)
+                    os.chdir(backup_path)
+                    diffrec = ""
+                    with open(project_path+srv_var_path+self.diffrec_filename, "r") as openfile:
+                        diffrec = openfile.read()
+                    return make_response(json.dumps({"diff": diffrec}), 200, headers_json)
+                else:
+                    abort_error("BAD_REQUEST", "Path of file {} does not exist in project arborescence".format(f))
+            else:
+                abort_error("BAD_REQUEST", "Given parameter {} does not match an existing file in database".format(fnode))
+
 class RestDownZip(Resource):
     def __init__(self):
         super(RestDownZip, self).__init__()
@@ -776,13 +808,24 @@ class RestBuildZip(Resource):
             ftmp_path = "/ariane.community.relmgr/ariane_relsrv/server/var/"
             print("project_path: ", project_path)
             os.system("touch " + project_path + ftmp_path + ftmp_fname)
+            cur_path = os.getcwd()
+            os.chdir(project_path + "/ariane.community.distrib")
+            print(os.getcwd())
+            # myenv = os.environ.copy()
+            # myenv["JAVA_HOME"] = "/Library/Java/JavaVirtualMachines/jdk1.7.0_71.jdk/Contents/Home"
+            # myenv["MAVEN_HOME"] = "/usr/local/Cellar/maven/3.2.5"
+            subprocess.Popen("./distribManager.py distpkgr " + version + " "
+                                                                         "> "+project_path + ftmp_path + ftmp_fname, shell=True)
+            os.chdir(cur_path)
             #os.system(project_path + "/ariane.community.distrib/distribManager.py distpkgr " + version + " "
             #         "> "+project_path + ftmp_path + ftmp_fname)
             #subprocess.call(project_path + "/ariane.community.distrib/distribManager.py distpkgr " + version + " "
-            #               "> "+project_path + ftmp_path + ftmp_fname, shell=True)
+            #              "> "+project_path + ftmp_path + ftmp_fname, shell=True)
             # Popen creates child process
+            # my_env = os.environ.copy()
+            # my_env["JAVA_HOME"] = "/Library/Java/JavaVirtualMachines/jdk1.7.0_71.jdk/Contents/Home"
             #subprocess.Popen(project_path + "/ariane.community.distrib/distribManager.py distpkgr " + version + " "
-            #                 "> "+project_path + ftmp_path + ftmp_fname, shell=True)
+            #                "> "+project_path + ftmp_path + ftmp_fname, shell=True, env=my_env)
 
             # Check end of building
             timeout = 2 * 60
@@ -802,8 +845,8 @@ class RestBuildZip(Resource):
                 timediff = stime2 - stime
                 if timediff > timeout:
                     break
-                if timediff > 3:  # FOR TEST
-                    shutil.copy(path_zip+filenames[0], path_zip+'aladin.zip')
+                    #if timediff > 3:  # FOR TEST
+                    #    shutil.copy(path_zip+filenames[0], path_zip+'aladin.zip')
             if build_done:
                 # get name of the new file
                 zipfile = [f for f in new_filenames if f not in filenames][0]
@@ -865,6 +908,7 @@ api.add_resource(RestFileNode, '/rest/filenode/<int:unique_key>', '/rest/filenod
 api.add_resource(RestGeneration, '/rest/generation')
 api.add_resource(RestBuildZip, '/rest/buildzip')
 api.add_resource(RestDownZip, '/rest/downloadzip')
+api.add_resource(RestFileDiff, '/rest/filediff')
 # Templates
 api.add_resource(TempBaseEdit, '/baseEdition.html')
 api.add_resource(TempBaseRelA, '/baseRelA.html')

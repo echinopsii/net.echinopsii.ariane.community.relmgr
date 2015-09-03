@@ -2,9 +2,8 @@
     <span>File Differences</span>
 </div>
 <div class="colBody">
-    <div ng-if="selectedObj.obj == 'filenode'">
-        {% raw %}
-        <span> File: {{ selectedObj.node.name }}</span>
-        {% endraw %}
-    </div>
+    {% raw %}
+    <span ng-if="selectedObj"> File: {{ selectedObj.node.name }}</span>
+    <div ng-if="selectedOBj">{{ filediff }}</div>
+    {% endraw %}
 </div>

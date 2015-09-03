@@ -18,18 +18,17 @@
 
 import sys, os, shutil, argparse, subprocess, json
 
+module_name = '/ariane.community.relmgr'
 project_path = str(os.getcwd())
-print(project_path)
-if project_path.endswith("ariane_relsrv/server"):
-    os.chdir(project_path[:-len("ariane_relsrv/server")] + 'bootstrap')
-    project_path = str(os.getcwd())
-    print("Working in subprocess, changing subprocess path to: ", project_path)
-if project_path.endswith('/bootstrap'):
-    module_path = project_path[:-len('/bootstrap')]
-    sys.path.append(module_path)
-    project_path = project_path[:-len('/ariane.community.relmgr/bootstrap')]
+if not os.path.exists(project_path + module_name):
+    if module_name in project_path:
+        project_path = project_path[:project_path.index(module_name)]
+        if not os.path.exists(project_path + module_name):
+            raise Exception("Incorrect project path: ", project_path)
+        sys.path.append(project_path + module_name)
 else:
-    raise Exception("Incorrect project path: ", project_path)
+    if project_path + module_name not in sys.path:
+        sys.path.append(project_path + module_name)
 
 from ariane_reltreelib.generator import generator
 from ariane_reltreelib.dao import ariane_delivery

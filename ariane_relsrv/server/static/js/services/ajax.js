@@ -102,6 +102,13 @@ angular.module('ArianeUI')
             buildZip: function(version){
                 var data = {command: version};
                 return $http.post("http://localhost:5000/rest/buildzip", data);
+            },
+            getFileDiff: function(filenode){
+                if(filenode.node_type == "filenode"){
+                    var data = {"filenode": filenode};
+                    var config = {params: data};
+                    return $http.get("http://localhost:5000/rest/filediff", config)
+                }
             }
         };
     });

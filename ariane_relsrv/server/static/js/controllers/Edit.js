@@ -49,8 +49,24 @@ angular.module('ArianeUI')
                 if(old_enableEdit != $scope.enableEdit)
                     setScopeAndNotify('enableEdit', $scope.enableEdit);
             }
+        });
 
-            return $scope.enableEdit;
+        $scope.$on('handleDiff', function(){
+                var fileObj = serviceUI.getSelectedObj();
+                if (backupObj != -1 && fileObj.obj == "filenode"){
+                    $scope.selectedObj = fileObj;
+                    serviceAjax.getFileDiff(fileObj.node)
+                        .success(function(data){
+                            $scope.filediff = data.filediff;
+                        })
+                        .error(function(data){
+                            $scope.filediff = "** Error while searching for differences **";
+                        })
+                }
+                else{
+                    $scope.selectedObj = null;
+                    $scope.filediff = "";
+                }
         });
 
         $scope.$on('addEdit', function(){

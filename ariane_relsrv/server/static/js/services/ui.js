@@ -92,7 +92,10 @@ angular.module('ArianeUI')
                     if(state.status.indexOf("new") > -1){
                         if(state.status == 'newBase')
                             $rootScope.$broadcast('newBaseSelected');
-                        $rootScope.$broadcast('handleEdition');
+                        if(page != "releaseB")
+                            $rootScope.$broadcast('handleEdition');
+                        else if(page == "releaseB")
+                            $rootScope.$broadcast('handleDiff');
                     }
                     else if(state.status == "addEdit" || state.status == "delEdit"){
                         $rootScope.$broadcast(state.status);
