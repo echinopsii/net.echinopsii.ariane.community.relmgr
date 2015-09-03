@@ -24,7 +24,8 @@
                 {% endraw %}
             </ul>
             </div>
-            <div ng-include="template.url"></div>
+            <!-- ************************ INCLUDED TEMPLATE  ************************ -->
+            <div ng-include="baseTemplate.url"></div>
         </div>
     </div>
     <!-- ****************************************************** COLUMN COMPOSITION ******************************************************-->
@@ -101,32 +102,7 @@
     </div>
     <!-- ****************************************************** COLUMN EDITION ******************************************************-->
     <div class="colEdit" ng-controller="EditCtrl">
-        <div class="colHeader">
-            <span>View / Edition
-                <button class="btnSave" ng-click="save()" ng-disabled="!activeEdit">Save</button>
-                <button class="btnSave" ng-click="cancel()" ng-disabled="!activeEdit">Cancel</button>
-            </span>
-        </div>
-        <div class="colBody">
-        <div ng-class="enableEdit ? 'editEnable' : 'editDisable'">
-            {% raw %}
-            <div ng-if="isNewNode">
-                <span>Edit the new {{ selectedObj.obj }} object</span>
-                <p ng-if="selectedObj.obj == 'submodule'">
-                    Submodule parent ? <select ng-model="choice.isNewSubParent"><option value="yes">yes</option><option value="no">no</option></select>
-                </p>
-            </div>
-            <div ng-if="isDeleting">
-                <span>Confirm to delete the following object: <select ng-model="choice.deleting"><option value="yes">yes</option><option value="no">no</option></select></span>
-            </div>
-            {% endraw %}
-            <ul class="editPropList" ng-repeat="(prop, value) in selectedObj.node">
-                <li class="editPropInput" ng-if="isPropEditable(prop)">
-                    <label ng-bind="prop"></label><input type="text" ng-disabled="!enableEdit" ng-model="selectedObj.node[prop]" ng-change="setActiveEdit()">
-                </li>
-            </ul>
-        </div>
-        </div>
+        <div ng-include="editionTemplate.url"></div>
     </div>
 </div>
 <!--<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>

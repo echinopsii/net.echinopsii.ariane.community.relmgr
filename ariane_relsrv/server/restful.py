@@ -18,30 +18,30 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 project_path = os.getcwd()
-project_path = project_path[:-len('/ariane_relsrv/server')]
+project_path = project_path[:project_path.index('/ariane.community.relmgr')]
 import sys
 sys.path.append(project_path)
-
-from flask import Flask, make_response, render_template
+import shutil
+from flask import Flask, make_response, render_template, send_from_directory
 from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import ariane_delivery
+from ariane_reltreelib import exceptions as err
+from bootstrap import command
 import json
 import subprocess
+from datetime import datetime
 
 app = Flask(__name__)
 api = Api(app)
 ariane = ariane_delivery.DeliveryTree({"login": "neo4j", "password": "admin", "type": "neo4j"})
-
-# TODO Gérer argument json reçu. Factoriser les class
-
-dist = ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
-modules = ariane.module_service.get_all(dist)
 
 def abort_error(error, msg):
     if error == "BAD_REQUEST":
         abort(400, message=msg)
     elif error == "NOT_FOUND":
         abort(404, message=msg)
+    elif error == "INTERNAL_ERROR":
+        abort(500, message=msg)
 
 def clear_args(args):
     keys = [k for k in args.keys()]
@@ -65,12 +65,25 @@ class UI(Resource):
 class HelloHtml(Resource):
     def get(self):
         return make_response(render_template('helloworld.html'), 200, headers_html)
-class Temp1(Resource):
+class TempBaseEdit(Resource):
     def get(self):
         return make_response(render_template('baseEdition.html'), 200, headers_html)
-class Temp2(Resource):
+class TempBaseRelA(Resource):
     def get(self):
         return make_response(render_template('baseReleaseA.html'), 200, headers_html)
+class TempBaseRelB(Resource):
+    def get(self):
+        return make_response(render_template('baseReleaseB.html'), 200, headers_html)
+class TempEditViewEdit(Resource):
+    def get(self):
+        return make_response(render_template('editionViewEdit.html'), 200, headers_html)
+class TempEditDiff(Resource):
+    def get(self):
+        return make_response(render_template('editionDiff.html'), 200, headers_html)
+
+class TempErr(Resource):
+    def get(self):
+        return make_response(render_template('err.html'), 200, headers_html)
 
 class RestFileNode(Resource):
     def __init__(self):
@@ -242,7 +255,10 @@ class RestPluginList(Resource):
         if args["version"] is not None:
             d = ariane.distribution_service.get_unique({"version": args["version"]})
             plist = ariane.plugin_service.get_all(d)
-            p = [p.get_properties(gettype=True) for p in plist]
+            if plist is not None:
+                p = [p.get_properties(gettype=True) for p in plist]
+            else:
+                p = {}
             return make_response(json.dumps({"plugins": p}), 200, headers_json)
         else:
             abort_error("BAD_REQUEST", "Missing parameter 'version'")
@@ -688,6 +704,120 @@ class RestDistributionList(Resource):
     #         return {}, 200
     #     else:
     #         abort_error("BAD_REQUEST", "Distribution {} does not exist".format(args))
+class FilesInfo(object):
+    zipfile = ""
+    path_zip = ""
+
+    def __init__(self):
+        pass
+
+class RestDownZip(Resource):
+    def __init__(self):
+        super(RestDownZip, self).__init__()
+
+    def post(self):
+        path_zip = FilesInfo.path_zip
+        zipfile = FilesInfo.zipfile
+        checked = False
+        if os.path.exists(path_zip):
+            for (dp, dn, fn) in os.walk(path_zip):
+                if zipfile in fn:
+                    checked = True
+                break
+        if checked:
+            return send_from_directory(path_zip, zipfile, as_attachment=True, mimetype="application/zip")
+        else:
+            abort_error('BAD_REQUEST', "Zip file Path and Name does not match any existing zip file")
+
+class RestBuildZip(Resource):
+    def __init__(self):
+        self.path_zip = project_path + "/artifacts/"
+        self.zipfile = ""
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('command', type=str, help='Command of File Generation')
+        super(RestBuildZip, self).__init__()
+
+    def get(self):
+        pass # return send_from_directory(self.path_zip, self.zipfile, as_attachment=True, mimetype="application/zip")
+
+    def post(self):
+        """
+        Use a subprocess calling "bootstrap/command.py 'command (arguments for command.py)'" to execute the File Generation.
+        command.py handles the change of working directory
+        :return:
+        """
+        args = self.reqparse.parse_args()
+        if args["command"] is not None:
+            version = args["command"]
+            if "SNAPSHOT" in version:
+                version = "master.SNAPSHOT"
+
+            path_zip = self.path_zip
+            FilesInfo.path_zip = path_zip
+            # Rename existing zip
+            filenames = []
+            for (dp, dn, fn) in os.walk(path_zip):
+                filenames = fn
+                break
+            number_files = len(filenames)
+            tmp_copyname = "tmp_renamed_zip.zip"
+            backup_name = ""
+            if number_files > 0:
+                search_name = "ariane.community.distrib-" + version
+                for fn in filenames:
+                    if search_name in fn:
+                        backup_name = fn
+                        shutil.move(path_zip+fn, path_zip+tmp_copyname)
+                if backup_name != "":
+                    filenames[filenames.index(backup_name)] = tmp_copyname
+
+            # Build new zip with distribManager and print build info into 'infobuild.txt' file
+            ftmp_fname = "infobuild.txt"
+            ftmp_path = "/ariane.community.relmgr/ariane_relsrv/server/var/"
+            print("project_path: ", project_path)
+            os.system("touch " + project_path + ftmp_path + ftmp_fname)
+            #os.system(project_path + "/ariane.community.distrib/distribManager.py distpkgr " + version + " "
+            #         "> "+project_path + ftmp_path + ftmp_fname)
+            #subprocess.call(project_path + "/ariane.community.distrib/distribManager.py distpkgr " + version + " "
+            #               "> "+project_path + ftmp_path + ftmp_fname, shell=True)
+            # Popen creates child process
+            #subprocess.Popen(project_path + "/ariane.community.distrib/distribManager.py distpkgr " + version + " "
+            #                 "> "+project_path + ftmp_path + ftmp_fname, shell=True)
+
+            # Check end of building
+            timeout = 2 * 60
+            time = datetime.now().time()
+            stime = time.hour * 3600 + time.minute * 60 + time.second
+            build_done = False
+            new_filenames = []
+            while not build_done:
+                for (dp, dn, fn) in os.walk(path_zip): # TIMEOUT loop
+                    # if a new file is created, building is done
+                    if len(fn) > number_files:
+                        build_done = True
+                        new_filenames = fn
+                # timeout condition
+                stime2 = datetime.now().time()
+                stime2 = stime2.hour * 3600 + stime2.minute * 60 + stime2.second
+                timediff = stime2 - stime
+                if timediff > timeout:
+                    break
+                if timediff > 3:  # FOR TEST
+                    shutil.copy(path_zip+filenames[0], path_zip+'aladin.zip')
+            if build_done:
+                # get name of the new file
+                zipfile = [f for f in new_filenames if f not in filenames][0]
+                FilesInfo.zipfile = zipfile
+                # delete copied file or rename it as before
+                if number_files > 0:
+                    if (zipfile == backup_name) and (tmp_copyname in new_filenames):
+                        os.remove(path_zip+tmp_copyname)
+                    else:
+                        if (zipfile != backup_name) and (tmp_copyname in new_filenames):
+                            shutil.move(path_zip+tmp_copyname, path_zip+backup_name)
+                return make_response(json.dumps({"zip": zipfile, "message": "Build Success"}), 200, headers_json)
+            else:
+                abort_error("INTERNAL_ERROR", "Error while building")
 
 class RestGeneration(Resource):
     def __init__(self):
@@ -703,7 +833,23 @@ class RestGeneration(Resource):
         """
         args = self.reqparse.parse_args()
         if args["command"] is not None:
-            subprocess.call('python3 ../../bootstrap/command.py ' + args["command"], shell=True)
+            cmd = command.Command()
+            params = args["command"].split(' ')
+            if params[0] == "testOK":
+                return make_response(json.dumps({"message": args["command"]}), 200, headers_json)
+            elif params[0] == "testNOK":
+                abort_error("BAD_REQUEST", "TEST: the Error test has succeded")
+            if len(params) >= 2:
+                if len(params) == 2:
+                    params.append(None)
+                try:
+                    cmd.execute(params[0], params[1], params[2])
+                except err.CommandError as cmderr:
+                    abort_error("BAD_REQUEST", "{} (Given command {} is incorrect)".format(cmderr, args))
+            else:
+                abort_error("BAD_REQUEST", "Too few arguments in the given command {}".format(args))
+            # Working solution: subprocess.call('python3 ../../bootstrap/command.py ' + args["command"], shell=True)
+            return make_response(json.dumps({"message": args["command"]}), 200, headers_json)
 
 
 api.add_resource(RestDistributionList, '/rest/distrib')
@@ -717,10 +863,18 @@ api.add_resource(RestSubModule, '/rest/submodule/<int:unique_key>', '/rest/submo
 api.add_resource(RestFileNodeList, '/rest/filenode')
 api.add_resource(RestFileNode, '/rest/filenode/<int:unique_key>', '/rest/filenode/<unique_key>')
 api.add_resource(RestGeneration, '/rest/generation')
+api.add_resource(RestBuildZip, '/rest/buildzip')
+api.add_resource(RestDownZip, '/rest/downloadzip')
+# Templates
+api.add_resource(TempBaseEdit, '/baseEdition.html')
+api.add_resource(TempBaseRelA, '/baseRelA.html')
+api.add_resource(TempBaseRelB, '/baseRelB.html')
+api.add_resource(TempEditViewEdit, '/editionViewEdit.html')
+api.add_resource(TempEditDiff, '/editionDiff.html')
+api.add_resource(TempErr, '/err.html')
+# Tests
 api.add_resource(UI, '/', "/index", "/index.html")
 api.add_resource(HelloHtml, '/hellohtml')
-api.add_resource(Temp1, '/edition.html')
-api.add_resource(Temp2, '/releaseA.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

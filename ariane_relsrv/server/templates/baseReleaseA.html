@@ -1,4 +1,13 @@
 <hr class="separateur">
 <div class="centerize">
+    <select ng-model="cmdGen.cmd" ng-options="key for (key, value) in commandsRelA"></select>
     <button class="btnValidate" ng-click="clickValidate('relA')">VALIDATE</button>
+    {% raw %}
+    <p class="infolog" ng-show="info.release.exists">
+        {{ info.release.msg }} <input type="checkbox" ng-model="info.release.exists">
+    </p>
+    <p class="errorlog" ng-show="error.release.exists">
+        {{ error.release.msg }} <input type="checkbox" ng-model="error.release.exists">
+    </p>
+    {% endraw %}
 </div>

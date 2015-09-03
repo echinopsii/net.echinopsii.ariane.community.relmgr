@@ -36,9 +36,9 @@ angular.module('ArianeUI')
                 return page;
             },
             setState: function(newstate){
-                if(newstate.status == "editing")
+                if(state.status != "generation" && state.status != "zip" && newstate.status == "editing")
                     state = newstate;
-                if(state.status != "editing"){
+                if(state.status != "generation" && state.status != "zip" && state.status != "editing"){
                     state = newstate;
                     return true;
                 }

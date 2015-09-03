@@ -12,6 +12,9 @@ angular.module('ArianeUI')
         $scope.choice = {isNewSubParent: "no", deleting: "no"};
         $scope.parent = {};
         $scope.page = 'edition';
+        var editionTemplates = [{name: 'edition', url:'editionViewEdit.html'}, {name:'releaseA', url:'editionViewEdit.html'}, {name:'releaseB', url:'editionDiff.html'}];
+        $scope.editionTemplate = editionTemplates[2];
+        var templateErr = "err.html";
         var editablesView = {
             module: ['name', 'version', 'order', 'git_repos', 'type'],
             plugin: ["name", "version"],
@@ -27,6 +30,7 @@ angular.module('ArianeUI')
             distrib: ["name", "version"]
         };
 
+        /* ********************* EVENTS ********************* */
         $scope.$on('handleEdition', function(){
             if(!$scope.activeEdit) {
                 var old_enableEdit = $scope.enableEdit;
@@ -68,6 +72,21 @@ angular.module('ArianeUI')
             $scope.selectedObj = JSON.parse(JSON.stringify(backupObj));
             $scope.isDeleting = true;
         });
+
+        $scope.$on('changePage', function(){
+            $scope.page = serviceUI.getPage();
+            for(var i= 0, len=editionTemplates.length, flagErr=true; i<len; i++){
+                if(editionTemplates[i].name == $scope.page){
+                    $scope.editionTemplate = editionTemplates[i];
+                    flagErr = false;
+                    break;
+                }
+            }
+            if(flagErr)
+                $scope.editionTemplate = templateErr;
+        });
+
+        /* ********************* Main FUNCTIONS ********************* */
 
         $scope.setActiveEdit = function(){
             if($scope.enableEdit){
@@ -128,13 +147,7 @@ angular.module('ArianeUI')
               setScopeAndNotify('activeEdit', false);
           }
         };
-        function updateJSON(obj, model){
-            for (var key in model){
-                if(typeof obj[key] != "undefined"){
-                    obj[key] = model[key];
-                }
-            }
-        }
+
         function setScopeAndNotify(key_scope, value){
             $scope[key_scope] = value;
 
@@ -145,5 +158,13 @@ angular.module('ArianeUI')
                 serviceUI.setActiveEdit(value);
             else { return; }
             serviceUI.actionBroadcast(key_scope);
+        }
+
+        function updateJSON(obj, model){
+            for (var key in model){
+                if(typeof obj[key] != "undefined"){
+                    obj[key] = model[key];
+                }
+            }
         }
     });

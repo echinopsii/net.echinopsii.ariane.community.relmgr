@@ -53,7 +53,7 @@ class Command(object):
         with open('neo4j_login.json', 'r') as target:
             logins = json.load(target)
         if logins is None:
-            raise err.CommandError("Error, the GraphDB login file can not be read. It should be '(GraphDB_name)_login.json")
+            raise err.CommandError("GraphDB login file can not be read. It should be '(GraphDB_name)_login.json")
         for key in logins.keys():
             if key not in ["login", "password"]:
                 raise err.CommandError("Error in neo4j_login.json")
@@ -93,7 +93,7 @@ class Command(object):
                 for vl in vlist:
                     os.system(graphDBpath+"/bin/neo4j-shell -file dependency_db/" + vl)
             else:
-                raise err.CommandError("Error, neo4j-community should be in the projet path: {}".format(project_path))
+                raise err.CommandError("neo4j-community should be in the projet path: {}".format(project_path))
         return have_to_import
 
     def get_number_of_distribs(self):
@@ -104,7 +104,7 @@ class Command(object):
         fnames = [f for f in fnames if f.startswith("distrib_")]
         return len(fnames)
 
-    def execute(self):
+    def execute_parse(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("command", help="File generation command")
         parser.add_argument("version", help="Ariane Delivery version generated")
@@ -116,6 +116,9 @@ class Command(object):
         print(cmd, version)
         shutil.copy(project_path+"/ariane.community.distrib/resources/maven/plan_module_parent_tpl.xml",
                     project_path)
+        self.execute(cmd, version, name)
+
+    def execute(self, cmd, version, name):
         distrib = Command.ariane.distribution_service.get_unique({"version": version})
         if isinstance(distrib, ariane_delivery.Distribution):
             if cmd in Command.commands_dist:
@@ -161,7 +164,7 @@ class Command(object):
                                 fvsh = Command.ariane.get_one_file(p, "vsh")
                                 Command.g.generate_vsh_plugin(p, fvsh)
                             else:
-                                raise err.CommandError("Error, Plugin name not found in database")
+                                raise err.CommandError("Plugin name not found in database")
                     else:
                         # Get Module or Plugin
                         mod = [mod for mod in modules if mod.name == name]
@@ -184,18 +187,24 @@ class Command(object):
                                 fnode = Command.ariane.get_one_file(m, "plan")
                                 if fnode is not None:
                                     Command.g.generate_plan(m, fnode)
+                                else:
+                                    raise err.CommandError("Component or Plugin named:{} does not have a .plan file".format(m.name))
                             elif cmd == "lib_json":
                                 fnode = Command.ariane.get_one_file(m, "json_build")
                                 if fnode is not None:
                                     Command.g.generate_plan(m, fnode)
+                                else:
+                                    raise err.CommandError("Component or Plugin named:{} does not have a .json build file".format(m.name))
+                        else:
+                            raise err.CommandError("Given Component or Plugin named: {} was not found in DB".format(name))
 
             else:
-                raise err.CommandError("Error, wrong command")
+                raise err.CommandError("Wrong command")
         else:
-            raise err.CommandError("Error, Distribution not found in database")
+            raise err.CommandError("Distribution not found in database")
 
 
 
 if __name__ == '__main__':
     cmd = Command()
-    cmd.execute()
+    cmd.execute_parse()

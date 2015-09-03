@@ -3,18 +3,29 @@
  */
 angular.module('ArianeUI')
     .controller('DisplayColBaseCtrl', function ($scope, serviceAjax, serviceUI) {
+        // data
         $scope.dists = [];
         var plugins = [];
         $scope.pluginsDict = {Names: [], PluginSet: []};
         $scope.curBaseSelected = 0;
-        $scope.togDist = true;
-        $scope.togPlug = true;
+        // state
         $scope.enableEdit = false;
         $scope.activeEdit = false;
-        var templates = [{name: 'edition', url:'edition.html'}, {name:'releaseA', url:'releaseA.html'}];
-        $scope.template = templates[0];
         $scope.page = 'edition';
+        // templates
+        var baseTemplates = [{name: 'edition', url:'baseEdition.html'}, {name:'releaseA', url:'baseRelA.html'}, {name:'releaseB', url:'baseRelB.html'}];
+        $scope.baseTemplate = baseTemplates[0];
         var templateErr = "err.html";
+        // inputs/outputs
+        $scope.commandsRelA = {Distribution: "distribution", Modules_Only: "module_only", Plugins_Only: "plugin_only", TestOK:"testOK", TestNOK: "testNOK"};
+        $scope.cmdGen = {cmd: $scope.commandsRelA["Modules_Only"]};
+        $scope.download = {zip: [], selected: null};
+        // log
+        $scope.info = {edition: {msg: "", exists: false}, release: {msg: "", exists: false}};
+        $scope.error = {edition: {msg: "", exists: false}, release: {msg: "", exists: false}};
+        // view variables
+        $scope.togDist = true;
+        $scope.togPlug = true;
         /* ********************* Main FUNCTIONS ********************* */
         (function init(){
             loadDistribs();
@@ -144,7 +155,6 @@ angular.module('ArianeUI')
             }
         };
         $scope.clickEditionMod = function(){
-            // TODO from Release mod, click to go back to Edition mod.
             if(serviceUI.setState({obj: "baseRelease", state: "nextPage"})){
                 loadDistribs();
                 if(serviceUI.changePage('edition'))
@@ -154,7 +164,33 @@ angular.module('ArianeUI')
         $scope.clickValidate = function(release){
             if(release == "relA"){
                 if(serviceUI.setState({obj: "release", state:"generation"})){
-                    serviceAjax.generate('module_only', $scope.dists[0].version);
+                    serviceAjax.generate($scope.cmdGen.cmd, $scope.dists[0].version)
+                        .success(function(data){
+                            logInfo("Generation done! ("+data.message+")");
+                            serviceUI.setState({obj: "default", state: "done"});
+                            if(serviceUI.changePage('release'))
+                                serviceUI.actionBroadcast('changePage');
+                        })
+                        .error(function(data){
+                            logError("An error occured: " + data.message);
+                            serviceUI.setState({obj: "default", state: "done"});
+                        });
+                }
+            }
+            else if(release == "relB"){
+                if(serviceUI.setState({obj: "release", state:"zip"})){
+                    serviceAjax.buildZip($scope.dists[0].version)
+                        .success(function(data){
+                            $scope.download.zip.push(data.zip);
+                            logInfo("Build of zip done! ");
+                            serviceUI.setState({obj: "default", state: "done"});
+                            //if(serviceUI.changePage('release'))
+                              //  serviceUI.actionBroadcast('changePage');
+                        })
+                        .error(function(data){
+                            logError("An error occured: " + data.message);
+                            serviceUI.setState({obj: "default", state: "done"});
+                        });
                 }
             }
         };
@@ -167,15 +203,15 @@ angular.module('ArianeUI')
         });
         $scope.$on('changePage', function(){
             $scope.page = serviceUI.getPage();
-            for(var i= 0, len=templates.length, flagErr=true; i<len; i++){
-                if(templates[i].name == $scope.page){
-                    $scope.template = templates[i];
+            for(var i= 0, len=baseTemplates.length, flagErr=true; i<len; i++){
+                if(baseTemplates[i].name == $scope.page){
+                    $scope.baseTemplate = baseTemplates[i];
                     flagErr = false;
                     break;
                 }
             }
             if(flagErr)
-                $scope.template = templateErr;
+                $scope.baseTemplate = templateErr;
         });
         $scope.$on('deleteNode', function(){
             var delObj = serviceUI.getAddDelObj();
@@ -203,6 +239,16 @@ angular.module('ArianeUI')
             return $scope.togPlug;
         };
 
+        function logInfo(msg){
+            $scope.info.release.msg = msg;
+            $scope.info.release.exists = true;
+            console.log(msg);
+        }
+        function logError(msg){
+            $scope.error.release.msg = msg;
+            $scope.error.release.exists = true;
+            console.warn(msg);
+        }
         function sortVersion(a,b){
             return (-1) * a.version.localeCompare(b.version);
         }
