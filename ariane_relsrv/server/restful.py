@@ -723,12 +723,13 @@ class RestFileDiff(Resource):
     def get(self):
         args = self.reqparse.parse_args()
         if args["filenode"] is not None:
-            fnode = args["filenode"]
+            fnode = json.loads(args["filenode"])
             f = ariane.find_without_label({"nID": fnode["nID"]})
             if f is not None:
-                if os.path.exists(project_path + f.path):
+                full_path = os.path.join(project_path, f.path)
+                if os.path.exists(full_path):
                     backup_path = os.getcwd()
-                    os.chdir(project_path + f.path)
+                    os.chdir(full_path)
                     if os.path.isfile(project_path+srv_var_path+self.diffrec_filename):
                         os.remove(project_path+srv_var_path+self.diffrec_filename)
                     os.system("touch "+project_path+srv_var_path+self.diffrec_filename)

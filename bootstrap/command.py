@@ -49,7 +49,7 @@ class Command(object):
 
     def __init__(self):
         logins = None
-        with open('neo4j_login.json', 'r') as target:
+        with open(project_path+module_name+'/bootstrap/neo4j_login.json', 'r') as target:
             logins = json.load(target)
         if logins is None:
             raise err.CommandError("GraphDB login file can not be read. It should be '(GraphDB_name)_login.json")
