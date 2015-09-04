@@ -135,7 +135,7 @@ class Generator(object):
                 self.generate_json_plugins(df)
             elif df.type == "json_plugin_dist":
                 self.generate_json_plugin_dist(version, df)
-            elif df.type == "git_repos":
+            elif df.type == "json_git_repos":
                 self.generate_json_git_repos(version, df)
 
     def generate_module_files(self, version):
@@ -467,8 +467,8 @@ class Generator(object):
             target.write(template.render(args))
 
     def generate_vsh_plugin(self, p, fvsh):
+        v = p.version
         if "-SNAPSHOT" in p.version:
-            v = p.version
             v = str(v).replace('-', '.')
         template = self.env.get_template(fvsh.path+'plugin_vsh.yml')
         args = {"plugin": {"name": p.name, "version": v}}
