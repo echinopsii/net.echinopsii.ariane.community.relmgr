@@ -820,6 +820,8 @@ class RestFileDiff(Resource):
                     diffrec = ""
                     with open(project_path+srv_var_path+self.diffrec_filename, "r") as openfile:
                         diffrec = openfile.readlines()
+                    if os.path.isfile(project_path+srv_var_path+self.diffrec_filename):
+                        os.remove(project_path+srv_var_path+self.diffrec_filename)
                     return make_response(json.dumps({"diff": diffrec}), 200, headers_json)
                 else:
                     abort_error("BAD_REQUEST", "Path of file {} does not exist in project arborescence".format(f))
@@ -889,14 +891,14 @@ class RestBuildZip(Resource):
             # Build new zip with distribManager and print build info into 'infobuild.txt' file
             ftmp_fname = "infobuild.txt"
             ftmp_path = "/ariane.community.relmgr/ariane_relsrv/server/var/"
-            print("project_path: ", project_path)
+            # remove infobuild.txt if already exists
+            if os.path.isfile(project_path + ftmp_path + ftmp_fname):
+                os.remove(project_path + ftmp_path + ftmp_fname)
             os.system("touch " + project_path + ftmp_path + ftmp_fname)
             cur_path = os.getcwd()
             os.chdir(project_path + "/ariane.community.distrib")
-            print(os.getcwd())
             # myenv = os.environ.copy()
-            # myenv["JAVA_HOME"] = "/Library/Java/JavaVirtualMachines/jdk1.7.0_71.jdk/Contents/Home"
-            # myenv["MAVEN_HOME"] = "/usr/local/Cellar/maven/3.2.5"
+            # myenv["PATH"] = make new PATH or myenv[”JAVA_HOME"] = make new JAVA_HOME, same thing for MAVEN_HOME
             subprocess.Popen("./distribManager.py distpkgr " + version + " "
                                                                          "> "+project_path + ftmp_path + ftmp_fname, shell=True)
             os.chdir(cur_path)
