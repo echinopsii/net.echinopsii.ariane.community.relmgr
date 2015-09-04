@@ -104,26 +104,38 @@ angular.module('ArianeUI')
         $scope.$on('changePage', function(){
             $scope.page = serviceUI.getPage();
         });
+
         $scope.$on('deleteNode', function(){
             var delObj = serviceUI.getAddDelObj();
             if(delObj.obj == "module" || delObj.obj == "plugin")
                 $scope.modules = $scope.modules.filter(function(e){ return e != delObj.node});
 
-            else if(delObj.obj == "submodule")
-                $scope.subSet.modules = $scope.subSet.modules.filter(function(e){return e != delObj.node});
+            else if(delObj.obj == "submodule"){
+                serviceAjax.submodule($scope.subSet.parent).success(function(data){
+                    data.submodules.sort(sortOrder);
+                    $scope.subSet.modules = data.submodules;
+                    loadSubmodParent($scope.subSet.modules);
+                });
+            }
 
             else if(delObj.obj == "filenode")
                 $scope.fileSet.filenodes = $scope.fileSet.filenodes.filter(function(e){ return e != delObj.node});
 
             $scope.curNodeSelected = 0;
         });
+
         $scope.$on('addNode', function(){
             var addObj = serviceUI.getAddDelObj();
             if(addObj.obj == "module")
                 $scope.modules.push(addObj.node);
 
-            else if(addObj.obj == "submodule")
-                $scope.subSet.modules.push(addObj.node);
+            else if(addObj.obj == "submodule"){
+                serviceAjax.submodule($scope.subSet.parent).success(function(data){
+                    data.submodules.sort(sortOrder);
+                    $scope.subSet.modules = data.submodules;
+                    loadSubmodParent($scope.subSet.modules);
+                });
+            }
 
             else if(addObj.obj == "filenode")
                 $scope.fileSet.filenodes.push(addObj.node);
@@ -192,20 +204,21 @@ angular.module('ArianeUI')
             }
         };
 
-        $scope.addElement = function(type){ // type: node type to add into database
+        $scope.addElement = function(type, parentBtn){ // type: node type to add into database
+            if (typeof parentBtn === "undefined") {parentBtn = "default"}
             if(serviceUI.setState({obj: type, status: 'addEdit'})){
                 var element = serviceAjax.createEmptyNode(type);
-                var parent = {obj: "", node: {}};
+                var parentAdd = {obj: "", node: {}};
                 if(type == 'module')
-                    parent = serviceUI.getBaseObj();
+                    parentAdd = serviceUI.getBaseObj();
                 else if (type == 'submodule')
                 {
-                    parent.node = $scope.subSet.parent;
-                    parent.obj = type;
+                    parentAdd.node = parentBtn;
+                    parentAdd.obj = parentBtn.node_type;
                 }
                 else if (type == 'filenode')
-                    parent = serviceUI.getSelectedObj();
-                serviceUI.setAddDelObj({obj: type, node: element, parent: JSON.parse(JSON.stringify(parent.node))});
+                    parentAdd = serviceUI.getSelectedObj();
+                serviceUI.setAddDelObj({obj: type, node: element, parent: JSON.parse(JSON.stringify(parentAdd.node))});
                 serviceUI.actionBroadcast();
             }
         };

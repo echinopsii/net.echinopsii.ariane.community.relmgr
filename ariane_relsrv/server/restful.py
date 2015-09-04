@@ -421,8 +421,12 @@ class RestSubModuleList(Resource):
                     clear_args(args)
                     if s.update(args):
                         s.save()
-                        s = s.get_properties(gettype=True)
-                        return make_response(json.dumps({"submodule": s}), 200, headers_json)
+                        sp = s.get_properties(gettype=True)
+                        if isinstance(s, ariane_delivery.SubModuleParent):
+                            sp["issubparent"] = True
+                        else:
+                            sp["issubparent"] = False
+                        return make_response(json.dumps({"submodule": sp}), 200, headers_json)
                     else:
                         abort_error("BAD_REQUEST", "Submodule {} already exists".format(args))
                 else:
@@ -438,7 +442,12 @@ class RestSubModuleList(Resource):
                 if isinstance(s, ariane_delivery.SubModule) or isinstance(s, ariane_delivery.SubModuleParent):
                     if s.update(arg_s):
                         s.save()
-                        return json.dumps({"submodule": s.get_properties(gettype=True)}), 200
+                        sp = s.get_properties(gettype=True)
+                        if isinstance(s, ariane_delivery.SubModuleParent):
+                            sp["issubparent"] = True
+                        else:
+                            sp["issubparent"] = False
+                        return json.dumps({"submodule": sp}), 200
                     else:
                         abort_error("BAD_REQUEST", "Nothing to update, values are the same")
                 else:
@@ -475,8 +484,12 @@ class RestSubModuleList(Resource):
                     sub.set_groupid_artifact(parpar, par)
             sub.save()
             par.add_submodule(sub)
-
-            return make_response(json.dumps({"submodule": sub.get_properties(gettype=True)}), 201, headers_json)
+            s = sub.get_properties(gettype=True)
+            if isinstance(sub, ariane_delivery.SubModuleParent):
+                s["issubparent"] = True
+            else:
+                s["issubparent"] = False
+            return make_response(json.dumps({"submodule": s}), 201, headers_json)
 
 class RestModule(Resource):
     def __init__(self):

@@ -24,7 +24,7 @@ angular.module('ArianeUI')
                     return {name: "", version: "", git_repos: "", type: "", order: "", node_type:"module", nID:0};
                 }
                 else if(type == "submodule")
-                    return {name: "", version: "", groupId: "", artifactId: "", order: "", node_type:"submodule", nID:0};
+                    return {name: "", version: "", groupId: "", artifactId: "", order: "", node_type:"submodule", issubparent:"no", nID:0};
                 else if(type == "filenode")
                     return {name: "", version: "", type: "", path: "",node_type:"filenode", nID:0};
             },
