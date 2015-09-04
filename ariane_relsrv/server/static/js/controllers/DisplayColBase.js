@@ -17,6 +17,7 @@ angular.module('ArianeUI')
         $scope.baseTemplate = baseTemplates[0];
         var templateErr = "err.html";
         // inputs/outputs
+        $scope.confirmValRoll = {msg: "VALIDATE", confirm:false, active: false};
         $scope.commandsRelA = {Distribution: "distribution", Modules_Only: "module_only", Plugins_Only: "plugin_only", TestOK:"testOK", TestNOK: "testNOK"};
         $scope.cmdGen = {cmd: $scope.commandsRelA["Modules_Only"]};
         $scope.download = {zip: [], selected: null};
@@ -45,7 +46,8 @@ angular.module('ArianeUI')
             for (var i=0; i < dlen; i++) {
                 var d = $scope.dists[i];
                 serviceAjax.plugin(d.version).success(function(data){
-                    data.plugins.sort(sortVersion);
+                    if(data.plugins.length > 1)
+                        data.plugins.sort(sortVersion);
                     plugins = data.plugins;
                     var plen = plugins.length;
                     for (var j=0; j<plen; j++){
@@ -161,7 +163,7 @@ angular.module('ArianeUI')
                     serviceUI.actionBroadcast('changePage');
             }
         };
-        $scope.clickValidate = function(release){
+        function Validate(release){
             if(release == "relA"){
                 if(serviceUI.setState({obj: "release", state:"generation"})){
                     serviceAjax.generate($scope.cmdGen.cmd, $scope.dists[0].version)
@@ -180,20 +182,52 @@ angular.module('ArianeUI')
             else if(release == "relB"){
                 if(serviceUI.setState({obj: "release", state:"zip"})){
                     serviceAjax.buildZip($scope.dists[0].version)
-                        .success(function(data){
-                            $scope.download.zip.push(data.zip);
-                            logInfo("Build of zip done! ");
-                            serviceUI.setState({obj: "default", state: "done"});
-                            //if(serviceUI.changePage('release'))
-                              //  serviceUI.actionBroadcast('changePage');
-                        })
-                        .error(function(data){
-                            logError("An error occured: " + data.message);
-                            serviceUI.setState({obj: "default", state: "done"});
-                        });
+                    .success(function(data){
+                        $scope.download.zip.push(data.zip);
+                        logInfo("Build of zip done! ");
+                        serviceUI.setState({obj: "default", state: "done"});
+                        //if(serviceUI.changePage('release'))
+                        //  serviceUI.actionBroadcast('changePage');
+                    })
+                    .error(function(data){
+                        logError("An error occured: " + data.message);
+                        serviceUI.setState({obj: "default", state: "done"});
+                    });
                 }
             }
+        }
+        function Rollback(release) {
+            if(release == "relB"){
+                if(serviceUI.setState({obj: "release", state:"generation"})){
+                    serviceAjax.checkout($scope.dists[0].version)
+                    .success(function(data){
+                        logInfo(data.message);
+                    })
+                    .error(function(data){
+                        logError("An error occured: " + data.message);
+                    });
+                    serviceUI.setState({obj: "default", state: "done"});
+                    if(serviceUI.changePage('rollback'))
+                        serviceUI.actionBroadcast('changePage');
+                }
+            }
+        }
+
+        $scope.clickValidRoll = function(validRoll, release){
+            $scope.confirmValRoll.validRoll = validRoll;
+            $scope.confirmValRoll.release = release;
+            $scope.confirmValRoll.active = true;
         };
+        $scope.clickConfirmValidRoll = function(choice){
+            if(choice == "YES"){
+                if($scope.confirmValRoll.validRoll == "VALIDATE")
+                    Validate($scope.confirmValRoll.release);
+                else if($scope.confirmValRoll.validRoll == "ROLLBACK")
+                    Rollback($scope.confirmValRoll.release);
+            }
+            $scope.confirmValRoll.active = false;
+        };
+
         /* ********************* EVENTS ********************* */
         $scope.$on('enableEdit', function(){
             $scope.enableEdit = serviceUI.getEnableEdit();
@@ -206,6 +240,11 @@ angular.module('ArianeUI')
             for(var i= 0, len=baseTemplates.length, flagErr=true; i<len; i++){
                 if(baseTemplates[i].name == $scope.page){
                     $scope.baseTemplate = baseTemplates[i];
+                    if($scope.page == "edition"){ // Reload everything
+                        $scope.enableEdit = false;
+                        $scope.activeEdit = false;
+                        loadDistribs();
+                    }
                     flagErr = false;
                     break;
                 }

@@ -79,7 +79,7 @@ angular.module('ArianeUI')
                         page = "releaseB";
                     }
                 }
-                else if (buttonType == "edition")
+                else if (buttonType == "edition" || buttonType == "rollback")
                 {
                     if(page == "releaseA" || page =="releaseB")
                         page = "edition";

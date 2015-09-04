@@ -62,7 +62,6 @@ angular.module('ArianeUI')
                                 $scope.filediff.diff.push({line: data.diff[i], color: ""})
                             }
                             colorDiffLines();
-                            console.log(data.diff);
                         })
                         .error(function(data){
                             $scope.filediff.diff = "** Error while searching for differences **";

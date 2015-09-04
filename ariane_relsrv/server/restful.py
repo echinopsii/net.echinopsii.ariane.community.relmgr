@@ -226,7 +226,7 @@ class RestPlugin(Resource):
 
     def get(self, unique_key, unique_key2=None):
         p = self.__get_plugin(unique_key, unique_key2)
-        if p is not None:
+        if isinstance(p, ariane_delivery.Plugin):
             return make_response(json.dumps({"plugin": p.get_properties(gettype=True)}), 200, headers_json)
         else:
             if unique_key2 is None:
@@ -726,6 +726,75 @@ class FilesInfo(object):
     def __init__(self):
         pass
 
+class RestCheckout(Resource):
+    """
+    Do a 'git checkout' on each generated file in order to go back to the last clean version.
+    """
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('version', type=str)
+        super(RestCheckout, self).__init__()
+
+    def post(self):
+        args = self.reqparse.parse_args()
+        if args["version"] is not None:
+            version = args["version"]
+            dist = ariane.distribution_service.get_unique({"version": version})
+            if isinstance(dist, ariane_delivery.Distribution):
+                backpath = os.getcwd()
+                dfiles = ariane.get_files(dist)
+                flag_dir = True
+                dpath = ""
+                for df in dfiles:
+                    if flag_dir:  # Get distrib path directory (i.e: ariane.community.distrib/) from this distrib's file path
+                        if df.path.startswith('/'):
+                            df.path = df.path[1:]
+                        dpath = df.path.split('/')
+                        dpath = dpath[0] + '/'
+                        os.chdir(os.path.join(project_path, dpath))
+                        flag_dir = False
+                    print("PRINT ", os.getcwd(), "git checkout " + df.path[len(dpath):]+df.name)
+                    os.system("git checkout " + df.path[len(dpath):]+df.name)
+                modules = ariane.module_service.get_all(dist)
+                plugins = ariane.plugin_service.get_all(dist)
+
+                def gitcheckout(m, flag, mpath=""):
+                    mfiles = m.list_files
+                    if flag:  # Get module/plugin path directory (i.e: ariane.community.core.directory/) from its own file path
+                        mpath = [f.path for f in mfiles if str(f.path).endswith(m.name+'/')]
+                        if len(mpath) > 0:
+                            mpath = mpath[0]
+                            os.chdir(os.path.join(project_path, mpath))
+                            flag = False
+                        else:
+                            return  # module/plugin must have at least one file
+                    for f in mfiles:
+                        print("PRINT ", os.getcwd(), "git checkout " + f.path[len(mpath):]+f.name)
+                        os.system("git checkout " + f.path[len(mpath):]+f.name)
+                    if not isinstance(m, ariane_delivery.SubModule):
+                        for s in m.list_submod:
+                            if isinstance(s, ariane_delivery.SubModule):
+                                ariane.submodule_service.update_arianenode_lists(s)
+                            elif isinstance(s, ariane_delivery.SubModuleParent):
+                                ariane.submodule_parent_service.update_arianenode_lists(s)
+                            gitcheckout(s, flag, mpath)  # Recursive call for SubModuleParent
+
+                for m in modules:
+                    if m.name != "relmgr":  # We don't want to checkout ariane.community.relmgr
+                        ariane.module_service.update_arianenode_lists(m)
+                        gitcheckout(m, True)
+                for p in plugins:
+                    ariane.plugin_service.update_arianenode_lists(p)
+                    gitcheckout(p, True)
+
+                os.chdir(backpath)
+                return make_response(json.dumps({"message": "git checkout done"}), 200, headers_json)
+            else:
+                abort_error("BAD_REQUEST", "Given Distribution version ({})does not exists".format(version))
+        else:
+            abort_error("BAD_REQUEST", "You must provide the parameter 'version' ")
+
+
 class RestFileDiff(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
@@ -923,6 +992,7 @@ api.add_resource(RestGeneration, '/rest/generation')
 api.add_resource(RestBuildZip, '/rest/buildzip')
 api.add_resource(RestDownZip, '/rest/downloadzip')
 api.add_resource(RestFileDiff, '/rest/filediff')
+api.add_resource(RestCheckout, '/rest/checkout')
 # Templates
 api.add_resource(TempBaseEdit, '/baseEdition.html')
 api.add_resource(TempBaseRelA, '/baseRelA.html')

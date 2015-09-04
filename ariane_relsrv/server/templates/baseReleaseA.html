@@ -1,8 +1,11 @@
 <hr class="separateur">
 <div class="centerize">
-    <select ng-model="cmdGen.cmd" ng-options="key for (key, value) in commandsRelA"></select>
-    <button class="btnValidate" ng-click="clickValidate('relA')">VALIDATE</button>
     {% raw %}
+    <select ng-model="cmdGen.cmd" ng-options="key for (key, value) in commandsRelA"></select>
+    <button class="btnValidate" ng-click="clickValidRoll('VALIDATE', 'relA')">VALIDATE</button>
+    <div>
+        <span ng-if="confirmValRoll.active">{{ confirmValRoll.validRoll}} ? <button ng-click="clickConfirmValidRoll('YES')">YES</button> <button ng-click="clickConfirmValidRoll('NO')">NO</button></span>
+    </div>
     <p class="infolog" ng-show="info.release.exists">
         {{ info.release.msg }} <input type="checkbox" ng-model="info.release.exists">
     </p>

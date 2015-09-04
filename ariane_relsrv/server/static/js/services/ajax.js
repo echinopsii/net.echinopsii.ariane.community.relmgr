@@ -107,8 +107,11 @@ angular.module('ArianeUI')
                 if(filenode.node_type == "filenode"){
                     var data = {"filenode": filenode};
                     var config = {params: data};
-                    return $http.get("http://localhost:5000/rest/filediff", config)
+                    return $http.get("http://localhost:5000/rest/filediff", config);
                 }
+            },
+            checkout: function(version){
+                return $http.post("http://localhost:5000/rest/checkout", {version: version});
             }
         };
     });

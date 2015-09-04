@@ -2,9 +2,9 @@
 <div class="listRoot">Plugins <button class="btnExtend" ng-click="togglePlugList()">+/-</button>
     <button ng-disabled="!enableAddDel || activeEdit" ng-click="addElement('plugin')">Add</button>
 </div>
+{% raw %}
 <div class="PlugList" ng-show="isPlugToggle()">
     <ul ng-repeat="plugName in pluginsDict.Names">
-        {% raw %}
         <li>{{ plugName.name }}<button class="btnExtend" ng-click="plugName.ShowHide()">+/-</button>
             <ul ng-repeat="plugSet in pluginsDict.PluginSet" ng-show="plugName.show">
                 <li ng-class="plugSet.selected ? 'PlugSelected' : 'PlugNotSelected'" ng-if="plugSet.name == plugName.name" ng-click="clickPlug(plugSet)">
@@ -12,6 +12,12 @@
                 </li>
             </ul>
         </li>
-        {% endraw %}
     </ul>
 </div>
+<p class="infolog" ng-show="info.release.exists">
+    {{ info.release.msg }} <input type="checkbox" ng-model="info.release.exists">
+</p>
+<p class="errorlog" ng-show="error.release.exists">
+    {{ error.release.msg }} <input type="checkbox" ng-model="error.release.exists">
+</p>
+{% endraw %}
