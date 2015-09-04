@@ -327,6 +327,49 @@ class AppTest(unittest.TestCase):
         for rel in related_nodes:
             self.assertIsInstance(rel, ariane_delivery.ArianeRelation)
 
+    def test_file_updatename(self):
+        self.ariane.delete_all()
+        create_db_file('inputs/create_0.6.3.txt')
+        d = self.ariane.distribution_service.get_unique({"version": "0.6.3"})
+        modules = self.ariane.module_service.get_all(d)
+        plugins = self.ariane.plugin_service.get_all(d)
+        for m in modules:
+            self.ariane.module_service.update_arianenode_lists(m)
+            m.version = "0.1.7"
+            m.save()
+            for f in m.list_files:
+                if f.type in ["json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_git_repos", "plan"]:
+                    if m.version not in f.name:
+                        print(m, f)
+                    self.assertTrue(m.version in f.name)
+            for s in m.list_submod:
+                if isinstance(s, ariane_delivery.SubModule):
+                    self.ariane.submodule_service.update_arianenode_lists(m)
+                else:
+                    self.ariane.submodule_parent_service.update_arianenode_lists(m)
+                s.version = "123"
+                s.save()
+                for sf in s.list_files:
+                    if sf.type in ["json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_git_repos", "plan"]:
+                        self.assertTrue(sf.version in sf.name)
+        for p in plugins:
+            self.ariane.plugin_service.update_arianenode_lists(p)
+            p.version = "234"
+            p.save()
+            for f in p.list_files:
+                if f.type in ["json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_git_repos", "plan"]:
+                    self.assertTrue(p.version in f.name)
+            for s in p.list_submod:
+                if isinstance(s, ariane_delivery.SubModule):
+                    self.ariane.submodule_service.update_arianenode_lists(p)
+                else:
+                    self.ariane.submodule_parent_service.update_arianenode_lists(p)
+                s.version = "45767"
+                s.save()
+                for sf in s.list_files:
+                    if sf.type in ["json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_git_repos", "plan"]:
+                        self.assertTrue(sf.version in sf.name)
+
     def test_ariane_service(self):
         mod = self.ariane.find_without_label(self.mod2.get_properties())
         print(mod)

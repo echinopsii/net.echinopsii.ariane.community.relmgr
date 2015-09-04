@@ -258,6 +258,7 @@ class DistributionService(DeliveryTree):
             if distrib.list_plugin is None:
                 distrib.list_plugin = []
             DeliveryTree.distribution_service.get_relations(distrib)
+            distrib._len_list_files = len(distrib.list_files)
 
     def deep_update_arianenode_lists(self, distrib):
         if isinstance(distrib, Distribution):
@@ -369,6 +370,9 @@ class ModuleService(DeliveryTree):
             if module.list_submod is None:
                 module.list_submod = []
             DeliveryTree.module_service.get_relations(module)
+            module._len_list_files = len(module.list_files)
+            module._len_list_mod_dep = len(module.list_module_dependency)
+            module._len_list_submod = len(module.list_submod)
 
     def deep_update_arianenode_lists(self, module):
         if isinstance(module, Module):
@@ -468,6 +472,9 @@ class PluginService(DeliveryTree):
             if plugin.list_submod is None:
                 plugin.list_submod = []
             DeliveryTree.plugin_service.get_relations(plugin)
+            plugin._len_list_files = len(plugin.list_files)
+            plugin._len_list_mod_dep = len(plugin.list_module_dependency)
+            plugin._len_list_submod = len(plugin.list_submod)
 
     def deep_update_arianenode_lists(self, plugin):
         if isinstance(plugin, Plugin):
@@ -624,6 +631,7 @@ class SubModuleParentService(DeliveryTree):
             if subpar.list_submod is None:
                 subpar.list_submod = []
             DeliveryTree.submodule_parent_service.get_relations(subpar)
+            subpar._len_list_files = len(subpar.list_files)
 
     def deep_update_arianenode_lists(self, subpar):
         if isinstance(subpar, SubModuleParent):
@@ -715,6 +723,11 @@ class ArianeNode(object):
         if gettype:
             prop["node_type"] = self.get_rest_endpoint()
         return prop
+
+    def update_filesname(self):
+        for f in self.list_files:
+            f.udpdate_name(self.version)
+            f.save()
 
     def add_file(self, file_node):
         if isinstance(file_node, FileNode):
@@ -819,6 +832,7 @@ class Distribution(ArianeNode):
         self.directory_name = ""
         self.list_module = []
         self.list_plugin = []
+        self._old_version = version
         self.dir = {"name": self.name, "version": self.version, "nID": self.id}
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
@@ -851,6 +865,8 @@ class Distribution(ArianeNode):
                 fnode.save()
 
             self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
+            self._old_version = self.version
+
             for plugin_dict in self.list_plugin:
                 self.__create_relation(plugin_dict["Plugin"], "COMPATIBLE WITH", plugin_dict["properties"])
 
@@ -864,6 +880,9 @@ class Distribution(ArianeNode):
             dir = self._get_dir()
             dir["node"] = self.node
             self.node = DeliveryTree.graph_dao.save_node(dir)
+
+            if self._old_version != self.version:
+                self.update_filesname()
 
     def delete(self):
         if self._is_saved():
@@ -1011,7 +1030,7 @@ class Module(ArianeNode):
                     s.save()
                 for f in self.list_files:
                     f.version = self.version
-                    f.save()
+                self.update_filesname()
                 self._old_version = self.version
 
     def delete(self):
@@ -1119,6 +1138,7 @@ class SubModule(ArianeNode):
         self.groupId = groupId
         self.artifactId = artifactId
         self.order = order
+        self._old_version = self.version
         self.dir = {"name": self.name, "version": self.version, "groupId": self.groupId,
                     "artifactId": self.artifactId, "order": self.order, "nID": self.id}
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
@@ -1153,7 +1173,7 @@ class SubModule(ArianeNode):
                 fnode.save()
 
             self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
-
+            self._old_version = self.version
             for fnode in self.list_files:
                 self._create_file(fnode)
 
@@ -1161,6 +1181,11 @@ class SubModule(ArianeNode):
             dir = self._get_dir()
             dir["node"] = self.node
             self.node = DeliveryTree.graph_dao.save_node(dir)
+
+            if self._old_version != self.version:
+                if len(self.list_files) == 0:
+                    self.list_files = DeliveryTree.get_files(self)
+                self.update_filesname()
 
     def delete(self):
         """
@@ -1272,7 +1297,7 @@ class Plugin(ArianeNode):
                     s.save()
                 for f in self.list_files:
                     f.version = self.version
-                    f.save()
+                self.update_filesname()
                 self._old_version = self.version
 
     def delete(self):
@@ -1366,6 +1391,7 @@ class SubModuleParent(ArianeNode):
         self.order = order
         self.artifactId = artifactId
         self.groupId = groupId
+        self._old_version = self.version
         self.dir = {"name": self.name, "version": self.version, "groupId": self.groupId, "artifactId": self.artifactId,
                     "order": self.order, "nID": self.id}
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
@@ -1403,6 +1429,7 @@ class SubModuleParent(ArianeNode):
                 fnode.save()
 
             self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
+            self._old_version = self.version
 
             for submod in self.list_submod:
                 self.__create_relation(submod)
@@ -1414,6 +1441,10 @@ class SubModuleParent(ArianeNode):
             dir = self._get_dir()
             dir["node"] = self.node
             self.node = DeliveryTree.graph_dao.save_node(dir)
+            if self._old_version != self.version:
+                if len(self.list_files) == 0:
+                    self.list_files = DeliveryTree.get_files(self)
+                self.update_filesname()
 
     def delete(self):
         """
@@ -1540,6 +1571,30 @@ class FileNode(object):
                 if fnode.update(fprop):
                     return fnode
         return None
+
+    def udpdate_name(self, version):
+        if self.type in ["json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_git_repos"]:
+            tmp = self.name.split('-')
+            if len(tmp) > 0:
+                prefix = tmp[:-1]
+                prefix = 'a'.join(prefix)
+                sufix = tmp[len(tmp)-1]
+                sufix = sufix.split('.')
+                sufix = '.' + sufix[len(sufix)-1]
+            else:
+                raise "Error, incorrect file name for {}".format(self)
+            self.name = prefix + '-' + version + sufix
+        elif self.type == "plan":
+            tmp = self.name.split('_')
+            if len(tmp) > 0:
+                prefix = tmp[:-1]
+                prefix = 'a'.join(prefix)
+                sufix = tmp[len(tmp)-1]
+                sufix = sufix.split('.')
+                sufix = '.' + sufix[len(sufix)-1]
+            else:
+                raise "Error, incorrect file name for {}".format(self)
+            self.name = prefix + '_' + version + sufix
 
     def get_properties(self, gettype=False):
         prop = self._get_dir()
