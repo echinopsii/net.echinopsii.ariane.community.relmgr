@@ -1596,6 +1596,9 @@ class FileNode(object):
                 raise "Error, incorrect file name for {}".format(self)
             self.name = prefix + '_' + version + sufix
 
+    def is_versioned(self):
+        return self.type in ["json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_git_repos", "plan"]
+
     def get_properties(self, gettype=False):
         prop = self._get_dir()
         if gettype:

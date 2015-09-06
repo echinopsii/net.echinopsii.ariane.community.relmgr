@@ -16,7 +16,13 @@
             </span>
         </div>
         <div class="colBody">
-            <span class="listRoot">Distributions<button class="btnExtend" ng-click="toggleDistList()">+/-</button></span>
+            <span class="listRoot">Distributions
+                <button class="btnExtend" ng-click="toggleDistList()">+/-</button>
+                <span ng-if="page=='edition'">
+                    <button class="btnRelease" ng-click="toggleResetDB()">RESET</button>
+                    <span ng-show="confirmValRoll.active">Reset Database ? <button ng-click="clickResetDB('YES')">YES</button> <button ng-click="clickResetDB('NO')">NO</button></span>
+                </span>
+            </span>
             <div class="DistList" ng-show="isDistToggle()">
             <ul ng-repeat="dist in dists">
                 {% raw %}

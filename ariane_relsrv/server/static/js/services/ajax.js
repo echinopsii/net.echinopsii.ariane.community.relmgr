@@ -100,7 +100,7 @@ angular.module('ArianeUI')
                 return $http.post("http://localhost:5000/rest/generation", data);
             },
             buildZip: function(version){
-                var data = {command: version};
+                var data = {version: version};
                 return $http.post("http://localhost:5000/rest/buildzip", data);
             },
             getFileDiff: function(filenode){
@@ -112,6 +112,9 @@ angular.module('ArianeUI')
             },
             checkout: function(version){
                 return $http.post("http://localhost:5000/rest/checkout", {version: version});
+            },
+            resetDB: function(){
+                return $http.post("http://localhost:5000/rest/reset");
             }
         };
     });

@@ -370,8 +370,10 @@ class Generator(object):
                     if len(rel.properties) > 0:
                         if (flag_append is False) and (max == 0):
                             plugin_dict[p_name].append({"pluginVersion": rel.properties["version_max"], "distVersion": [d.version]})
+                            version_order.append(rel.properties["version_max"])
                         elif (flag_append is False) and (min == 0):
                             plugin_dict[p_name].append({"pluginVersion": rel.properties["version_min"], "distVersion": [d.version]})
+                            version_order.append((rel.properties["version_min"]))
                     if flag_new_version:
                         plugin_dict[p_name].append({"pluginVersion": p.version, "distVersion": [d.version]})
                         version_order.append(p.version)

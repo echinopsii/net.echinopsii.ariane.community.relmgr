@@ -91,6 +91,7 @@ angular.module('ArianeUI')
         function keepSNAPSHOT(){
             $scope.dists = $scope.dists.filter(function(d){ return d.version.indexOf("SNAPSHOT") > -1 || d.snapshot});
             console.assert($scope.dists.length == 1, "Multiple SNAPSHOT Distribution versions");
+            $scope.dists[0].selected = true;
             serviceUI.setBaseObj({obj: $scope.dists[0].node_type, node: $scope.dists[0]});
         }
         /* *********** Main Scope Functions ************ */
@@ -202,11 +203,12 @@ angular.module('ArianeUI')
                     serviceAjax.checkout($scope.dists[0].version)
                     .success(function(data){
                         logInfo(data.message);
-                    })
+                        serviceUI.setState({obj: "default", state: "done"});
+                        })
                     .error(function(data){
                         logError("An error occured: " + data.message);
+                        serviceUI.setState({obj: "default", state: "done"});
                     });
-                    serviceUI.setState({obj: "default", state: "done"});
                     if(serviceUI.changePage('rollback'))
                         serviceUI.actionBroadcast('changePage');
                 }
@@ -228,6 +230,26 @@ angular.module('ArianeUI')
             $scope.confirmValRoll.active = false;
         };
 
+        $scope.toggleResetDB = function(){
+            $scope.confirmValRoll.active = !$scope.confirmValRoll.active;
+        };
+        $scope.clickResetDB = function (choice) {
+            if(choice == "YES"){
+                if(serviceUI.setState({obj:"reinit", status:"generation"})){
+                    serviceAjax.resetDB()
+                        .success(function(data){
+                            loadDistribs();
+                            logInfo(data.message);
+                            serviceUI.setState({obj: "default", status: "done"});
+                        })
+                        .error(function(data){
+                            logError(data.message);
+                            serviceUI.setState({obj: "default", status: "done"});
+                        });
+                }
+            }
+            $scope.confirmValRoll.active = false;
+        };
         /* ********************* EVENTS ********************* */
         $scope.$on('enableEdit', function(){
             $scope.enableEdit = serviceUI.getEnableEdit();
@@ -241,7 +263,6 @@ angular.module('ArianeUI')
                 if(baseTemplates[i].name == $scope.page){
                     $scope.baseTemplate = baseTemplates[i];
                     if($scope.page == "edition"){ // Reload everything
-                        $scope.enableEdit = false;
                         $scope.activeEdit = false;
                         loadDistribs();
                     }

@@ -36,6 +36,8 @@ app = Flask(__name__)
 api = Api(app)
 ariane = ariane_delivery.DeliveryTree({"login": "neo4j", "password": "admin", "type": "neo4j"})
 srv_var_path = "/ariane.community.relmgr/ariane_relsrv/server/var/"
+neo4j_path = project_path + "/neo4j-community-2.2.3/"
+db_export_path = project_path + "/ariane.community.relmgr/bootstrap/dependency_db/"
 
 def abort_error(error, msg):
     if error == "BAD_REQUEST":
@@ -726,6 +728,18 @@ class FilesInfo(object):
     def __init__(self):
         pass
 
+class RestReset(Resource):
+    def post(self):
+        alldistrib_file = "all.cypher"
+        if os.path.isfile(db_export_path + alldistrib_file):
+            ariane.delete_all()
+            os.system(neo4j_path+"/bin/neo4j-shell -file " + db_export_path + alldistrib_file)
+            return make_response(json.dumps({"message": "All distributions have been imported: Database is reset"}),
+                                 200, headers_json)
+        else:
+            abort_error("INTERNAL_ERROR", "Error while importing '"+db_export_path+alldistrib_file+"', file was not "
+                        "found")
+
 class RestCheckout(Resource):
     """
     Do a 'git checkout' on each generated file in order to go back to the last clean version.
@@ -742,6 +756,8 @@ class RestCheckout(Resource):
             dist = ariane.distribution_service.get_unique({"version": version})
             if isinstance(dist, ariane_delivery.Distribution):
                 backpath = os.getcwd()
+                # First Checkout 'ariane.community.distrib' files: most of these files are versioned so we need to
+                # remove them. Because they are not currently in the git repository, 'git checkout' command doesn't work
                 dfiles = ariane.get_files(dist)
                 flag_dir = True
                 dpath = ""
@@ -754,7 +770,13 @@ class RestCheckout(Resource):
                         os.chdir(os.path.join(project_path, dpath))
                         flag_dir = False
                     print("PRINT ", os.getcwd(), "git checkout " + df.path[len(dpath):]+df.name)
-                    os.system("git checkout " + df.path[len(dpath):]+df.name)
+                    if df.is_versioned():
+                        if os.path.isfile(df.path[len(dpath):]+df.name):
+                            os.remove(df.path[len(dpath):]+df.name)
+                    else:
+                        os.system("git checkout " + df.path[len(dpath):]+df.name)
+                # Second, Checkout all other Modules/Plugins files. There are 2 verisoned files (.plan et .json build)
+                # so we remove them. For the not versioned files we use 'git checkout'
                 modules = ariane.module_service.get_all(dist)
                 plugins = ariane.plugin_service.get_all(dist)
 
@@ -770,7 +792,11 @@ class RestCheckout(Resource):
                             return  # module/plugin must have at least one file
                     for f in mfiles:
                         print("PRINT ", os.getcwd(), "git checkout " + f.path[len(mpath):]+f.name)
-                        os.system("git checkout " + f.path[len(mpath):]+f.name)
+                        if f.is_versioned():
+                            if os.path.isfile(f.path[len(mpath):]+f.name):
+                                os.remove(f.path[len(mpath):]+f.name)
+                        else:
+                            os.system("git checkout " + f.path[len(mpath):]+f.name)
                     if not isinstance(m, ariane_delivery.SubModule):
                         for s in m.list_submod:
                             if isinstance(s, ariane_delivery.SubModule):
@@ -851,7 +877,7 @@ class RestBuildZip(Resource):
         self.path_zip = project_path + "/artifacts/"
         self.zipfile = ""
         self.reqparse = reqparse.RequestParser()
-        self.reqparse.add_argument('command', type=str, help='Command of File Generation')
+        self.reqparse.add_argument('version', type=str, help='Version of Distribution to build')
         super(RestBuildZip, self).__init__()
 
     def get(self):
@@ -864,10 +890,14 @@ class RestBuildZip(Resource):
         :return:
         """
         args = self.reqparse.parse_args()
-        if args["command"] is not None:
-            version = args["command"]
+        if args["version"] is not None:
+            version = args["version"]
+            # Command is either 'distpkgr master.SNAPSHOT'
+            # or 'distpkgr {version}.SNAPSHOT' where {version} is version's value (i.e version= '0.6.4')
             if "SNAPSHOT" in version:
                 version = "master.SNAPSHOT"
+            else:
+                version = version + ".SNAPSHOT"
 
             path_zip = self.path_zip
             FilesInfo.path_zip = path_zip
@@ -995,6 +1025,7 @@ api.add_resource(RestBuildZip, '/rest/buildzip')
 api.add_resource(RestDownZip, '/rest/downloadzip')
 api.add_resource(RestFileDiff, '/rest/filediff')
 api.add_resource(RestCheckout, '/rest/checkout')
+api.add_resource(RestReset, '/rest/reset')
 # Templates
 api.add_resource(TempBaseEdit, '/baseEdition.html')
 api.add_resource(TempBaseRelA, '/baseRelA.html')

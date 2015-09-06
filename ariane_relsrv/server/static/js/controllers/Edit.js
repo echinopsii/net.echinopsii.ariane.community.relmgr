@@ -98,6 +98,7 @@ angular.module('ArianeUI')
             for(var i= 0, len=editionTemplates.length, flagErr=true; i<len; i++){
                 if(editionTemplates[i].name == $scope.page){
                     $scope.editionTemplate = editionTemplates[i];
+                    $scope.filediff = {diff: [{line: "", color: ""}], message: ""};
                     flagErr = false;
                     break;
                 }
