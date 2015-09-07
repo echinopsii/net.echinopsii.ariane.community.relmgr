@@ -17,7 +17,7 @@ angular.module('ArianeUI')
         $scope.baseTemplate = baseTemplates[0];
         var templateErr = "err.html";
         // inputs/outputs
-        $scope.confirmValRoll = {msg: "VALIDATE", confirm:false, active: false};
+        $scope.confirmValRoll = {msg: "VALIDATE", confirm:false, active: false, disableVal: false};
         $scope.commandsRelA = {Distribution: "distribution", Modules_Only: "module_only", Plugins_Only: "plugin_only", TestOK:"testOK", TestNOK: "testNOK"};
         $scope.cmdGen = {cmd: $scope.commandsRelA["Modules_Only"]};
         $scope.download = {zip: [], selected: null};
@@ -176,6 +176,7 @@ angular.module('ArianeUI')
                         })
                         .error(function(data){
                             logError("An error occured: " + data.message);
+                            $scope.confirmValRoll.disableVal = true;
                             serviceUI.setState({obj: "default", state: "done"});
                         });
                 }
@@ -192,25 +193,28 @@ angular.module('ArianeUI')
                     })
                     .error(function(data){
                         logError("An error occured: " + data.message);
+                        $scope.confirmValRoll.disableVal = true;
                         serviceUI.setState({obj: "default", state: "done"});
                     });
                 }
             }
         }
         function Rollback(release) {
-            if(release == "relB"){
+            if(release == "relB" || release == "relA"){
                 if(serviceUI.setState({obj: "release", state:"generation"})){
                     serviceAjax.checkout($scope.dists[0].version)
                     .success(function(data){
                         logInfo(data.message);
                         serviceUI.setState({obj: "default", state: "done"});
+                        if(serviceUI.changePage('rollback'))
+                            serviceUI.actionBroadcast('changePage');
                         })
                     .error(function(data){
                         logError("An error occured: " + data.message);
                         serviceUI.setState({obj: "default", state: "done"});
+                        if(serviceUI.changePage('rollback'))
+                            serviceUI.actionBroadcast('changePage');
                     });
-                    if(serviceUI.changePage('rollback'))
-                        serviceUI.actionBroadcast('changePage');
                 }
             }
         }
@@ -266,6 +270,7 @@ angular.module('ArianeUI')
                         $scope.activeEdit = false;
                         loadDistribs();
                     }
+                    $scope.confirmValRoll.disableVal = false;
                     flagErr = false;
                     break;
                 }
