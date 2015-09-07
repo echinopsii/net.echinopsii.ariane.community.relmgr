@@ -1443,8 +1443,10 @@ class SubModuleParent(ArianeNode):
             dir["node"] = self.node
             self.node = DeliveryTree.graph_dao.save_node(dir)
             if self._old_version != self.version:
-                if len(self.list_files) == 0:
-                    self.list_files = DeliveryTree.get_files(self)
+                DeliveryTree.submodule_parent_service.update_arianenode_lists(self)
+                for s in self.list_submod:
+                    s.version = self.version
+                    s.save()
                 self.update_filesname()
 
     def delete(self):
