@@ -882,6 +882,7 @@ class Distribution(ArianeNode):
             self.node = DeliveryTree.graph_dao.save_node(dir)
 
             if self._old_version != self.version:
+                self.list_files = DeliveryTree.get_files(self)
                 self.update_filesname()
 
     def delete(self):
@@ -1573,11 +1574,18 @@ class FileNode(object):
         return None
 
     def udpdate_name(self, version):
+        if "SNAPSHOT" in version:
+            version = "master.SNAPSHOT"
+        if "-" in version:
+            version = str(version).replace('-', '.')
+        if "_" in version:
+            version = str(version).replace('_', '.')
+
         if self.type in ["json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_git_repos"]:
             tmp = self.name.split('-')
             if len(tmp) > 0:
                 prefix = tmp[:-1]
-                prefix = 'a'.join(prefix)
+                prefix = '-'.join(prefix)
                 sufix = tmp[len(tmp)-1]
                 sufix = sufix.split('.')
                 sufix = '.' + sufix[len(sufix)-1]
@@ -1588,7 +1596,7 @@ class FileNode(object):
             tmp = self.name.split('_')
             if len(tmp) > 0:
                 prefix = tmp[:-1]
-                prefix = 'a'.join(prefix)
+                prefix = '-'.join(prefix)
                 sufix = tmp[len(tmp)-1]
                 sufix = sufix.split('.')
                 sufix = '.' + sufix[len(sufix)-1]

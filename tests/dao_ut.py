@@ -331,6 +331,15 @@ class AppTest(unittest.TestCase):
         self.ariane.delete_all()
         create_db_file('inputs/create_0.6.3.txt')
         d = self.ariane.distribution_service.get_unique({"version": "0.6.3"})
+        d.list_files = self.ariane.get_files(d)
+        d.version = "0.6.3.2"
+        d.save()
+        for df in d.list_files:
+            if df.type in ["json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_git_repos", "plan"]:
+                self.assertTrue(d.version in df.name)
+            else:
+                self.assertFalse(d.version in df.name)
+
         modules = self.ariane.module_service.get_all(d)
         plugins = self.ariane.plugin_service.get_all(d)
         for m in modules:

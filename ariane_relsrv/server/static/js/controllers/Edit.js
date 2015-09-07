@@ -99,6 +99,8 @@ angular.module('ArianeUI')
                 if(editionTemplates[i].name == $scope.page){
                     $scope.editionTemplate = editionTemplates[i];
                     $scope.filediff = {diff: [{line: "", color: ""}], message: ""};
+                    if($scope.page == "releaseA")
+                        $scope.enableEdit = false;
                     flagErr = false;
                     break;
                 }
@@ -151,13 +153,18 @@ angular.module('ArianeUI')
                     $scope.isDeleting = false;
                 }
                 else{ // UPDATING
-                    var res = serviceAjax.save($scope.selectedObj.node, $scope.selectedObj.obj);
-                    if(res){
-                        updateJSON(backupObj.node, $scope.selectedObj.node);
-                    }
+                    serviceAjax.save($scope.selectedObj.node, $scope.selectedObj.obj)
+                        .success(function(data){
+                            updateJSON(backupObj.node, $scope.selectedObj.node);
+                            serviceUI.setState({obj: backupObj.obj, status: "done"});
+                            setScopeAndNotify('activeEdit', false);
+                            serviceUI.actionBroadcast('update');
+                        })
+                        .error(function(data){
+                            serviceUI.setState({obj: backupObj.obj, status: "done"});
+                            setScopeAndNotify('activeEdit', false);
+                        });
                 }
-                serviceUI.setState({obj: backupObj.obj, status: "done"});
-                setScopeAndNotify('activeEdit', false);
             }
         };
 
@@ -185,11 +192,11 @@ angular.module('ArianeUI')
             var lines = $scope.filediff.diff;
             for (var i= 0, len=lines.length ; i<len; i++){
                 var line = String(lines[i].line);
-                if(line.indexOf('+') == 0)
+                if(line.indexOf('+ ') == 0)
                     lines[i].color = "DiffGreen";
-                else if(line.indexOf('-') == 0)
+                else if(line.indexOf('- ') == 0)
                     lines[i].color = "DiffRed";
-                else if (line.indexOf('---') == 0 || line.indexOf('+++') == 0 || line.indexOf('index') == 0 || line.indexOf('diff') == 0)
+                else if (line.indexOf('--- ') == 0 || line.indexOf('+++ ') == 0 || line.indexOf('index') == 0 || line.indexOf('diff') == 0)
                     lines[i].color = "DiffWhite";
                 else if (line.indexOf('@@') == 0)
                     lines[i].color = "DiffBlue";

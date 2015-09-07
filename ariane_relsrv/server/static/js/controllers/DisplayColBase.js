@@ -91,8 +91,8 @@ angular.module('ArianeUI')
         function keepSNAPSHOT(){
             $scope.dists = $scope.dists.filter(function(d){ return d.version.indexOf("SNAPSHOT") > -1 || d.snapshot});
             console.assert($scope.dists.length == 1, "Multiple SNAPSHOT Distribution versions");
-            $scope.dists[0].selected = true;
-            serviceUI.setBaseObj({obj: $scope.dists[0].node_type, node: $scope.dists[0]});
+            $scope.dists[0].selected = false;
+            serviceUI.setBaseObj({obj: "default", node: $scope.dists[0]});
         }
         /* *********** Main Scope Functions ************ */
         $scope.clickDist = function(dist){

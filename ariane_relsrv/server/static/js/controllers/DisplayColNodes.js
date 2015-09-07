@@ -140,6 +140,10 @@ angular.module('ArianeUI')
             else if(addObj.obj == "filenode")
                 $scope.fileSet.filenodes.push(addObj.node);
         });
+        $scope.$on('update', function(){
+            var selObj = serviceUI.getSelectedObj();
+            loadFiles(selObj.node);
+        });
 
         $scope.clickMod = function(module){
             var nodeObj = serviceUI.getNodeObj();

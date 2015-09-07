@@ -61,8 +61,7 @@ angular.module('ArianeUI')
                 var data = {};
                 data[type] = JSON.stringify(c_element);
                 var config = {data: data, headers: {'Content-Type': 'application/json'}, dataType:'json'};
-                var res = $http.post("http://localhost:5000/rest/"+type, data);
-                return true;
+                return $http.post("http://localhost:5000/rest/"+type, data);
                 // Handle res
             },
             create: function(element, type, parent){
