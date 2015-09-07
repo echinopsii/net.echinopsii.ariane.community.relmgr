@@ -12,6 +12,7 @@ angular.module('ArianeUI')
         var page = "edition";
         var enableEdit = false;
         var activeEdit = false;
+        var log = {type: "", message: "", mode: ""};
         // var loup = {j:"lol"}; // for test:
         return {
             getState: function(){
@@ -22,6 +23,9 @@ angular.module('ArianeUI')
             },
             getNodeObj: function(){
                 return nodeObj;
+            },
+            getLog: function(){
+                return log;
             },
             getEnableEdit: function(){
                 return enableEdit;
@@ -56,6 +60,10 @@ angular.module('ArianeUI')
                 nodeObj = newnodeobj;
                 if(newnodeobj.obj != "default")
                     selectedObj = nodeObj;
+            },
+            setNotifyLog: function(newlog){
+                log = newlog;
+                this.actionBroadcast('updateLog');
             },
             setEnableEdit: function(enableFlag){
                 enableEdit = enableFlag;

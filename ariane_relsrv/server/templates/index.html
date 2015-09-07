@@ -111,6 +111,17 @@
         <div ng-include="editionTemplate.url"></div>
     </div>
 </div>
+<div class="logSection" ng-controller="LogCtrl">
+    <span><--- * Log Info/Error * -------------------------- ></span>
+    {% raw %}
+    <ul ng-repeat="log in log.list">
+        <li ng-class="log.type" ng-show="log.show">
+            {{log.mode}} ({{log.status}}): {{log.message}}
+            <input type="checkbox" ng-model="log.show">
+        </li>
+    </ul>
+    {% endraw %}
+</div>
 <!--<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular.min.js"></script>-->
 <script type="text/javascript" src="../static/js/lib/jquery-1.8.0.min.js"></script>
@@ -122,6 +133,7 @@
 <script type="text/javascript" src="../static/js/controllers/DisplayColBase.js"></script>
 <script type="text/javascript" src="../static/js/controllers/DisplayColNodes.js"></script>
 <script type="text/javascript" src="../static/js/controllers/Edit.js"></script>
+<script type="text/javascript" src="../static/js/controllers/Log.js"></script>
 <script type="text/ng-template" id="field_renderer.html">
     {% raw %}
     <li>

@@ -81,6 +81,20 @@ ul {
     width: 30%;
     padding-right: 2%;
 }
+.logSection{
+    color: #00f400;
+    background-color: #0e0303;
+    float: left;
+    width: 100%;
+    padding-top: 1%;
+    padding-left: 1%;
+}
+.info{
+    color: white;
+}
+.error{
+    color: red;
+}
 .btnValidate {
     background: #fc0505;
     background-image: -webkit-linear-gradient(top, #fc0505, #d91c84);

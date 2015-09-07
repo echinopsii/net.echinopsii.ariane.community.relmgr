@@ -21,9 +21,6 @@ angular.module('ArianeUI')
         $scope.commandsRelA = {Distribution: "distribution", Modules_Only: "module_only", Plugins_Only: "plugin_only", TestOK:"testOK", TestNOK: "testNOK"};
         $scope.cmdGen = {cmd: $scope.commandsRelA["Modules_Only"]};
         $scope.download = {zip: [], selected: null};
-        // log
-        $scope.info = {edition: {msg: "", exists: false}, release: {msg: "", exists: false}};
-        $scope.error = {edition: {msg: "", exists: false}, release: {msg: "", exists: false}};
         // view variables
         $scope.togDist = true;
         $scope.togPlug = true;
@@ -169,13 +166,13 @@ angular.module('ArianeUI')
                 if(serviceUI.setState({obj: "release", state:"generation"})){
                     serviceAjax.generate($scope.cmdGen.cmd, $scope.dists[0].version)
                         .success(function(data){
-                            logInfo("Generation done! ("+data.message+")");
+                            serviceUI.setNotifyLog({type:"info", mode:"ReleaseA", message: "Generation done! ("+data.message+")"});
                             serviceUI.setState({obj: "default", state: "done"});
                             if(serviceUI.changePage('release'))
                                 serviceUI.actionBroadcast('changePage');
                         })
                         .error(function(data){
-                            logError("An error occured: " + data.message);
+                            serviceUI.setNotifyLog({type:"error", mode:"ReleaseA", message: "An error occured: " + data.message});
                             $scope.confirmValRoll.disableVal = true;
                             serviceUI.setState({obj: "default", state: "done"});
                         });
@@ -186,13 +183,13 @@ angular.module('ArianeUI')
                     serviceAjax.buildZip($scope.dists[0].version)
                     .success(function(data){
                         $scope.download.zip.push(data.zip);
-                        logInfo("Build of zip done! ");
+                        serviceUI.setNotifyLog({type:"info", mode:"ReleaseB", message: "Build of zip done! "});
                         serviceUI.setState({obj: "default", state: "done"});
                         //if(serviceUI.changePage('release'))
                         //  serviceUI.actionBroadcast('changePage');
                     })
                     .error(function(data){
-                        logError("An error occured: " + data.message);
+                        serviceUI.setNotifyLog({type:"error", mode:"ReleaseB", message: "An error occured: " + data.message});
                         $scope.confirmValRoll.disableVal = true;
                         serviceUI.setState({obj: "default", state: "done"});
                     });
@@ -204,13 +201,15 @@ angular.module('ArianeUI')
                 if(serviceUI.setState({obj: "release", state:"generation"})){
                     serviceAjax.checkout($scope.dists[0].version)
                     .success(function(data){
-                        logInfo(data.message);
+                        var mode = 'Release' + release[release.indexOf('rel')];
+                        serviceUI.setNotifyLog({type:"info", mode: mode, message: data.message});
                         serviceUI.setState({obj: "default", state: "done"});
                         if(serviceUI.changePage('rollback'))
                             serviceUI.actionBroadcast('changePage');
                         })
                     .error(function(data){
-                        logError("An error occured: " + data.message);
+                        var mode = 'Release' + release[release.indexOf('rel')];
+                        serviceUI.setNotifyLog({type:"error", mode: mode, message: "An error occured: " + data.message});
                         serviceUI.setState({obj: "default", state: "done"});
                         if(serviceUI.changePage('rollback'))
                             serviceUI.actionBroadcast('changePage');
@@ -243,11 +242,11 @@ angular.module('ArianeUI')
                     serviceAjax.resetDB()
                         .success(function(data){
                             loadDistribs();
-                            logInfo(data.message);
+                            serviceUI.setNotifyLog({type:"info", mode: "View", message: data.message});
                             serviceUI.setState({obj: "default", status: "done"});
                         })
                         .error(function(data){
-                            logError(data.message);
+                            serviceUI.setNotifyLog({type:"error", mode: "View", message: data.message});
                             serviceUI.setState({obj: "default", status: "done"});
                         });
                 }
@@ -303,17 +302,6 @@ angular.module('ArianeUI')
         $scope.isPlugToggle = function(){
             return $scope.togPlug;
         };
-
-        function logInfo(msg){
-            $scope.info.release.msg = msg;
-            $scope.info.release.exists = true;
-            console.log(msg);
-        }
-        function logError(msg){
-            $scope.error.release.msg = msg;
-            $scope.error.release.exists = true;
-            console.warn(msg);
-        }
         function sortVersion(a,b){
             return (-1) * a.version.localeCompare(b.version);
         }
