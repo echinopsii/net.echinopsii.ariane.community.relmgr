@@ -40,7 +40,7 @@ def create_db_file(filename):
                 if ("#" not in list_param) and (len(list_param) > 0):
                     # print('list param: ', list_param)
                     if state == "core" and "distribution" in list_param:
-                        distrib = ariane_delivery.Distribution(list_param[1], list_param[2])
+                        distrib = ariane_delivery.Distribution(list_param[1], list_param[2], editable="false")
                         state = "module"
                     elif "dependency:" in list_param:
                         state = "dependency"

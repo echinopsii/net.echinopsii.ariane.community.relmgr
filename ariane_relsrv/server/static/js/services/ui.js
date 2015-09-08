@@ -125,7 +125,7 @@ angular.module('ArianeUI')
                     return -1;
             },
             checkEditable: function(){
-                return(baseObj.node.version.indexOf("SNAPSHOT") > -1 || baseObj.node.snapshot == true);
+                return(baseObj.node.version.indexOf("SNAPSHOT") > -1 || baseObj.node.snapshot == true ||baseObj.node.editable == true);
             }
         };
     });

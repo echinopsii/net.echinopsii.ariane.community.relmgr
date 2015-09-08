@@ -21,6 +21,7 @@ angular.module('ArianeUI')
         $scope.commandsRelA = {Distribution: "distribution", Modules_Only: "module_only", Plugins_Only: "plugin_only", TestOK:"testOK", TestNOK: "testNOK"};
         $scope.cmdGen = {cmd: $scope.commandsRelA["Modules_Only"]};
         $scope.download = {zip: [], selected: null};
+        $scope.btnActive = {release: false};
         // view variables
         $scope.togDist = true;
         $scope.togPlug = true;
@@ -99,6 +100,7 @@ angular.module('ArianeUI')
                     if (typeof dist["selected"] != "undefined")
                         delete dist["selected"];
                     serviceUI.setBaseObj({obj: dist.node_type, node: dist}); // Use of JSON.parse(JSON.stringify(obj)) to copy JSON object. This object must not contain any function.
+                    $scope.btnActive.release = (serviceUI.checkEditable());
                     serviceUI.setNodeObj({obj: "default", node: {}});
                     if ($scope.curBaseSelected != 0)
                         $scope.curBaseSelected["selected"] = false;
@@ -125,6 +127,7 @@ angular.module('ArianeUI')
                     if (typeof PluginSet.plugin["dist_version"] != "undefined")
                         delete PluginSet.plugin["dist_version"];
                     serviceUI.setBaseObj({obj: node_type, node: PluginSet.plugin});
+                    $scope.btnActive.release = false;
                     serviceUI.setNodeObj({obj: "default", node: {}});
                     if ($scope.curBaseSelected != 0)
                         $scope.curBaseSelected["selected"] = false;
@@ -149,9 +152,19 @@ angular.module('ArianeUI')
         };
         $scope.clickReleaseMod = function(){
             if(serviceUI.setState({obj: "baseRelease", state: "nextPage"})){
-                loadDistribs(keepSNAPSHOT);
-                if(serviceUI.changePage('release'))
-                    serviceUI.actionBroadcast('changePage');
+                //loadDistribs(keepSNAPSHOT);
+                var baseobj = serviceUI.getBaseObj();
+                serviceAjax.distribCopy(baseobj.node)
+                    .success(function(data){
+                        $scope.dists = [];
+                        $scope.dists.push(data.distrib);
+                        serviceUI.setNotifyLog({type: "info", mode: "View", message: "Enter ReleaseA mode. Distribution SNAPSHOT was copied"});
+                        if(serviceUI.changePage('release'))
+                            serviceUI.actionBroadcast('changePage');
+                    })
+                    .error(function(data){
+                        serviceUI.setNotifyLog({type: "error", mode: "View", message: "Unable to enter into ReleaseA mode. Nothing was done.\nCause: "+data.message})
+                    });
             }
         };
         $scope.clickEditionMod = function(){

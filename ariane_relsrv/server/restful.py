@@ -46,6 +46,8 @@ def abort_error(error, msg):
         abort(404, message=msg)
     elif error == "INTERNAL_ERROR":
         abort(500, message=msg)
+    elif error == "FORBIDDEN":
+        abort(403, message=msg)
 
 def clear_args(args):
     keys = [k for k in args.keys()]
@@ -648,6 +650,7 @@ class RestDistributionList(Resource):
         self.reqparse.add_argument('version', type=str, help='Distribution version')
         self.reqparse.add_argument('nID', type=int, help='Distribution database ID named "nID"')
         self.reqparse.add_argument('distrib', location='json')
+        self.reqparse.add_argument('copy', type=bool)
         # self.reqparse.add_argument('version', type=str)
         super(RestDistributionList, self).__init__()
 
@@ -681,17 +684,40 @@ class RestDistributionList(Resource):
             else:
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         elif args["distrib"] is not None:
+            if args["copy"] is not None:
+                copy = args["copy"]
+                if not isinstance(copy, bool):
+                    abort_error("BAD_REQUEST", "Argument 'copy' must be a boolean")
+            else:
+                copy = False
             arg_d = json.loads(args["distrib"])
             d = ariane.distribution_service.get_unique(arg_d)
+            if not isinstance(d, ariane_delivery.Distribution):
+                abort_error("BAD_REQUEST", "Given parameter {} must be a Distribution".format(d))
             dev = ariane.distribution_service.get_dev_distrib()
-            if d == dev:
-                if isinstance(d, ariane_delivery.Distribution):
+            if copy:
+                if dev.editable == "true":
+                    abort_error("FORBIDDEN", "A copy already exists")
+                if dev == d:
+                    cd = ariane_delivery.DistributionService.copy_distrib(d)
+                    cd.editable = "true"
+                    cd.save()
+                    # Modify current Distrib name but save this name by adding 'copyTemp' before
+                    d.name = "copyTemp" + d.name
+                    d.version = "copyTemp" + d.version
+                    d.save()
+                    return make_response(json.dumps({"distrib": cd.get_properties(gettype=True)}), 200, headers_json)
+                else:
+                    abort_error("BAD_REQUEST", "Can not modifiy Distribution which is not in SNAPSHOT Version")
+            else:
+                dev = ariane.distribution_service.get_dev_distrib()
+                if d == dev:
                     arg_d.pop("nID")
                     if d.update(arg_d):
                         d.save()
                         return make_response(json.dumps({"distrib": d.get_properties(gettype=True)}), 200, headers_json)
-            else:
-                abort_error("BAD_REQUEST", "Can not modifiy Distribution which is not in SNAPSHOT Version")
+                else:
+                    abort_error("BAD_REQUEST", "Can not modifiy Distribution which is not in SNAPSHOT Version")
         else:
             dist_exists = ariane.distribution_service.get_unique({"name": args["name"], "version": args["version"]})
             if dist_exists is None:
@@ -816,7 +842,20 @@ class RestCheckout(Resource):
                     gitcheckout(p, True)
 
                 os.chdir(backpath)
-                return make_response(json.dumps({"message": "git checkout done"}), 200, headers_json)
+                # Delete copy distrib and rename Initial distrib
+                cd = ariane.distribution_service.get_unique({"version": version})
+                if isinstance(cd, ariane_delivery.Distribution):
+                    cd.delete()
+                else:
+                    abort_error("BAD_REQUEST", "Temporary Distribution version {} was not found. Can not remove it".format(version))
+                dist = ariane.distribution_service.get_unique({"version": "copyTemp"+version})
+                if isinstance(dist, ariane_delivery.Distribution):
+                    dist.name = dist.name[len("copyTemp"):]
+                    dist.version = dist.version[len("copyTemp"):]
+                    dist.save()
+                else:
+                    abort_error("BAD_REQUEST","Distribution model {} was not found. Can not reinitialize the Database".format(dist))
+                return make_response(json.dumps({"message": "git checkout done. Database reinitialized."}), 200, headers_json)
             else:
                 abort_error("BAD_REQUEST", "Given Distribution version ({})does not exists".format(version))
         else:

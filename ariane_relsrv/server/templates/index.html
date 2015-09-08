@@ -11,7 +11,7 @@
     <div class="colBase" ng-controller="DisplayColBaseCtrl">
         <div class="colHeader">
             <span>Distribution
-                <button class="btnRelease" ng-if="page=='edition'" ng-disabled="!enableEdit || activeEdit" ng-click="clickReleaseMod()">Release</button>
+                <button class="btnRelease" ng-if="page=='edition'" ng-disabled="!btnActive.release" ng-click="clickReleaseMod()">Release</button>
                 <button class="btnRelease" ng-if="page=='releaseA'" ng-disabled="!enableEdit || activeEdit" ng-click="clickEditionMod()">Edition</button>
             </span>
         </div>

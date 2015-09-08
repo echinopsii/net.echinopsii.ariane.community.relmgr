@@ -192,12 +192,12 @@ angular.module('ArianeUI')
             var lines = $scope.filediff.diff;
             for (var i= 0, len=lines.length ; i<len; i++){
                 var line = String(lines[i].line);
-                if(line.indexOf('+ ') == 0)
-                    lines[i].color = "DiffGreen";
-                else if(line.indexOf('- ') == 0)
-                    lines[i].color = "DiffRed";
-                else if (line.indexOf('--- ') == 0 || line.indexOf('+++ ') == 0 || line.indexOf('index') == 0 || line.indexOf('diff') == 0)
+                if (line.indexOf('---') == 0 || line.indexOf('+++') == 0 || line.indexOf('index') == 0 || line.indexOf('diff') == 0)
                     lines[i].color = "DiffWhite";
+                else if(line.indexOf('+') == 0)
+                    lines[i].color = "DiffGreen";
+                else if(line.indexOf('-') == 0)
+                    lines[i].color = "DiffRed";
                 else if (line.indexOf('@@') == 0)
                     lines[i].color = "DiffBlue";
             }

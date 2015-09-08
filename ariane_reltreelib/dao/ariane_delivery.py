@@ -289,12 +289,94 @@ class DistributionService(DeliveryTree):
         return self._get_relations(args, ["COMPATIBLE WITH", "DEPENDS ON"])
 
     def get_dev_distrib(self):
-        distribs = self.get_all()
-        dev = Distribution('dev', '0.0.0')
-        for d in distribs:
-            if d.version > dev.version:
-                dev = d
-        return dev
+        dev = self.get_unique({"editable": "true"})
+        if isinstance(dev, Distribution):
+            return dev
+        else:
+            distribs = self.get_all()
+            dev = Distribution('dev', '0.0.0')
+            for d in distribs:
+                if d.version > dev.version:
+                    dev = d
+            return dev
+
+    @staticmethod
+    def copy_distrib(dist):
+        if not isinstance(dist, Distribution):
+            return None
+
+        def copysubparent(sub):
+            DeliveryTree.submodule_parent_service.update_arianenode_lists(sub)
+            csub = SubModuleParent(sub.name, sub.version, sub.groupId, sub.artifactId, order=sub.order)
+            for sf in sub.list_files:
+                csub.add_file(FileNode(sf.name, sf.type, sf.version, sf.path))
+            for s in sub.list_submod:
+                if isinstance(s, SubModuleParent):
+                    ss = copysubparent(s)
+                    csub.add_submodule(SubModuleParent(ss.name, ss.version, ss.groupId, ss.artifactId, order=ss.order))
+                else:
+                    DeliveryTree.submodule_service.update_arianenode_lists(s)
+                    ss = SubModule(s.name, s.version, s.groupId, s.artifactId, order=s.order)
+                    for sf in s.list_files:
+                        ss.add_file(FileNode(sf.name, sf.type, sf.version, sf.path))
+                    csub.add_submodule(ss)
+            return csub
+
+        cd = Distribution(dist.name, dist.version)
+        DeliveryTree.distribution_service.update_arianenode_lists(dist)
+        for df in dist.list_files:
+            cd.add_file(FileNode(df.name, df.type, df.version, df.path))
+        for m in dist.list_module:
+            cm = Module(m.name, m.version, m.type, order=m.order)
+            DeliveryTree.module_service.update_arianenode_lists(m)
+            for mf in m.list_files:
+                cm.add_file(FileNode(mf.name, mf.type, mf.version, mf.path))
+            for s in m.list_submod:
+                if isinstance(s, SubModuleParent):
+                    sub = copysubparent(s)
+                    cm.add_submodule(sub)
+                else:
+                    DeliveryTree.submodule_service.update_arianenode_lists(s)
+                    csub = SubModule(s.name, s.version, s.groupId, s.artifactId, order=s.order)
+                    for subf in s.list_files:
+                        csub.add_file(FileNode(subf.name, subf.type, subf.version, subf.path))
+                    cm.add_submodule(csub)
+            cd.add_module(cm)
+        for mod in dist.list_module:
+            cm = [m for m in cd.list_module if m.name == mod.name][0]
+            for md in mod.list_module_dependency:
+                c_md = [t for t in cd.list_module if t.name == md["module"].name][0]
+                cm.add_module_dependency({"module": c_md, "version_min": md["version_min"],
+                                          "version_max": md["version_max"], "version": md["module"].version})
+
+        for plug in dist.list_plugin:
+            m = plug["Plugin"]
+            cm = Plugin(m.name, m.version)
+            DeliveryTree.plugin_service.update_arianenode_lists(m)
+            for mf in m.list_files:
+                cm.add_file(FileNode(mf.name, mf.type, mf.version, mf.path))
+            for s in m.list_submod:
+                if isinstance(s, SubModuleParent):
+                    sub = copysubparent(s)
+                    cm.add_submodule(sub)
+                else:
+                    DeliveryTree.submodule_service.update_arianenode_lists(s)
+                    csub = SubModule(s.name, s.version, s.groupId, s.artifactId, order=s.order)
+                    for subf in s.list_files:
+                        csub.add_file(FileNode(subf.name, subf.type, subf.version, subf.path))
+                    cm.add_submodule(csub)
+            cd.add_plugin(cm, plug["properties"])
+
+        for plugin in dist.list_plugin:
+            plug = plugin["Plugin"]
+            cp = [m for m in cd.list_plugin if m["Plugin"].name == plug.name][0]
+            cp = cp["Plugin"]
+            for md in plug.list_module_dependency:
+                c_md = [t for t in cd.list_module if t.name == md["module"].name][0]
+                cp.add_module_dependency({"module": c_md, "version_min": md["version_min"],
+                                          "version_max": md["version_max"], "version": md["module"].version})
+        cd.save()
+        return cd
 
     @staticmethod
     def _create_ariane_node(node):
@@ -790,7 +872,7 @@ class ArianeNode(object):
             args = {"name": "", "version": "", "type": "", "groupId": "", "artifactId": ""}
 
         if node_type == "Distribution":
-            node = Distribution(args["name"], args["version"], args["nID"])
+            node = Distribution(args["name"], args["version"], args["nID"], editable=args["editable"])
         elif node_type == "Module":
             node = Module(args["name"], args["version"], args["type"], args["nID"], order=args["order"])
         elif node_type == "Plugin":
@@ -825,19 +907,20 @@ class ArianeNode(object):
 
 class Distribution(ArianeNode):
 
-    def __init__(self, name, version, id=0):
+    def __init__(self, name, version, id=0, editable="false"):
         super().__init__(name, version)
         self.id = id
         self.node_type = self.__class__.__name__
         self.directory_name = ""
+        self.editable = "false"
         self.list_module = []
         self.list_plugin = []
         self._old_version = version
-        self.dir = {"name": self.name, "version": self.version, "nID": self.id}
+        self.dir = {"name": self.name, "version": self.version, "editable": self.editable, "nID": self.id}
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
     def _get_dir(self):
-        self.dir = {"name": self.name, "version": self.version, "nID": self.id}
+        self.dir = {"name": self.name, "version": self.version, "editable": self.editable, "nID": self.id}
         return self.dir
 
     def update(self, args):

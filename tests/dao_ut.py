@@ -535,7 +535,24 @@ class AppTest(unittest.TestCase):
         os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -c dump > "
                   "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
 
-    # def test_maxnid(self):
+    def test_copy_distrib(self):
+        self.ariane.delete_all()
+        create_db_file('inputs/create_0.6.3.txt')
+        count = self.ariane.graph_dao.count("Node")
+        d = self.ariane.distribution_service.get_unique({"version": "0.6.3"})
+        self.assertTrue(isinstance(d, ariane_delivery.Distribution))
+        cd = ariane_delivery.DistributionService.copy_distrib(d)
+        self.assertTrue(self.ariane.check_uniqueness())
+        dlist = self.ariane.distribution_service.find({"version": "0.6.3"})
+        self.assertEqual(len(dlist), 2)
+        d = dlist[0]
+        d2 = dlist[1]
+        self.assertTrue(isinstance(d, ariane_delivery.Distribution))
+        self.assertTrue(isinstance(d2, ariane_delivery.Distribution))
+        self.assertNotEqual(d, d2)
+        count2 = self.ariane.graph_dao.count("Node")
+        self.assertEqual(2*count, count2)
+        # def test_maxnid(self):
     #     self.ariane.delete_all()
     #     os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "
     #               "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
