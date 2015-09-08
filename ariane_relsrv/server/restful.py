@@ -937,8 +937,9 @@ class RestBuildZip(Resource):
             # or 'distpkgr {version}.SNAPSHOT' where {version} is version's value (i.e version= '0.6.4')
             if "SNAPSHOT" in version:
                 version = "master.SNAPSHOT"
+                version_cmd = version
             else:
-                version = version + ".SNAPSHOT"
+                version_cmd = version + ".SNAPSHOT"
 
             path_zip = self.path_zip
             FilesInfo.path_zip = path_zip
@@ -970,8 +971,8 @@ class RestBuildZip(Resource):
             os.chdir(project_path + "/ariane.community.distrib")
             # myenv = os.environ.copy()
             # myenv["PATH"] = make new PATH or myenv[”JAVA_HOME"] = make new JAVA_HOME, same thing for MAVEN_HOME
-            subprocess.Popen("./distribManager.py distpkgr " + version + " "
-                                                                         "> "+project_path + ftmp_path + ftmp_fname, shell=True)
+            subprocess.Popen("./distribManager.py distpkgr " + version_cmd + " "
+                             "> "+project_path + ftmp_path + ftmp_fname, shell=True)
             os.chdir(cur_path)
             #os.system(project_path + "/ariane.community.distrib/distribManager.py distpkgr " + version + " "
             #         "> "+project_path + ftmp_path + ftmp_fname)
