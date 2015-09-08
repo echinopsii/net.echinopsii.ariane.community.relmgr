@@ -381,7 +381,9 @@ class DistributionService(DeliveryTree):
     @staticmethod
     def _create_ariane_node(node):
         args = DeliveryTree.graph_dao.get_node_properties(node)
-        return Distribution(args["name"], args["version"], args["nID"])
+        if "editable" not in args.keys():
+            args["editable"] = "false"
+        return Distribution(args["name"], args["version"], args["nID"], editable=args["editable"])
 
     def __get_name_version_master(self, version):
         if "SNAPSHOT" in version:
@@ -912,7 +914,7 @@ class Distribution(ArianeNode):
         self.id = id
         self.node_type = self.__class__.__name__
         self.directory_name = ""
-        self.editable = "false"
+        self.editable = editable
         self.list_module = []
         self.list_plugin = []
         self._old_version = version
