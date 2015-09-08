@@ -61,8 +61,8 @@ angular.module('ArianeUI')
                 if(newnodeobj.obj != "default")
                     selectedObj = nodeObj;
             },
-            setNotifyLog: function(newlog){
-                log = newlog;
+            setNotifyLog: function(type, mode, message){
+                log = {type: type, mode: mode, message: message};
                 this.actionBroadcast('updateLog');
             },
             setEnableEdit: function(enableFlag){
@@ -125,7 +125,11 @@ angular.module('ArianeUI')
                     return -1;
             },
             checkEditable: function(){
-                return(baseObj.node.version.indexOf("SNAPSHOT") > -1 || baseObj.node.snapshot == true ||baseObj.node.editable == true);
+                // Check if the selected distribution is editable. An editable distribution is only a copy and has the property 'editable' == 'true'
+                return(baseObj.node.version.indexOf("SNAPSHOT") > -1 || baseObj.node.snapshot == true ||baseObj.node.editable == "true");
+            },
+            isDistribCopy: function(dist){
+                return (dist.version.indexOf("copyTemp") > -1);
             }
         };
     });

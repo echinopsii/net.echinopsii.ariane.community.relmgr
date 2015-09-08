@@ -703,6 +703,7 @@ class RestDistributionList(Resource):
                     cd.editable = "true"
                     cd.save()
                     # Modify current Distrib name but save this name by adding 'copyTemp' before
+                    FilesInfo.distrib_copy_id = d.id
                     d.name = "copyTemp" + d.name
                     d.version = "copyTemp" + d.version
                     d.save()
@@ -750,6 +751,7 @@ class RestDistributionList(Resource):
 class FilesInfo(object):
     zipfile = ""
     path_zip = ""
+    distrib_copy_id = 0
 
     def __init__(self):
         pass
@@ -848,7 +850,7 @@ class RestCheckout(Resource):
                     cd.delete()
                 else:
                     abort_error("BAD_REQUEST", "Temporary Distribution version {} was not found. Can not remove it".format(version))
-                dist = ariane.distribution_service.get_unique({"version": "copyTemp"+version})
+                dist = ariane.distribution_service.get_unique({"nID": FilesInfo.distrib_copy_id})
                 if isinstance(dist, ariane_delivery.Distribution):
                     dist.name = dist.name[len("copyTemp"):]
                     dist.version = dist.version[len("copyTemp"):]

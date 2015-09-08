@@ -31,17 +31,17 @@ angular.module('ArianeUI')
         };
         $scope.filediff = {diff: [{line: "", color: ""}], message: ""};
         /* ********************* EVENTS ********************* */
-        $scope.$on('handleEdition', function(){
+        $scope.$on('handleEdition', function(){ // event called on page = 'view' | 'edition' | 'releaseA'
             if(!$scope.activeEdit) {
                 var old_enableEdit = $scope.enableEdit;
                 backupObj = serviceUI.getSelectedObj();
                 if (backupObj != -1){
                     var baseObj = serviceUI.getBaseObj();
                     $scope.selectedObj = JSON.parse(JSON.stringify(backupObj)); // copy JSON object
-                    $scope.enableEdit = serviceUI.checkEditable();
                     $scope.isNewNode = false;
                     $scope.isDeleting = false;
                     $scope.parent = {};
+                    $scope.enableEdit = serviceUI.checkEditable() && $scope.page != "edition"; // IMPORTANT - Enable properties edition if true
                 }
                 else
                     $scope.enableEdit = false;

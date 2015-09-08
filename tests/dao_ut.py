@@ -516,10 +516,15 @@ class AppTest(unittest.TestCase):
         p.save()
         d.add_plugin(p)
 
-    def test_import_all_cypher(self):
+    def test_import_all_distribcypher(self):
         self.ariane.delete_all()
         os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "
                   "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/alldistrib.cypher")
+
+    def test_import_all_distribcypher(self):
+        self.ariane.delete_all()
+        os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "
+                  "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
 
     def test_import(self):
         self.ariane.delete_all()

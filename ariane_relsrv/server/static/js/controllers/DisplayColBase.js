@@ -21,7 +21,7 @@ angular.module('ArianeUI')
         $scope.commandsRelA = {Distribution: "distribution", Modules_Only: "module_only", Plugins_Only: "plugin_only", TestOK:"testOK", TestNOK: "testNOK"};
         $scope.cmdGen = {cmd: $scope.commandsRelA["Modules_Only"]};
         $scope.download = {zip: [], selected: null};
-        $scope.btnActive = {release: false};
+        $scope.btnActive = {release: false, refresh: true, reset: {active: true, showConfirm: false}};
         // view variables
         $scope.togDist = true;
         $scope.togPlug = true;
@@ -34,6 +34,10 @@ angular.module('ArianeUI')
             {
                 data.distribs.sort(sortVersion);
                 $scope.dists = data.distribs;
+                var len_dist = $scope.dists.length;
+                $scope.dists = $scope.dists.filter(function(e){ return !serviceUI.isDistribCopy(e)});
+                $scope.btnActive.release = (len_dist == $scope.dists.length);
+                toggleBtnRefresh();
                 loadPlugins();
                 if (typeof filter !== "undefined")
                     filter();
@@ -158,13 +162,15 @@ angular.module('ArianeUI')
                     .success(function(data){
                         $scope.dists = [];
                         $scope.dists.push(data.distrib);
-                        serviceUI.setNotifyLog({type: "info", mode: "View", message: "Enter ReleaseA mode. Distribution SNAPSHOT was copied"});
+                        serviceUI.setNotifyLog("info", "View", "Enter ReleaseA mode. Distribution SNAPSHOT was copied");
                         if(serviceUI.changePage('release'))
                             serviceUI.actionBroadcast('changePage');
                     })
                     .error(function(data){
-                        serviceUI.setNotifyLog({type: "error", mode: "View", message: "Unable to enter into ReleaseA mode. Nothing was done.\nCause: "+data.message})
+                        $scope.btnActive.release = false;
+                        serviceUI.setNotifyLog("error", "View", "Unable to enter into ReleaseA mode. Nothing was done.\nCause: "+data.message);
                     });
+                $scope.btnActive.release = false;
             }
         };
         $scope.clickEditionMod = function(){
@@ -179,13 +185,13 @@ angular.module('ArianeUI')
                 if(serviceUI.setState({obj: "release", state:"generation"})){
                     serviceAjax.generate($scope.cmdGen.cmd, $scope.dists[0].version)
                         .success(function(data){
-                            serviceUI.setNotifyLog({type:"info", mode:"ReleaseA", message: "Generation done! ("+data.message+")"});
+                            serviceUI.setNotifyLog("info", "ReleaseA", "Generation done! ("+data.message+")");
                             serviceUI.setState({obj: "default", state: "done"});
                             if(serviceUI.changePage('release'))
                                 serviceUI.actionBroadcast('changePage');
                         })
                         .error(function(data){
-                            serviceUI.setNotifyLog({type:"error", mode:"ReleaseA", message: "An error occured: " + data.message});
+                            serviceUI.setNotifyLog("error", "ReleaseA", "An error occured: " + data.message);
                             $scope.confirmValRoll.disableVal = true;
                             serviceUI.setState({obj: "default", state: "done"});
                         });
@@ -196,13 +202,13 @@ angular.module('ArianeUI')
                     serviceAjax.buildZip($scope.dists[0].version)
                     .success(function(data){
                         $scope.download.zip.push(data.zip);
-                        serviceUI.setNotifyLog({type:"info", mode:"ReleaseB", message: "Build of zip done! "});
+                        serviceUI.setNotifyLog("info", "ReleaseB", "Build of zip done! ");
                         serviceUI.setState({obj: "default", state: "done"});
                         //if(serviceUI.changePage('release'))
                         //  serviceUI.actionBroadcast('changePage');
                     })
                     .error(function(data){
-                        serviceUI.setNotifyLog({type:"error", mode:"ReleaseB", message: "An error occured: " + data.message});
+                        serviceUI.setNotifyLog("error", "ReleaseB", "An error occured: " + data.message);
                         $scope.confirmValRoll.disableVal = true;
                         serviceUI.setState({obj: "default", state: "done"});
                     });
@@ -215,14 +221,14 @@ angular.module('ArianeUI')
                     serviceAjax.checkout($scope.dists[0].version)
                     .success(function(data){
                         var mode = 'Release' + release[release.indexOf('rel')];
-                        serviceUI.setNotifyLog({type:"info", mode: mode, message: data.message});
+                        serviceUI.setNotifyLog("info", mode, data.message);
                         serviceUI.setState({obj: "default", state: "done"});
                         if(serviceUI.changePage('rollback'))
                             serviceUI.actionBroadcast('changePage');
                         })
                     .error(function(data){
                         var mode = 'Release' + release[release.indexOf('rel')];
-                        serviceUI.setNotifyLog({type:"error", mode: mode, message: "An error occured: " + data.message});
+                        serviceUI.setNotifyLog("error", mode,  "An error occured: " + data.message);
                         serviceUI.setState({obj: "default", state: "done"});
                         if(serviceUI.changePage('rollback'))
                             serviceUI.actionBroadcast('changePage');
@@ -247,7 +253,7 @@ angular.module('ArianeUI')
         };
 
         $scope.toggleResetDB = function(){
-            $scope.confirmValRoll.active = !$scope.confirmValRoll.active;
+            $scope.btnActive.reset.showConfirm = !$scope.btnActive.reset.showConfirm;
         };
         $scope.clickResetDB = function (choice) {
             if(choice == "YES"){
@@ -255,17 +261,30 @@ angular.module('ArianeUI')
                     serviceAjax.resetDB()
                         .success(function(data){
                             loadDistribs();
-                            serviceUI.setNotifyLog({type:"info", mode: "View", message: data.message});
+                            serviceUI.setNotifyLog("info", "View", data.message);
                             serviceUI.setState({obj: "default", status: "done"});
+                            $scope.btnActive.reset.active = true;
                         })
                         .error(function(data){
-                            serviceUI.setNotifyLog({type:"error", mode: "View", message: data.message});
+                            serviceUI.setNotifyLog("error", "View", data.message);
                             serviceUI.setState({obj: "default", status: "done"});
+                            $scope.btnActive.reset.active = true;
                         });
                 }
+                $scope.btnActive.reset.active = false;
             }
-            $scope.confirmValRoll.active = false;
+            $scope.btnActive.reset.showConfirm = false;
         };
+        $scope.clickRefresh = function(){
+            $scope.btnActive.refresh = false;
+            loadDistribs();
+        };
+        function toggleBtnRefresh(){
+            if(!$scope.btnActive.refresh){
+                serviceUI.setNotifyLog("info", "View", "Distribution list has been refreshed");
+                $scope.btnActive.refresh = true;
+            }
+        }
         /* ********************* EVENTS ********************* */
         $scope.$on('enableEdit', function(){
             $scope.enableEdit = serviceUI.getEnableEdit();

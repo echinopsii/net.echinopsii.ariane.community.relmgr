@@ -19,8 +19,9 @@
             <span class="listRoot">Distributions
                 <button class="btnExtend" ng-click="toggleDistList()">+/-</button>
                 <span ng-if="page=='edition'">
-                    <button class="btnRelease" ng-click="toggleResetDB()">RESET</button>
-                    <span ng-show="confirmValRoll.active">Reset Database ? <button ng-click="clickResetDB('YES')">YES</button> <button ng-click="clickResetDB('NO')">NO</button></span>
+                    <button class="btnAction" ng-disabled="!btnActive.refresh" ng-click="clickRefresh()">REFRESH</button>
+                    <button class="btnAction" ng-disabled="!btnActive.reset.active" ng-click="toggleResetDB()">RESET</button>
+                    <span ng-show="btnActive.reset.showConfirm">Reset Database ? <button ng-click="clickResetDB('YES')">YES</button> <button ng-click="clickResetDB('NO')">NO</button></span>
                 </span>
             </span>
             <div class="DistList" ng-show="isDistToggle()">
@@ -42,7 +43,7 @@
         <div class="colBody" ng-controller="DisplayColNodesCtrl">
         <span class="listRoot">Components <!-- ****************** Components ****************** -->
             <button class="btnExtend" ng-click="toggleModList()">+/-</button>
-            <button class="btnAddDel" ng-if="page=='edition' && !isPlugin && enableEdit" ng-disabled="activeEdit" ng-click="addElement('module')">Add</button>
+            <button class="btnAction" ng-if="page=='edition' && !isPlugin && enableEdit" ng-disabled="activeEdit" ng-click="addElement('module')">Add</button>
         </span>
         <div class="ModList" ng-show="isModToggle()">
             <ul ng-repeat="module in modules">
@@ -51,8 +52,8 @@
                     <span>
                         <label ng-click="clickMod(module)">{{ module.name }} {{module.version}}</label><span ng-if="module.order"> ({{ module.order }})</span>
                         <span ng-if="page=='edition' && module.selected && enableEdit">
-                            <!--<button class="btnAddDel" ng-click="addElement('submodule')">Add</button>-->
-                            <button class="btnAddDel" ng-disabled="activeEdit" ng-click="delElement(module)">Delete</button>
+                            <!--<button class="btnAction" ng-click="addElement('submodule')">Add</button>-->
+                            <button class="btnAction" ng-disabled="activeEdit" ng-click="delElement(module)">Delete</button>
                         </span>
                     </span>
                 {% endraw %}
@@ -64,7 +65,7 @@
         <div class="listRoot">Modules
             (<span ng-if="subSet.parent">{{subSet.parent.name}}</span>)
             <button class="btnExtend" ng-click="toggleSubList()">+/-</button>
-            <button class="btnAddDel" ng-if="page=='edition' && subSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('submodule', subSet.parent)">Add</button>
+            <button class="btnAction" ng-if="page=='edition' && subSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('submodule', subSet.parent)">Add</button>
         </div>
             {% endraw %}
         <div class="SubList" ng-show="isSubToggle()">
@@ -75,9 +76,9 @@
                         <label ng-class="submodule.selected ? 'SubSelected' : 'SubNotSelected'" ng-click="clickSub(submodule)">{{ submodule.name }} ({{ submodule.order }})</label>
                         <button class="btnExtend" ng-if="submodule.issubparent" ng-click="toggleModSub(submodule)">+/-</button>
                         <span ng-if="page=='edition' && submodule.issubparent && submodule.selected && enableEdit">
-                            <button class="btnAddDel" ng-disabled="activeEdit" ng-click="addElement('submodule', submodule)">Add</button>
+                            <button class="btnAction" ng-disabled="activeEdit" ng-click="addElement('submodule', submodule)">Add</button>
                         </span>
-                        <button class="btnAddDel" ng-if="page=='edition' && submodule.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(submodule)">Delete</button>
+                        <button class="btnAction" ng-if="page=='edition' && submodule.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(submodule)">Delete</button>
                     </span>
                         <div class="ModSubList" ng-if="submodule.issubparent" ng-show="isModSubToggle(submodule)">
                             <ul ng-repeat="sub in submodule.sublist" ng-include="'field_renderer.html'">
@@ -93,13 +94,13 @@
             (<span ng-if="fileSet.parent">{{fileSet.parent.name | prefix:'Distrib_':fileSet.parent:'node_type':'distrib' | sufix:'version':fileSet.parent:'node_type':'distrib'}}</span>)
             {% endraw %}
             <button class="btnExtend" ng-disabled="0" ng-click="toggleFileList()">+/-</button>
-            <button class="btnAddDel" ng-if="page=='edition' && fileSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('filenode')">Add</button>
+            <button class="btnAction" ng-if="page=='edition' && fileSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('filenode')">Add</button>
         </div>
         <div class="FileList" ng-show="isFileToggle()">
             <ul ng-repeat="filenode in fileSet.filenodes">
             {% raw %}
                 <li ng-class="filenode.selected ? 'FileSelected' : 'FileNotSelected'" ng-click="clickFile(filenode)">{{ filenode.name | limitDisplay : limitLetterNum }}
-                    <button class="btnAddDel" ng-if="page=='edition' && filenode.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(filenode)">Delete</button>
+                    <button class="btnAction" ng-if="page=='edition' && filenode.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(filenode)">Delete</button>
                 </li>
             {% endraw %}
             </ul>
@@ -116,8 +117,8 @@
     {% raw %}
     <ul ng-repeat="log in log.list">
         <li ng-class="log.type" ng-show="log.show">
-            {{log.mode}} ({{log.status}}): {{log.message}}
             <input type="checkbox" ng-model="log.show">
+            {{log.mode}} ({{log.status}}): {{log.message}}
         </li>
     </ul>
     {% endraw %}
@@ -140,8 +141,8 @@
         <span>
             <label ng-class="sub.selected ? 'SubSelected' : 'SubdNotSelected'" ng-click="clickSub(sub)">{{ sub.name }} ({{ sub.order }})</label>
             <button class="btnExtend" ng-if="sub.issubparent" ng-click="toggleModSub(sub)">+/-</button>
-            <span ng-if="page=='edition' && sub.issubparent && sub.selected && enableEdit"><button class="btnAddDel" ng-disabled="activeEdit" ng-click="addElement('submodule', sub)">Add</button></span>
-            <button class="btnAddDel" ng-if="page=='edition' && sub.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(sub)">Delete</button>
+            <span ng-if="page=='edition' && sub.issubparent && sub.selected && enableEdit"><button class="btnAction" ng-disabled="activeEdit" ng-click="addElement('submodule', sub)">Add</button></span>
+            <button class="btnAction" ng-if="page=='edition' && sub.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(sub)">Delete</button>
         </span>
         <div class="ModSubList" ng-if="sub.issubparent" ng-show="isModSubToggle(sub)">
             <ul ng-repeat="sub in sub.sublist">
