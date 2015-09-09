@@ -790,22 +790,23 @@ class RestCheckout(Resource):
                 dfiles = ariane.get_files(dist)
                 flag_dir = True
                 dpath = ""
-                if not generator.Degenerator.is_git_tagged(dist.version):
-                    for df in dfiles:
-                        if flag_dir:  # Get distrib path directory (i.e: ariane.community.distrib/) from this distrib's file path
-                            if df.path.startswith('/'):
-                                df.path = df.path[1:]
-                            dpath = df.path.split('/')
-                            dpath = dpath[0] + '/'
-                            os.chdir(os.path.join(project_path, dpath))
-                            flag_dir = False
-                        if os.path.isfile(df.path[len(dpath):]+df.name):
-                            if (df.is_versioned()) and ("master.SNAPSHOT" not in df.name):
-                                print("PRINT ", os.getcwd(), "remove " + df.path[len(dpath):]+df.name)
-                                os.remove(df.path[len(dpath):]+df.name)
-                            else:
-                                print("PRINT ", os.getcwd(), "git checkout " + df.path[len(dpath):]+df.name)
-                                os.system("git checkout " + df.path[len(dpath):]+df.name)
+                for df in dfiles:
+                    if flag_dir:  # Get distrib path directory (i.e: ariane.community.distrib/) from this distrib's file path
+                        if df.path.startswith('/'):
+                            df.path = df.path[1:]
+                        dpath = df.path.split('/')
+                        dpath = dpath[0] + '/'
+                        os.chdir(os.path.join(project_path, dpath))
+                        flag_dir = False
+                    if generator.Degenerator.is_git_tagged(dist.version):
+                        break
+                    if os.path.isfile(df.path[len(dpath):]+df.name):
+                        if (df.is_versioned()) and ("master.SNAPSHOT" not in df.name):
+                            print("PRINT ", os.getcwd(), "remove " + df.path[len(dpath):]+df.name)
+                            os.remove(df.path[len(dpath):]+df.name)
+                        else:
+                            print("PRINT ", os.getcwd(), "git checkout " + df.path[len(dpath):]+df.name)
+                            os.system("git checkout " + df.path[len(dpath):]+df.name)
                 # Second, Checkout all other Modules/Plugins files. There are 2 verisoned files (.plan et .json build)
                 # so we remove them. For the not versioned files we use 'git checkout'
                 modules = ariane.module_service.get_all(dist)
@@ -814,13 +815,10 @@ class RestCheckout(Resource):
                 def gitcheckout(m, flag, mpath=""):
                     mfiles = m.list_files
                     if flag:  # Get module/plugin path directory (i.e: ariane.community.core.directory/) from its own file path
-                        mpath = [f.path for f in mfiles if str(f.path).endswith(m.name+'/')]
-                        if len(mpath) > 0:
-                            mpath = mpath[0]
-                            os.chdir(os.path.join(project_path, mpath))
-                            flag = False
-                        else:
-                            return  # module/plugin must have at least one file
+                        mpath = m.get_directory_name() + '/'
+                        dirpath = os.path.join(project_path, mpath)
+                        os.chdir(dirpath)
+                        flag = False
                     for f in mfiles:
                         if os.path.isfile(f.path[len(mpath):]+f.name):
                             if (f.is_versioned()) and ("master.SNAPSHOT" not in f.name):
@@ -839,11 +837,11 @@ class RestCheckout(Resource):
 
                 for m in modules:
                     if m.name != "relmgr":  # We don't want to checkout ariane.community.relmgr
-                        if not generator.Degenerator.is_git_tagged(m.version):
+                        if not generator.Degenerator.is_git_tagged(m.version, path=project_path+'/'+m.get_directory_name()):
                             ariane.module_service.update_arianenode_lists(m)
                             gitcheckout(m, True)
                 for p in plugins:
-                    if not generator.Degenerator.is_git_tagged(p.version):
+                    if not generator.Degenerator.is_git_tagged(p.version, path=project_path+'/'+p.get_directory_name()):
                         ariane.plugin_service.update_arianenode_lists(p)
                         gitcheckout(p, True)
 

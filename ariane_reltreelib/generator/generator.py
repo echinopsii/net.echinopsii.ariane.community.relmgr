@@ -194,7 +194,7 @@ class Generator(object):
         plugins = self.get_plugins_list(version)
 
         for plug in plugins:
-            if not Degenerator.is_git_tagged(plug.version, path=self.dir_output+plug.get_directory_name()):
+            if Degenerator.is_git_tagged(plug.version, path=self.dir_output+plug.get_directory_name()):
                 continue
             self.ariane.plugin_service.update_arianenode_lists(plug)
             plug_files = self.ariane.get_files(plug)
@@ -342,7 +342,7 @@ class Generator(object):
         return self.dir_output+fjson.path+fjson.name
 
     def generate_json_dist(self, version, fjson):
-        if not Degenerator.is_git_tagged(version, path=self.dir_output+fjson.path):
+        if Degenerator.is_git_tagged(version, path=self.dir_output+fjson.path):
             return
         elements = self.get_modules_list(version)
         print(elements)
