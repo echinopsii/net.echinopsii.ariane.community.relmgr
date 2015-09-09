@@ -20,7 +20,7 @@ angular.module('ArianeUI')
         $scope.confirmValRoll = {msg: "VALIDATE", confirm:false, active: false, disableVal: false};
         $scope.commandsRelA = {Distribution: "distribution", Modules_Only: "module_only", Plugins_Only: "plugin_only", TestOK:"testOK", TestNOK: "testNOK"};
         $scope.cmdGen = {cmd: $scope.commandsRelA["Modules_Only"]};
-        $scope.download = {zip: [], selected: null};
+        $scope.download = {zip: [], selected: null, click: false};
         $scope.btnActive = {release: false, refresh: true, reset: {active: true, showConfirm: false}};
         // view variables
         $scope.togDist = true;
@@ -209,9 +209,9 @@ angular.module('ArianeUI')
                     })
                     .error(function(data){
                         serviceUI.setNotifyLog("error", "ReleaseB", "An error occured: " + data.message);
-                        $scope.confirmValRoll.disableVal = true;
                         serviceUI.setState({obj: "default", state: "done"});
                     });
+                    $scope.confirmValRoll.disableVal = true;
                 }
             }
         }
@@ -285,6 +285,10 @@ angular.module('ArianeUI')
                 $scope.btnActive.refresh = true;
             }
         }
+
+        $scope.clickDownload = function(){
+            $scope.confirmValRoll.disableVal = false;
+        };
         /* ********************* EVENTS ********************* */
         $scope.$on('enableEdit', function(){
             $scope.enableEdit = serviceUI.getEnableEdit();

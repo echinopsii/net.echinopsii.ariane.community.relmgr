@@ -4,10 +4,11 @@
     <div> Download Section:
         <form id="formdownload" action="/rest/downloadzip" method="post">
             <select ng-model="download.selected" ng-options="name for name in download.zip"></select>
-            <button type="submit">Download!</button>
+            <button type="submit" ng-disabled="download.selected == null" ng-click="clickDownload()">Download!</button>
         </form>
     </div>
     <hr class="separateur">
+    <!--<button ng-click="clickTestValidate()">TestValidate</button>-->
     <button class="btnValidate" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relB')">VALIDATE</button>
     <button class="btnValidate" type="submit" ng-click="clickValidRoll('ROLLBACK', 'relB')">ROLLBACK</button>
     <div>
