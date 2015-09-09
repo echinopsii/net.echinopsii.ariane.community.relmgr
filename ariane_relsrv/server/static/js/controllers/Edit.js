@@ -9,6 +9,7 @@ angular.module('ArianeUI')
         $scope.activeEdit = false; // User is editing (after changing input property or after click on Add/Delete)
         $scope.isDeleting = false;
         $scope.isNewNode = false;
+        $scope.isDiff = false;
         $scope.choice = {isNewSubParent: "no", deleting: "no"};
         $scope.parent = {};
         $scope.page = 'edition';
@@ -57,11 +58,13 @@ angular.module('ArianeUI')
                     $scope.selectedObj = fileObj;
                     serviceAjax.getFileDiff(fileObj.node)
                         .success(function(data){
+                            $scope.isDiff = data.isDiff;
                             $scope.filediff.diff = [{line:"", color:""}];
                             for (var i= 0, len=data.diff.length; i<len; i++){
                                 $scope.filediff.diff.push({line: data.diff[i], color: ""})
                             }
-                            colorDiffLines();
+                            if ($scope.isDiff)
+                                colorDiffLines();
                         })
                         .error(function(data){
                             $scope.filediff.diff = "** Error while searching for differences **";

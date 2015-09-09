@@ -882,21 +882,18 @@ class RestFileDiff(Resource):
             if f is not None:
                 full_path = os.path.join(project_path, f.path)
                 if os.path.exists(full_path):
-                    backup_path = os.getcwd()
-                    os.chdir(full_path)
-                    if os.path.isfile(project_path+srv_var_path+self.diffrec_filename):
-                        os.remove(project_path+srv_var_path+self.diffrec_filename)
-                    os.system("touch "+project_path+srv_var_path+self.diffrec_filename)
-                    os.system("git diff " + f.name + " > " + project_path + srv_var_path + self.diffrec_filename)
-                    os.chdir(backup_path)
-                    diffrec = ""
-                    with open(project_path+srv_var_path+self.diffrec_filename, "r") as openfile:
-                        diffrec = openfile.readlines()
-                    if os.path.isfile(project_path+srv_var_path+self.diffrec_filename):
-                        os.remove(project_path+srv_var_path+self.diffrec_filename)
-                    return make_response(json.dumps({"diff": diffrec}), 200, headers_json)
-                else:
-                    abort_error("BAD_REQUEST", "Path of file {} does not exist in project arborescence".format(f))
+                    flag_diff = True
+                    out = subprocess.check_output("git diff " + f.name, shell=True, cwd=full_path)
+                    out = (out.decode()).split('\n')
+                    if out[-1] == '':
+                        out = out[:-1]
+                    if len(out) == 0:
+                        flag_diff = False
+                        out = subprocess.check_output("cat " + f.name, shell=True, cwd=full_path)
+                        out = (out.decode()).split('\n')
+                        if out[-1] == '':
+                            out = out[:-1]
+                    return make_response(json.dumps({"diff": out, "isDiff": flag_diff}), 200, headers_json)
             else:
                 abort_error("BAD_REQUEST", "Given parameter {} does not match an existing file in database".format(fnode))
 

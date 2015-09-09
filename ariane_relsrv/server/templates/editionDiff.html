@@ -4,7 +4,7 @@
 <div class="colBody">
     {% raw %}
     <span ng-if="selectedObj"> File: {{ selectedObj.node.name }}</span>
-    <div>Differences:
+    <div ng-if="selectedObj">Differences: <span style="color:red;" ng-if="!isDiff">No Differences</span>
         <ul ng-repeat="line in filediff.diff">
             <li ng-class="line.color">{{ line.line }}</li>
         </ul>
