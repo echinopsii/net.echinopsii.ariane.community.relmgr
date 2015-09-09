@@ -20,12 +20,7 @@ angular.module('ArianeUI')
 
         function DistSelected(baseObj){
             if(baseObj["node"] != curBaseObj ){
-                serviceAjax.module(baseObj["node"]).success(function(data){
-                    data.modules.sort(sortOrder);
-                    $scope.modules = data.modules;
-                    $scope.togMod = true;
-                    curBaseObj = baseObj["node"];
-                });
+                loadComponents(baseObj["node"]);
             }
             tmp_subSet = $scope.subSet;
             $scope.subSet = {parent: null, modules: []};
@@ -52,6 +47,14 @@ angular.module('ArianeUI')
             $scope.togMod = true;
             $scope.curNodeSelected["selected"] = false;
             $scope.isPlugin = true;
+        }
+        function loadComponents(dist){
+            serviceAjax.module(dist).success(function(data){
+                data.modules.sort(sortOrder);
+                $scope.modules = data.modules;
+                $scope.togMod = true;
+                curBaseObj = dist;
+            });
         }
         function loadFiles(node){
             $scope.fileSet.parent = node;
@@ -103,6 +106,10 @@ angular.module('ArianeUI')
         });
         $scope.$on('changePage', function(){
             $scope.page = serviceUI.getPage();
+            if($scope.page == "releaseA"){
+                var baseObj = serviceUI.getBaseObj();
+                loadComponents(baseObj.node);
+            }
         });
 
         $scope.$on('deleteNode', function(){

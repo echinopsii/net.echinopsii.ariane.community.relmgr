@@ -42,23 +42,22 @@ class MyLoader(BaseLoader):
 class Degenerator(object):
 
     @staticmethod
-    def is_git_tagged(filename, path=None):
+    def is_git_tagged(version, path=None):
         tag_flag = False
-        backpath = ""
+        tags = []
         if path is not None:
-            backpath = os.getcwd()
-            os.chdir(path)
-        tags = subprocess.check_output("git tag", shell=True)
+            if os.path.exists(path):
+                tags = subprocess.check_output("git tag", shell=True, cwd=path)
+        else:
+            tags = subprocess.check_output("git tag", shell=True)
         # check_output gives the command output in bytes format, so we decode it.
         tags = (tags.decode()).split('\n')
         if tags[-1] == '':
             tags = tags[:-1]
         for tag in tags:
-            if tag in filename:
+            if tag == version:
                 tag_flag = True
                 break
-        if backpath != "":
-            os.chdir(backpath)
 
         return tag_flag
 
@@ -155,7 +154,7 @@ class Generator(object):
             elif df.type == "json_dist":
                 self.generate_json_dist(version, df)
             elif df.type == "json_plugins":
-                self.generate_json_plugins(df)
+                self.generate_json_plugins(version, df)
             elif df.type == "json_plugin_dist":
                 self.generate_json_plugin_dist(version, df)
             elif df.type == "json_git_repos":
@@ -168,6 +167,8 @@ class Generator(object):
         for mod in modules:
             if mod.name in file_gen_exception:
                 continue
+            if Degenerator.is_git_tagged(mod.version, path=self.dir_output+mod.get_directory_name()):
+                continue
             self.ariane.module_service.update_arianenode_lists(mod)
             mod_files = self.ariane.get_files(mod)
             for f in mod_files:
@@ -176,7 +177,7 @@ class Generator(object):
                 elif f.type == "json_build":
                     self.generate_lib_json(mod, f)
                 elif f.type == "vsh":
-                    self.generate_vsh_installer(modules, f)
+                    self.generate_vsh_installer(version, modules, f)
                 elif f.type == "pom":
                     grId, artId = self.__generate_pom_mod_plug(mod, f)
 
@@ -193,6 +194,8 @@ class Generator(object):
         plugins = self.get_plugins_list(version)
 
         for plug in plugins:
+            if not Degenerator.is_git_tagged(plug.version, path=self.dir_output+plug.get_directory_name()):
+                continue
             self.ariane.plugin_service.update_arianenode_lists(plug)
             plug_files = self.ariane.get_files(plug)
             for f in plug_files:
@@ -217,6 +220,8 @@ class Generator(object):
         file_gen_exception = self.get_module_file_gen_exceptions()
 
         if mod_plug.name not in file_gen_exception:
+            if Degenerator.is_git_tagged(mod_plug.version, path=self.dir_output+mod_plug.get_directory_name()):
+                return
             if type(mod_plug) is ariane_delivery.Module:
                 self.ariane.module_service.get_relations(mod_plug)
             elif type(mod_plug) is ariane_delivery.Plugin:
@@ -237,9 +242,8 @@ class Generator(object):
 
         args = {"version": sub.version, "groupId": grId, "artifactId": artId, "name": sub.name}
 
-        if not Degenerator.is_git_tagged(fpom.name, path=self.dir_output+fpom.path):
-            with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
-                target.write(template.render(args))
+        with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
+            target.write(template.render(args))
 
         groupId = artId
         artifactId = artId + '.' + sub.name
@@ -267,13 +271,14 @@ class Generator(object):
                 "packaging": packaging, "modules": mod_plug.list_submod,
                 "dependencies": mod_plug.list_module_dependency}
 
-        if not Degenerator.is_git_tagged(fpom.name, path=self.dir_output+fpom.path):
-            with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
-                target.write(template.render(args))
+        with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
+            target.write(template.render(args))
 
         return groupId, artifactId
 
     def generate_pom_dist(self, version, fpom):
+        if Degenerator.is_git_tagged(version, path=self.dir_output+fpom.path):
+            return
         modules = self.get_modules_list(version)
         mod_exception = self.get_module_file_gen_exceptions()
         for m in modules.copy():
@@ -283,11 +288,12 @@ class Generator(object):
         template = self.env.get_template(fpom.path + 'pom_distrib.yml')
         args = {"modules": modules, "version": version}
 
-        if not Degenerator.is_git_tagged(fpom.name, path=self.dir_output+fpom.path):
-            with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
-                target.write(template.render(args))
+        with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
+            target.write(template.render(args))
 
     def generate_plan(self, mod_plug, fplan):
+        if Degenerator.is_git_tagged(mod_plug.version, path=self.dir_output+fplan.path):
+            return
         sub_exceptions = self.get_submodule_plan_exceptions()
         snapshot = False
         if "SNAPSHOT" in mod_plug.version:
@@ -313,11 +319,12 @@ class Generator(object):
             m_version = mod_plug.version
         args = {"version": m_version, "module": mod_plug, "vmin": vmin, "vmax": vmax, "submodules": submodules}
 
-        if not Degenerator.is_git_tagged(fplan.name, path=self.dir_output+fplan.path):
-            with open(self.dir_output+fplan.path+fplan.name, 'w') as target:
-                target.write(template.render(args))
+        with open(self.dir_output+fplan.path+fplan.name, 'w') as target:
+            target.write(template.render(args))
 
     def generate_json_plugin_dist(self, version, fjson):
+        if Degenerator.is_git_tagged(version, path=self.dir_output+fjson.path):
+            return
         elements = self.get_plugins_list(version)
         dictio = {}
 
@@ -329,13 +336,14 @@ class Generator(object):
                 l = [e.version]
             dictio[key] = l
 
-        if not Degenerator.is_git_tagged(fjson.name, path=self.dir_output+fjson.path):
-            with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
-                json.dump(dictio, target, indent=4)
+        with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
+            json.dump(dictio, target, indent=4)
 
-            return self.dir_output+fjson.path+fjson.name
+        return self.dir_output+fjson.path+fjson.name
 
     def generate_json_dist(self, version, fjson):
+        if not Degenerator.is_git_tagged(version, path=self.dir_output+fjson.path):
+            return
         elements = self.get_modules_list(version)
         print(elements)
         dictio = {}
@@ -351,13 +359,14 @@ class Generator(object):
                 else:
                     dictio[key] = e.version
 
-        if not Degenerator.is_git_tagged(fjson.name, path=self.dir_output+fjson.path):
-            with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
-                json.dump(dictio, target, indent=4)
+        with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
+            json.dump(dictio, target, indent=4)
 
             return self.dir_output+fjson.path+fjson.name
 
-    def generate_json_plugins(self, fjson):
+    def generate_json_plugins(self, version,  fjson):
+        if Degenerator.is_git_tagged(version, path=self.dir_output+fjson.path):
+            return
         distribs = self.ariane.distribution_service.get_all()
         plugin_dict = {}
         version_order = []
@@ -425,13 +434,14 @@ class Generator(object):
                 new_list[version_order.index(pversion)] = OrderedDict(tuple_list)
             plugin_dict_order[dic] = new_list
 
-        if not Degenerator.is_git_tagged(fjson.name, path=self.dir_output+fjson.path):
-            with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
-                json.dump(plugin_dict_order, target, indent=4)
+        with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
+            json.dump(plugin_dict_order, target, indent=4)
 
         return self.dir_output+fjson.path+fjson.name
 
     def generate_json_git_repos(self, version, fjson):
+        if Degenerator.is_git_tagged(version, path=self.dir_output+fjson.path):
+            return
         distrib = self.get_distrib(version)
 
         modules = self.get_modules_list(version)
@@ -452,13 +462,14 @@ class Generator(object):
             key = p.get_directory_name()
             dictio[key] = {"type": "plugin", "url": url + key + '.git'}
 
-        if not Degenerator.is_git_tagged(fjson.name, path=self.dir_output+fjson.path):
-            with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
-                json.dump(dictio, target, indent=4)
+        with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
+            json.dump(dictio, target, indent=4)
 
         return self.dir_output+fjson.path+fjson.name
 
     def generate_lib_json(self, mod_plug, fjson):
+        if Degenerator.is_git_tagged(mod_plug.version, path=self.dir_output+fjson.path):
+            return
         extension_dict = self.get_submodule_lib_extensions()
         exception_list = self.get_submodule_lib_exceptions()
         list_lib = []
@@ -479,11 +490,12 @@ class Generator(object):
                     url += "net.echinopsii."+mod_plug.get_directory_name()+"."+s.name+"/"+mod_plug.version+"/net.echinopsii."+mod_plug.get_directory_name()+"."+s.name+"-"+mod_plug.version + ext
                     list_lib.append(url)
 
-            if not Degenerator.is_git_tagged(fjson.name, path=self.dir_output+fjson.path):
-                with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
-                    json.dump(list_lib, target, indent=4)
+            with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
+                json.dump(list_lib, target, indent=4)
 
-    def generate_vsh_installer(self, modules, fvsh):
+    def generate_vsh_installer(self, version, modules, fvsh):
+        if Degenerator.is_git_tagged(version, path=self.dir_output+fvsh.path):
+            return
         vsh_exceptions = self.get_vsh_exceptions()
         modules = sorted(modules, key=lambda mod: mod.order)
         modlist = []
@@ -500,20 +512,20 @@ class Generator(object):
         template = self.env.get_template(fvsh.path+'installer_vsh.yml')
         args = {"modules": modlist}
 
-        if not Degenerator.is_git_tagged(fvsh.name, path=self.dir_output+fvsh.path):
-            with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
-                target.write(template.render(args))
+        with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
+            target.write(template.render(args))
 
     def generate_vsh_plugin(self, p, fvsh):
+        if Degenerator.is_git_tagged(p.version, path=self.dir_output+fvsh.path):
+            return
         v = p.version
         if "-SNAPSHOT" in p.version:
             v = str(v).replace('-', '.')
         template = self.env.get_template(fvsh.path+'plugin_vsh.yml')
         args = {"plugin": {"name": p.name, "version": v}}
 
-        if not Degenerator.is_git_tagged(fvsh.name, path=self.dir_output+fvsh.path):
-            with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
-                target.write(template.render(args))
+        with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
+            target.write(template.render(args))
 
     def compare_files(self, file_type, filename1, filename2):
         with open(filename1, 'r') as file1:

@@ -790,17 +790,17 @@ class RestCheckout(Resource):
                 dfiles = ariane.get_files(dist)
                 flag_dir = True
                 dpath = ""
-                for df in dfiles:
-                    if flag_dir:  # Get distrib path directory (i.e: ariane.community.distrib/) from this distrib's file path
-                        if df.path.startswith('/'):
-                            df.path = df.path[1:]
-                        dpath = df.path.split('/')
-                        dpath = dpath[0] + '/'
-                        os.chdir(os.path.join(project_path, dpath))
-                        flag_dir = False
-                    if os.path.isfile(df.path[len(dpath):]+df.name):
-                        if not generator.Degenerator.is_git_tagged(df.name):
-                            if df.is_versioned() and "master.SNAPSHOT" not in df.name:
+                if not generator.Degenerator.is_git_tagged(dist.version):
+                    for df in dfiles:
+                        if flag_dir:  # Get distrib path directory (i.e: ariane.community.distrib/) from this distrib's file path
+                            if df.path.startswith('/'):
+                                df.path = df.path[1:]
+                            dpath = df.path.split('/')
+                            dpath = dpath[0] + '/'
+                            os.chdir(os.path.join(project_path, dpath))
+                            flag_dir = False
+                        if os.path.isfile(df.path[len(dpath):]+df.name):
+                            if (df.is_versioned()) and ("master.SNAPSHOT" not in df.name):
                                 print("PRINT ", os.getcwd(), "remove " + df.path[len(dpath):]+df.name)
                                 os.remove(df.path[len(dpath):]+df.name)
                             else:
@@ -823,13 +823,12 @@ class RestCheckout(Resource):
                             return  # module/plugin must have at least one file
                     for f in mfiles:
                         if os.path.isfile(f.path[len(mpath):]+f.name):
-                            if not generator.Degenerator.is_git_tagged(df.name):
-                                if f.is_versioned() and "master.SNAPSHOT" not in df.name:
-                                        print("PRINT ", os.getcwd(), "remove " + f.path[len(mpath):]+f.name)
-                                        os.remove(f.path[len(mpath):]+f.name)
-                                else:
-                                    print("PRINT ", os.getcwd(), "git checkout " + f.path[len(mpath):]+f.name)
-                                    os.system("git checkout " + f.path[len(mpath):]+f.name)
+                            if (f.is_versioned()) and ("master.SNAPSHOT" not in f.name):
+                                    print("PRINT ", os.getcwd(), "remove " + f.path[len(mpath):]+f.name)
+                                    os.remove(f.path[len(mpath):]+f.name)
+                            else:
+                                print("PRINT ", os.getcwd(), "git checkout " + f.path[len(mpath):]+f.name)
+                                os.system("git checkout " + f.path[len(mpath):]+f.name)
                     if not isinstance(m, ariane_delivery.SubModule):
                         for s in m.list_submod:
                             if isinstance(s, ariane_delivery.SubModule):
@@ -840,11 +839,13 @@ class RestCheckout(Resource):
 
                 for m in modules:
                     if m.name != "relmgr":  # We don't want to checkout ariane.community.relmgr
-                        ariane.module_service.update_arianenode_lists(m)
-                        gitcheckout(m, True)
+                        if not generator.Degenerator.is_git_tagged(m.version):
+                            ariane.module_service.update_arianenode_lists(m)
+                            gitcheckout(m, True)
                 for p in plugins:
-                    ariane.plugin_service.update_arianenode_lists(p)
-                    gitcheckout(p, True)
+                    if not generator.Degenerator.is_git_tagged(p.version):
+                        ariane.plugin_service.update_arianenode_lists(p)
+                        gitcheckout(p, True)
 
                 os.chdir(backpath)
                 # Delete copy distrib and rename Initial distrib
@@ -859,7 +860,7 @@ class RestCheckout(Resource):
                     dist.version = dist.version[len("copyTemp"):]
                     dist.save()
                 else:
-                    abort_error("BAD_REQUEST","Distribution model {} was not found. Can not reinitialize the Database".format(dist))
+                    abort_error("BAD_REQUEST", "Distribution model {} was not found. Can not reinitialize the Database".format(dist))
                 return make_response(json.dumps({"message": "git checkout done. Database reinitialized."}), 200, headers_json)
             else:
                 abort_error("BAD_REQUEST", "Given Distribution version ({})does not exists".format(version))

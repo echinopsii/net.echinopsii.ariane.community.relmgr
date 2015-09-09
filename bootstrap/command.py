@@ -141,7 +141,7 @@ class Command(object):
                             #     print("Importing missing data")
                             if not Command.ariane.check_uniqueness():
                                 raise err.CommandError("Error while importing missing Distributions")
-                            Command.g.generate_json_plugins(fnode)
+                            Command.g.generate_json_plugins(version, fnode)
                         else:
                             method = getattr(Command.g, 'generate_'+cmd)
                             if fnode is not None:
@@ -156,7 +156,7 @@ class Command(object):
                             for m in modules:
                                 fnode = Command.ariane.get_one_file(m, "vsh")
                                 if fnode is not None:
-                                    Command.g.generate_vsh_installer(modules.copy(), fnode)
+                                    Command.g.generate_vsh_installer(version, modules.copy(), fnode)
                         else:
                             p = Command.ariane.plugin_service.get_unique({"name": name})
                             if p is not None:

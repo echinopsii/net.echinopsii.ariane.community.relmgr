@@ -162,6 +162,7 @@ angular.module('ArianeUI')
                     .success(function(data){
                         $scope.dists = [];
                         $scope.dists.push(data.distrib);
+                        serviceUI.setBaseObj({obj: "default", node: $scope.dists[0]});
                         serviceUI.setNotifyLog("info", "View", "Enter ReleaseA mode. Distribution SNAPSHOT was copied");
                         if(serviceUI.changePage('release'))
                             serviceUI.actionBroadcast('changePage');
