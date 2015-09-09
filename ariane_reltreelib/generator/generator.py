@@ -21,8 +21,8 @@ from jinja2 import Environment, PackageLoader, TemplateNotFound, BaseLoader
 from ariane_reltreelib.dao import ariane_delivery
 import os, json, ariane_reltreelib
 from os.path import join, exists, getmtime, realpath
-from os import getcwd
 from collections import OrderedDict
+import subprocess
 __author__ = 'stanrenia'
 
 class MyLoader(BaseLoader):
@@ -38,6 +38,29 @@ class MyLoader(BaseLoader):
         with open(path) as f:
             source = f.read()
         return source, path, lambda: mtime == getmtime(path)
+
+class Degenerator(object):
+
+    @staticmethod
+    def is_git_tagged(filename, path=None):
+        tag_flag = False
+        backpath = ""
+        if path is not None:
+            backpath = os.getcwd()
+            os.chdir(path)
+        tags = subprocess.check_output("git tag", shell=True)
+        # check_output gives the command output in bytes format, so we decode it.
+        tags = (tags.decode()).split('\n')
+        if tags[-1] == '':
+            tags = tags[:-1]
+        for tag in tags:
+            if tag in filename:
+                tag_flag = True
+                break
+        if backpath != "":
+            os.chdir(backpath)
+
+        return tag_flag
 
 class Generator(object):
     ariane_deliverytool_module_path = os.path.dirname(ariane_reltreelib.__file__)
@@ -257,6 +280,7 @@ class Generator(object):
         modules = sorted(modules, key=lambda mod: mod.order)
         template = self.env.get_template(fpom.path + 'pom_distrib.yml')
         args = {"modules": modules, "version": version}
+
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
             target.write(template.render(args))
 
@@ -286,8 +310,9 @@ class Generator(object):
             m_version = mod_plug.version
         args = {"version": m_version, "module": mod_plug, "vmin": vmin, "vmax": vmax, "submodules": submodules}
 
-        with open(self.dir_output+fplan.path+fplan.name, 'w') as target:
-            target.write(template.render(args))
+        if not Degenerator.is_git_tagged(fplan.name, path=self.dir_output+fplan.path):
+            with open(self.dir_output+fplan.path+fplan.name, 'w') as target:
+                target.write(template.render(args))
 
     def generate_json_plugin_dist(self, version, fjson):
         elements = self.get_plugins_list(version)
@@ -301,8 +326,9 @@ class Generator(object):
                 l = [e.version]
             dictio[key] = l
 
-        with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
-            json.dump(dictio, target, indent=4)
+        if not Degenerator.is_git_tagged(fjson.name, path=self.dir_output+fjson.path):
+            with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
+                json.dump(dictio, target, indent=4)
 
             return self.dir_output+fjson.path+fjson.name
 
@@ -322,8 +348,9 @@ class Generator(object):
                 else:
                     dictio[key] = e.version
 
-        with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
-            json.dump(dictio, target, indent=4)
+        if not Degenerator.is_git_tagged(fjson.name, path=self.dir_output+fjson.path):
+            with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
+                json.dump(dictio, target, indent=4)
 
             return self.dir_output+fjson.path+fjson.name
 
@@ -394,6 +421,7 @@ class Generator(object):
                 tuple_list = sorted(tuple_list, key=lambda t: t[0], reverse=True)
                 new_list[version_order.index(pversion)] = OrderedDict(tuple_list)
             plugin_dict_order[dic] = new_list
+
         with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
             json.dump(plugin_dict_order, target, indent=4)
 
@@ -420,8 +448,9 @@ class Generator(object):
             key = p.get_directory_name()
             dictio[key] = {"type": "plugin", "url": url + key + '.git'}
 
-        with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
-            json.dump(dictio, target, indent=4)
+        if not Degenerator.is_git_tagged(fjson.name, path=self.dir_output+fjson.path):
+            with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
+                json.dump(dictio, target, indent=4)
 
         return self.dir_output+fjson.path+fjson.name
 
@@ -446,8 +475,9 @@ class Generator(object):
                     url += "net.echinopsii."+mod_plug.get_directory_name()+"."+s.name+"/"+mod_plug.version+"/net.echinopsii."+mod_plug.get_directory_name()+"."+s.name+"-"+mod_plug.version + ext
                     list_lib.append(url)
 
-            with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
-                json.dump(list_lib, target, indent=4)
+            if not Degenerator.is_git_tagged(fjson.name, path=self.dir_output+fjson.path):
+                with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
+                    json.dump(list_lib, target, indent=4)
 
     def generate_vsh_installer(self, modules, fvsh):
         vsh_exceptions = self.get_vsh_exceptions()
@@ -465,6 +495,7 @@ class Generator(object):
 
         template = self.env.get_template(fvsh.path+'installer_vsh.yml')
         args = {"modules": modlist}
+
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
             target.write(template.render(args))
 
@@ -474,6 +505,7 @@ class Generator(object):
             v = str(v).replace('-', '.')
         template = self.env.get_template(fvsh.path+'plugin_vsh.yml')
         args = {"plugin": {"name": p.name, "version": v}}
+
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
             target.write(template.render(args))
 

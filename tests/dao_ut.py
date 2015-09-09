@@ -557,6 +557,7 @@ class AppTest(unittest.TestCase):
         self.assertNotEqual(d, d2)
         count2 = self.ariane.graph_dao.count("Node")
         self.assertEqual(2*count, count2)
+
         # def test_maxnid(self):
     #     self.ariane.delete_all()
     #     os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "

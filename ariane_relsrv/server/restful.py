@@ -27,6 +27,7 @@ from flask import Flask, make_response, render_template, send_from_directory
 from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import ariane_delivery
 from ariane_reltreelib import exceptions as err
+from ariane_reltreelib.generator import generator
 from bootstrap import command
 import json
 import subprocess
@@ -798,12 +799,13 @@ class RestCheckout(Resource):
                         os.chdir(os.path.join(project_path, dpath))
                         flag_dir = False
                     if os.path.isfile(df.path[len(dpath):]+df.name):
-                        if df.is_versioned() and "master.SNAPSHOT" not in df.name:
-                            print("PRINT ", os.getcwd(), "remove " + df.path[len(dpath):]+df.name)
-                            os.remove(df.path[len(dpath):]+df.name)
-                        else:
-                            print("PRINT ", os.getcwd(), "git checkout " + df.path[len(dpath):]+df.name)
-                            os.system("git checkout " + df.path[len(dpath):]+df.name)
+                        if not generator.Degenerator.is_git_tagged(df.name):
+                            if df.is_versioned() and "master.SNAPSHOT" not in df.name:
+                                print("PRINT ", os.getcwd(), "remove " + df.path[len(dpath):]+df.name)
+                                os.remove(df.path[len(dpath):]+df.name)
+                            else:
+                                print("PRINT ", os.getcwd(), "git checkout " + df.path[len(dpath):]+df.name)
+                                os.system("git checkout " + df.path[len(dpath):]+df.name)
                 # Second, Checkout all other Modules/Plugins files. There are 2 verisoned files (.plan et .json build)
                 # so we remove them. For the not versioned files we use 'git checkout'
                 modules = ariane.module_service.get_all(dist)
@@ -821,12 +823,13 @@ class RestCheckout(Resource):
                             return  # module/plugin must have at least one file
                     for f in mfiles:
                         if os.path.isfile(f.path[len(mpath):]+f.name):
-                            if f.is_versioned() and "master.SNAPSHOT" not in df.name:
-                                    print("PRINT ", os.getcwd(), "remove " + f.path[len(mpath):]+f.name)
-                                    os.remove(f.path[len(mpath):]+f.name)
-                            else:
-                                print("PRINT ", os.getcwd(), "git checkout " + f.path[len(mpath):]+f.name)
-                                os.system("git checkout " + f.path[len(mpath):]+f.name)
+                            if not generator.Degenerator.is_git_tagged(df.name):
+                                if f.is_versioned() and "master.SNAPSHOT" not in df.name:
+                                        print("PRINT ", os.getcwd(), "remove " + f.path[len(mpath):]+f.name)
+                                        os.remove(f.path[len(mpath):]+f.name)
+                                else:
+                                    print("PRINT ", os.getcwd(), "git checkout " + f.path[len(mpath):]+f.name)
+                                    os.system("git checkout " + f.path[len(mpath):]+f.name)
                     if not isinstance(m, ariane_delivery.SubModule):
                         for s in m.list_submod:
                             if isinstance(s, ariane_delivery.SubModule):
