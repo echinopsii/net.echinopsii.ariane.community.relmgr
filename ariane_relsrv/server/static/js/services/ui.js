@@ -10,6 +10,7 @@ angular.module('ArianeUI')
         var selectedObj = {obj: "default", node: {}};
         var pageList = ["edition", "releaseA", "releaseB"];
         var page = "edition";
+        var mode = "Release";
         var enableEdit = false;
         var activeEdit = false;
         var log = {type: "", message: "", mode: ""};
@@ -35,6 +36,9 @@ angular.module('ArianeUI')
             },
             getAddDelObj: function(){
                 return addDelObj;
+            },
+            getMode: function () {
+                return mode;
             },
             getPage: function(){
                 return page;
@@ -74,6 +78,9 @@ angular.module('ArianeUI')
             setAddDelObj: function (newAddDelObj) {
                  addDelObj = newAddDelObj;
             },
+            setMode: function(newmode){
+                mode = newmode;
+            },
             setPage: function(newpage){
                 page = newpage;
             },
@@ -86,10 +93,17 @@ angular.module('ArianeUI')
                     else if(page == "releaseA"){
                         page = "releaseB";
                     }
+                    else if(page == "releaseB"){
+                        page = "releaseC";
+                    }
+                    else if(page == "releaseC")
+                        page = "releaseDEV";
+                    else if(page == "releaseDEV")
+                        page = "releaseA";
                 }
                 else if (buttonType == "edition" || buttonType == "rollback")
                 {
-                    if(page == "releaseA" || page =="releaseB")
+                    if(page == "releaseA" || page =="releaseB" || page == "releaseC" || page == "releaseDEV")
                         page = "edition";
                 }
                 return oldPage != page;
@@ -102,7 +116,7 @@ angular.module('ArianeUI')
                             $rootScope.$broadcast('newBaseSelected');
                         if(page != "releaseB")
                             $rootScope.$broadcast('handleEdition');
-                        else if(page == "releaseB")
+                        else if(page == "releaseB" || "releaseC")
                             $rootScope.$broadcast('handleDiff');
                     }
                     else if(state.status == "addEdit" || state.status == "delEdit"){

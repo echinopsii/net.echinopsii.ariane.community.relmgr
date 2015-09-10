@@ -1,0 +1,17 @@
+{% raw %}
+<hr class="separateur">
+<span>{{modeTitle.selected}}</span>
+<hr class="separateur">
+<div class="centerize">
+    ** Non definitive validation page **
+    <!--<span>New DEV Version - <label for="version">Version:</label><input type="text" id="version" ng-model="cmdRelDEV.version"/></span>-->
+    <!--<div class="input_warning" ng-if="cmdRelDEV.warn">{{ cmdRelDEV.warning }}</div>-->
+    <hr class="separateur">
+    <!--<button ng-click="clickTestValidate()">TestValidate</button>-->
+    <button class="btnValidate" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relDEV')">VALIDATE</button>
+    <button class="btnValidate" type="submit" ng-click="clickValidRoll('ROLLBACK', 'relDEV')">ROLLBACK</button>
+    <div>
+        <span ng-if="confirmValRoll.active">Are you sure to {{ confirmValRoll.validRoll}} ? <button ng-click="clickConfirmValidRoll('YES')">YES</button> <button ng-click="clickConfirmValidRoll('NO')">NO</button></span>
+    </div>
+</div>
+{% endraw %}

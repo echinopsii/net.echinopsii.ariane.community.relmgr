@@ -98,6 +98,10 @@ angular.module('ArianeUI')
             }
         });
 
+        $scope.$on('reloadComponents', function(){
+            loadComponents(serviceUI.getBaseObj().node);
+        });
+
         $scope.$on('enableEdit', function(){
             $scope.enableEdit = serviceUI.getEnableEdit();
         });

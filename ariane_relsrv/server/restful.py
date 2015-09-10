@@ -81,6 +81,12 @@ class TempBaseRelA(Resource):
 class TempBaseRelB(Resource):
     def get(self):
         return make_response(render_template('baseReleaseB.html'), 200, headers_html)
+class TempBaseRelC(Resource):
+    def get(self):
+        return make_response(render_template('baseReleaseC.html'), 200, headers_html)
+class TempBaseRelDEV(Resource):
+    def get(self):
+        return make_response(render_template('baseReleaseDEV.html'), 200, headers_html)
 class TempEditViewEdit(Resource):
     def get(self):
         return make_response(render_template('editionViewEdit.html'), 200, headers_html)
@@ -696,30 +702,21 @@ class RestDistributionList(Resource):
             if not isinstance(d, ariane_delivery.Distribution):
                 abort_error("BAD_REQUEST", "Given parameter {} must be a Distribution".format(d))
             dev = ariane.distribution_service.get_dev_distrib()
-            if copy:
-                if dev.editable == "true":
-                    abort_error("FORBIDDEN", "A copy already exists")
-                if dev == d:
-                    cd = ariane_delivery.DistributionService.copy_distrib(d)
-                    cd.editable = "true"
-                    cd.save()
-                    # Modify current Distrib name but save this name by adding 'copyTemp' before
-                    FilesInfo.distrib_copy_id = d.id
-                    d.name = "copyTemp" + d.name
-                    d.version = "copyTemp" + d.version
-                    d.save()
+            if dev == d:
+                if copy:
+                    cd = ReleaseTools.create_distrib_copy(d)
+                    if cd is None:
+                        abort_error("FORBIDDEN", "A copy already exists")
                     return make_response(json.dumps({"distrib": cd.get_properties(gettype=True)}), 200, headers_json)
                 else:
-                    abort_error("BAD_REQUEST", "Can not modifiy Distribution which is not in SNAPSHOT Version")
-            else:
-                dev = ariane.distribution_service.get_dev_distrib()
-                if d == dev:
                     arg_d.pop("nID")
                     if d.update(arg_d):
+                        if (d.version == dev.version) or (d.version in dev.version):
+                            abort_error("BAD_REQUEST", "Can not save this Distribution. The version: {} already exists".format(d.version))
                         d.save()
                         return make_response(json.dumps({"distrib": d.get_properties(gettype=True)}), 200, headers_json)
-                else:
-                    abort_error("BAD_REQUEST", "Can not modifiy Distribution which is not in SNAPSHOT Version")
+            else:
+                abort_error("BAD_REQUEST", "Can not modifiy Distribution which is not in SNAPSHOT Version")
         else:
             dist_exists = ariane.distribution_service.get_unique({"name": args["name"], "version": args["version"]})
             if dist_exists is None:
@@ -749,13 +746,124 @@ class RestDistributionList(Resource):
     #         return {}, 200
     #     else:
     #         abort_error("BAD_REQUEST", "Distribution {} does not exist".format(args))
-class FilesInfo(object):
+class ReleaseTools(object):
     zipfile = ""
     path_zip = ""
     distrib_copy_id = 0
 
     def __init__(self):
         pass
+
+    @staticmethod
+    def get_distrib_path(dist):
+        dfile = (ariane.get_files(dist))[0]
+        dpath = dfile.path.split('/')[0] + '/'
+        return dpath
+
+    @staticmethod
+    def create_distrib_copy(d):
+        dev = ariane.distribution_service.get_dev_distrib()
+        if dev.editable != "true":
+            cd = ariane_delivery.DistributionService.copy_distrib(d)
+            cd.editable = "true"
+            cd.save()
+            # Modify current Distrib name but save this name by adding 'copyTemp' before
+            ReleaseTools.distrib_copy_id = d.id
+            d.name = "copyTemp" + d.name
+            d.version = "copyTemp" + d.version
+            d.save()
+            return cd
+        return None
+
+    @staticmethod
+    def create_dev_distrib():
+        """
+        :return 0: success, -1: invalid argument, 1: interal error, can not find the actual DEV Distribution
+        """
+        dev = ariane.distribution_service.get_dev_distrib()
+        if not isinstance(dev, ariane_delivery.Distribution):
+            return 1  # abort_error("INTERNAL_ERROR", "Server can not find the actual DEV Distribution")
+
+        if dev.editable != "true":
+            return 2  # The actual DEV Distribution is already in a '-SNAPSHOT' version
+
+        dev.editable = "false"
+        dev.save()
+        newdev = ariane_delivery.DistributionService.copy_distrib(dev)
+        newdev.editable = "true"
+        newdev.version += "-SNAPSHOT"
+        newdev.save()
+        return newdev
+
+    @staticmethod
+    def remove_genuine_copy():
+        dcopies = ariane.distribution_service.get_all()
+        if len(dcopies):
+            dcopies = [d for d in dcopies if "copyTemp" in d.version]
+            for d in dcopies:
+                d.delete()
+
+    @staticmethod
+    def remove_distrib_copy(cd):
+        if (isinstance(cd, ariane_delivery.Distribution)) and (cd.editable == "true"):
+            cd.delete()
+        else:
+            cd = ariane.distribution_service.find({"editable": "true"})
+            if isinstance(cd, ariane_delivery.Distribution):
+                cd.delete()
+            elif isinstance(cd, list):
+                for c in cd:
+                    c.delete()
+            else:
+                return -1
+        dist = ariane.distribution_service.get_unique({"nID": ReleaseTools.distrib_copy_id})
+        if isinstance(dist, ariane_delivery.Distribution):
+            dist.name = dist.name[len("copyTemp"):]
+            dist.version = dist.version[len("copyTemp"):]
+            dist.save()
+            return 0
+        distribs = ariane.distribution_service.get_all()
+        for d in distribs:
+            if "copyTemp" in d.version:
+                d.version = d.version[len("copyTemp"):]
+                if "copyTemp" in d.name:
+                    d.name = d.name[len("copyTemp"):]
+                d.save()
+                return 0
+        return 1
+
+class RestDistributionManager(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('distrib', location='json')
+        self.reqparse.add_argument('mode', type=str)
+        super(RestDistributionManager, self).__init__()
+
+    def post(self):
+        args = self.reqparse.parse_args()
+        if args["mode"] is None:
+            abort_error("BAD_REQUEST", "You must provide the 'mode' parameter")
+        mode = args["mode"]
+        if mode == "DEV":
+            newdev = ReleaseTools.create_dev_distrib()
+            if not isinstance(newdev, ariane_delivery.Distribution):
+                if newdev == 1:
+                    abort_error("INTERNAL_ERROR", "Server can not find the actual DEV Distribution")
+                elif newdev == 2:
+                    abort_error("BAD_REQUEST", "The actual DEV Distribution is already in a '-SNAPSHOT' version")
+
+            return make_response(json.dumps({"distrib": newdev.get_properties(gettype=True)}), 200, headers_json)
+
+        elif mode == "copy":
+            if args["distrib"] is None:
+                abort_error("BAD_REQUEST", "You must provide the 'distrib' parameter")
+            arg_d = json.loads(args["distrib"])
+            d = ariane.distribution_service.get_unique(arg_d)
+            if not isinstance(d, ariane_delivery.Distribution):
+                abort_error("BAD_REQUEST", "Given parameter {} must be a Distribution".format(d))
+        else:
+            abort_error("BAD_REQUEST", "Given parameter 'mode' is invalid")
+
 
 class RestReset(Resource):
     def post(self):
@@ -769,6 +877,81 @@ class RestReset(Resource):
             abort_error("INTERNAL_ERROR", "Error while importing '"+db_export_path+alldistrib_file+"', file was not "
                         "found")
 
+class RestCommit(Resource):
+    module_test = ariane_delivery.Module("testrepos", "testversion")
+
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('mode', type=str)
+        self.reqparse.add_argument('task', type=str)
+        self.reqparse.add_argument('comment', type=str)
+        super(RestCommit, self).__init__()
+
+    @staticmethod
+    def generate_in_testrepos():
+        path = os.path.join(project_path, RestCommit.module_test.get_directory_name())
+        if os.path.exists(path):
+            subprocess.call("touch addedfile.json", shell=True, cwd=path)
+            subprocess.call("echo addedline >> another.xml", shell=True, cwd=path)
+
+    def post(self):
+        args = self.reqparse.parse_args()
+        if args["mode"] is None:
+            abort_error("BAD_REQUEST", "You must provide 'mode' parameter")
+        if args["task"] is None:
+            abort_error("BAD_REQUEST", "You must provide 'task' parameter")
+        if args["comment"] is None:
+            abort_error("BAD_REQUEST", "You must provide 'comment' parameter")
+
+        mode = args["mode"]
+        task = args["task"]
+        comment = args["comment"]
+
+        # git commit -m "task comment" ./
+        # git tag version_module
+        # git push origin  version_module
+
+        dist = ariane.distribution_service.get_dev_distrib()
+        if not isinstance(dist, ariane_delivery.Distribution):
+            abort_error("INTERNAL_ERROR", "Server can not find the current Distribution to commit")
+
+        # FOR TEST :
+        RestCommit.generate_in_testrepos()
+        modules = [self.module_test]
+        # FOR RELEASE:
+        # modules = ariane.module_service.get_all(dist)
+        # plugins = ariane.plugin_service.get_all(dist)
+        errs = ""
+        path_errs = []
+        for m in modules:
+            commit = "git commit -m \""+task+" "+comment+"\" ./"
+            mpath = os.path.join(project_path, m.get_directory_name())
+            if os.path.exists(mpath):
+                os.chdir(mpath)
+                if subprocess.call("git add ./", shell=True) != 0:
+                    errs += "error_on_add; "
+                if subprocess.call(commit, shell=True) != 0:
+                    errs += "error_on_commit: "+task + " " + comment + "; "
+
+                if mode == "Release":
+                    if subprocess.call("git tag " + m.version, shell=True) != 0:
+                        errs += "error_on_tag: " + m.version + "; "
+                    if subprocess.call("git push origin " + m.version, shell=True) != 0:
+                        errs += "error_on_push_origin: " + m.version + "; "
+                elif mode == "DEV":
+                    if subprocess.call("git push ", shell=True) != 0:
+                        errs += "error_on_push: " + m.version + "; "
+            else:
+                path_errs.append(mpath)
+
+        if len(path_errs) > 0:
+            errs += " Error: Following paths does not exist {} ; ".format(path_errs)
+        message = "Git Commit-Tag-Push done."
+        if len(errs) > 0:
+            message += " However some Errors occured. Please correct them manually.\n" + errs
+        return make_response(json.dumps({"message": message}), 200, headers_json)
+
+
 class RestCheckout(Resource):
     """
     Do a 'git checkout' on each generated file in order to go back to the last clean version.
@@ -776,95 +959,107 @@ class RestCheckout(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('version', type=str)
+        self.reqparse.add_argument('mode', type=str)
         super(RestCheckout, self).__init__()
 
     def post(self):
         args = self.reqparse.parse_args()
-        if args["version"] is not None:
-            version = args["version"]
-            dist = ariane.distribution_service.get_unique({"version": version})
-            if isinstance(dist, ariane_delivery.Distribution):
-                backpath = os.getcwd()
-                # First Checkout 'ariane.community.distrib' files: most of these files are versioned so we need to
-                # remove them. Because they are not currently in the git repository, 'git checkout' command doesn't work
-                dfiles = ariane.get_files(dist)
-                flag_dir = True
-                dpath = ""
-                for df in dfiles:
-                    if flag_dir:  # Get distrib path directory (i.e: ariane.community.distrib/) from this distrib's file path
-                        if df.path.startswith('/'):
-                            df.path = df.path[1:]
-                        dpath = df.path.split('/')
-                        dpath = dpath[0] + '/'
-                        os.chdir(os.path.join(project_path, dpath))
-                        flag_dir = False
-                    if generator.Degenerator.is_git_tagged(dist.version):
-                        break
-                    if os.path.isfile(df.path[len(dpath):]+df.name):
-                        if (df.is_versioned()) and ("master.SNAPSHOT" not in df.name):
-                            print("PRINT ", os.getcwd(), "remove " + df.path[len(dpath):]+df.name)
-                            os.remove(df.path[len(dpath):]+df.name)
-                        else:
-                            print("PRINT ", os.getcwd(), "git checkout " + df.path[len(dpath):]+df.name)
-                            os.system("git checkout " + df.path[len(dpath):]+df.name)
-                # Second, Checkout all other Modules/Plugins files. There are 2 verisoned files (.plan et .json build)
-                # so we remove them. For the not versioned files we use 'git checkout'
-                modules = ariane.module_service.get_all(dist)
-                plugins = ariane.plugin_service.get_all(dist)
-
-                def gitcheckout(m, flag, mpath=""):
-                    mfiles = m.list_files
-                    if flag:  # Get module/plugin path directory (i.e: ariane.community.core.directory/) from its own file path
-                        mpath = m.get_directory_name() + '/'
-                        dirpath = os.path.join(project_path, mpath)
-                        os.chdir(dirpath)
-                        flag = False
-                    for f in mfiles:
-                        if os.path.isfile(f.path[len(mpath):]+f.name):
-                            if (f.is_versioned()) and ("master.SNAPSHOT" not in f.name):
-                                    print("PRINT ", os.getcwd(), "remove " + f.path[len(mpath):]+f.name)
-                                    os.remove(f.path[len(mpath):]+f.name)
-                            else:
-                                print("PRINT ", os.getcwd(), "git checkout " + f.path[len(mpath):]+f.name)
-                                os.system("git checkout " + f.path[len(mpath):]+f.name)
-                    if not isinstance(m, ariane_delivery.SubModule):
-                        for s in m.list_submod:
-                            if isinstance(s, ariane_delivery.SubModule):
-                                ariane.submodule_service.update_arianenode_lists(s)
-                            elif isinstance(s, ariane_delivery.SubModuleParent):
-                                ariane.submodule_parent_service.update_arianenode_lists(s)
-                            gitcheckout(s, flag, mpath)  # Recursive call for SubModuleParent
-
-                for m in modules:
-                    if m.name != "relmgr":  # We don't want to checkout ariane.community.relmgr
-                        if not generator.Degenerator.is_git_tagged(m.version, path=project_path+'/'+m.get_directory_name()):
-                            ariane.module_service.update_arianenode_lists(m)
-                            gitcheckout(m, True)
-                for p in plugins:
-                    if not generator.Degenerator.is_git_tagged(p.version, path=project_path+'/'+p.get_directory_name()):
-                        ariane.plugin_service.update_arianenode_lists(p)
-                        gitcheckout(p, True)
-
-                os.chdir(backpath)
-                # Delete copy distrib and rename Initial distrib
-                cd = ariane.distribution_service.get_unique({"version": version})
-                if isinstance(cd, ariane_delivery.Distribution):
-                    cd.delete()
-                else:
-                    abort_error("BAD_REQUEST", "Temporary Distribution version {} was not found. Can not remove it".format(version))
-                dist = ariane.distribution_service.get_unique({"nID": FilesInfo.distrib_copy_id})
-                if isinstance(dist, ariane_delivery.Distribution):
-                    dist.name = dist.name[len("copyTemp"):]
-                    dist.version = dist.version[len("copyTemp"):]
-                    dist.save()
-                else:
-                    abort_error("BAD_REQUEST", "Distribution model {} was not found. Can not reinitialize the Database".format(dist))
-                return make_response(json.dumps({"message": "git checkout done. Database reinitialized."}), 200, headers_json)
-            else:
-                abort_error("BAD_REQUEST", "Given Distribution version ({})does not exists".format(version))
-        else:
+        if args["version"] is None:
             abort_error("BAD_REQUEST", "You must provide the parameter 'version' ")
 
+        version = args["version"]
+        dist = ariane.distribution_service.get_unique({"version": version})
+        if not isinstance(dist, ariane_delivery.Distribution):
+            abort_error("BAD_REQUEST", "Given Distribution version ({})does not exists".format(version))
+
+        if args["mode"] is None:
+            abort_error("BAD_REQUEST", "You must specify a mode for the Checkout WebService")
+
+        mode = args["mode"]
+        if mode == "files":
+            backpath = os.getcwd()
+            # First Checkout 'ariane.community.distrib' files: most of these files are versioned so we need to
+            # remove them. Because they are not currently in the git repository, 'git checkout' command doesn't work
+            dfiles = ariane.get_files(dist)
+            dpath = ReleaseTools.get_distrib_path(dist)
+            os.chdir(os.path.join(project_path, dpath))
+            for df in dfiles:
+                if generator.Degenerator.is_git_tagged(dist.version):
+                    break
+                if os.path.isfile(df.path[len(dpath):]+df.name):
+                    if (df.is_versioned()) and ("master.SNAPSHOT" not in df.name):
+                        print("PRINT ", os.getcwd(), "remove " + df.path[len(dpath):]+df.name)
+                        os.remove(df.path[len(dpath):]+df.name)
+                    else:
+                        print("PRINT ", os.getcwd(), "git checkout " + df.path[len(dpath):]+df.name)
+                        os.system("git checkout " + df.path[len(dpath):]+df.name)
+            # Second, Checkout all other Modules/Plugins files. There are 2 verisoned files (.plan et .json build)
+            # so we remove them. For the not versioned files we use 'git checkout'
+            modules = ariane.module_service.get_all(dist)
+            plugins = ariane.plugin_service.get_all(dist)
+
+            def gitcheckout(m, flag, mpath=""):
+                mfiles = m.list_files
+                if flag:  # Get module/plugin path directory (i.e: ariane.community.core.directory/) from its own file path
+                    mpath = m.get_directory_name() + '/'
+                    dirpath = os.path.join(project_path, mpath)
+                    os.chdir(dirpath)
+                    flag = False
+                for f in mfiles:
+                    if os.path.isfile(f.path[len(mpath):]+f.name):
+                        if (f.is_versioned()) and ("master.SNAPSHOT" not in f.name):
+                                print("PRINT ", os.getcwd(), "remove " + f.path[len(mpath):]+f.name)
+                                os.remove(f.path[len(mpath):]+f.name)
+                        else:
+                            print("PRINT ", os.getcwd(), "git checkout " + f.path[len(mpath):]+f.name)
+                            os.system("git checkout " + f.path[len(mpath):]+f.name)
+                if not isinstance(m, ariane_delivery.SubModule):
+                    for s in m.list_submod:
+                        if isinstance(s, ariane_delivery.SubModule):
+                            ariane.submodule_service.update_arianenode_lists(s)
+                        elif isinstance(s, ariane_delivery.SubModuleParent):
+                            ariane.submodule_parent_service.update_arianenode_lists(s)
+                        gitcheckout(s, flag, mpath)  # Recursive call for SubModuleParent
+
+            for m in modules:
+                if m.name != "relmgr":  # We don't want to checkout ariane.community.relmgr
+                    if not generator.Degenerator.is_git_tagged(m.version, path=project_path+'/'+m.get_directory_name()):
+                        ariane.module_service.update_arianenode_lists(m)
+                        gitcheckout(m, True)
+            for p in plugins:
+                if not generator.Degenerator.is_git_tagged(p.version, path=project_path+'/'+p.get_directory_name()):
+                    ariane.plugin_service.update_arianenode_lists(p)
+                    gitcheckout(p, True)
+
+            os.chdir(backpath)
+            # Delete copy distrib and rename Initial distrib
+            cd = ariane.distribution_service.get_unique({"version": version})
+            if not isinstance(cd, ariane_delivery.Distribution):
+                abort_error("BAD_REQUEST", "Temporary Distribution version {} was not found. Can not remove it".format(version))
+            ret_rmcompy = ReleaseTools.remove_distrib_copy(cd)
+            if ret_rmcompy == 1:
+                abort_error("BAD_REQUEST", "Distribution copy model was not found. Can not reinitialize the Database")
+            elif ret_rmcompy == -1:
+                abort_error("BAD_REQUEST", "Given distribution {} is not the copy, Can not reinitialize the Database".format(cd))
+            else:
+                return make_response(json.dumps({"message": "git checkout done. Database reinitialized."}), 200, headers_json)
+
+        elif mode == "directories":
+            paths = [ReleaseTools.get_distrib_path(dist)]
+            modules = ariane.module_service.get_all(dist)
+            plugins = ariane.plugin_service.get_all(dist)
+            paths.extend([os.path.join(project_path, m.get_directory_name()) for m in modules])
+            paths.extend([os.path.join(project_path, p.get_directory_name()) for p in plugins])
+            errs = ""
+            for p in paths:
+                if os.path.exists(p):
+                    retcall = subprocess.call('git checkout ./', shell=True, cwd=p)
+                    if retcall != 0:
+                        errs += "error while git checkout {}-".format(p)
+                    retcall = subprocess.call('git pull', shell=True, cwd=p)
+                    if retcall != 0:
+                        errs += "error while git pull {}-".format(p)
+            return make_response(json.dumps({"message": "git checkout and pull done. " + errs}), 200, headers_json)
 
 class RestFileDiff(Resource):
     def __init__(self):
@@ -896,13 +1091,15 @@ class RestFileDiff(Resource):
             else:
                 abort_error("BAD_REQUEST", "Given parameter {} does not match an existing file in database".format(fnode))
 
-class RestDownZip(Resource):
+class RestGetDelZip(Resource):
     def __init__(self):
-        super(RestDownZip, self).__init__()
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('version', type=str, help='Version of Zip file')
+        super(RestGetDelZip, self).__init__()
 
     def post(self):
-        path_zip = FilesInfo.path_zip
-        zipfile = FilesInfo.zipfile
+        path_zip = ReleaseTools.path_zip
+        zipfile = ReleaseTools.zipfile
         checked = False
         if os.path.exists(path_zip):
             for (dp, dn, fn) in os.walk(path_zip):
@@ -913,6 +1110,22 @@ class RestDownZip(Resource):
             return send_from_directory(path_zip, zipfile, as_attachment=True, mimetype="application/zip")
         else:
             abort_error('BAD_REQUEST', "Zip file Path and Name does not match any existing zip file")
+            
+    def delete(self):
+        zipfile = ReleaseTools.zipfile
+        path_zip = ReleaseTools.path_zip
+        args = self.reqparse.parse_args()
+        if args["version"] is None:
+            abort_error("BAD_REQUEST", "You must provide the 'version' parameter, the zip file version to remove.")
+        
+        version = args["version"]
+        if version not in zipfile:
+            abort_error("BAD_REQUEST", "Given parameter 'version' {} does not match the latest Zip file created".format(version))
+        
+        # If file exist, remove. If not, it is already removed so do nothing.
+        if os.path.isfile(path_zip+zipfile):
+            os.remove(path_zip+zipfile)
+        return make_response(json.dumps({"message": "Zip file {} has been removed".format(zipfile), "zip": zipfile}), 200, headers_json)
 
 class RestBuildZip(Resource):
     def __init__(self):
@@ -943,7 +1156,7 @@ class RestBuildZip(Resource):
                 version_cmd = version + ".SNAPSHOT"
 
             path_zip = self.path_zip
-            FilesInfo.path_zip = path_zip
+            ReleaseTools.path_zip = path_zip
             # Rename existing zip
             filenames = []
             for (dp, dn, fn) in os.walk(path_zip):
@@ -970,21 +1183,9 @@ class RestBuildZip(Resource):
             os.system("touch " + project_path + ftmp_path + ftmp_fname)
             cur_path = os.getcwd()
             os.chdir(project_path + "/ariane.community.distrib")
-            # myenv = os.environ.copy()
-            # myenv["PATH"] = make new PATH or myenv[”JAVA_HOME"] = make new JAVA_HOME, same thing for MAVEN_HOME
             subprocess.Popen("./distribManager.py distpkgr " + version_cmd + " "
                              "> "+project_path + ftmp_path + ftmp_fname, shell=True)
             os.chdir(cur_path)
-            #os.system(project_path + "/ariane.community.distrib/distribManager.py distpkgr " + version + " "
-            #         "> "+project_path + ftmp_path + ftmp_fname)
-            #subprocess.call(project_path + "/ariane.community.distrib/distribManager.py distpkgr " + version + " "
-            #              "> "+project_path + ftmp_path + ftmp_fname, shell=True)
-            # Popen creates child process
-            # my_env = os.environ.copy()
-            # my_env["JAVA_HOME"] = "/Library/Java/JavaVirtualMachines/jdk1.7.0_71.jdk/Contents/Home"
-            #subprocess.Popen(project_path + "/ariane.community.distrib/distribManager.py distpkgr " + version + " "
-            #                "> "+project_path + ftmp_path + ftmp_fname, shell=True, env=my_env)
-
             # Check end of building
             timeout = 2 * 60
             time = datetime.now().time()
@@ -1008,7 +1209,7 @@ class RestBuildZip(Resource):
             if build_done:
                 # get name of the new file
                 zipfile = [f for f in new_filenames if f not in filenames][0]
-                FilesInfo.zipfile = zipfile
+                ReleaseTools.zipfile = zipfile
                 # delete copied file or rename it as before
                 if number_files > 0:
                     if (zipfile == backup_name) and (tmp_copyname in new_filenames):
@@ -1065,14 +1266,18 @@ api.add_resource(RestFileNodeList, '/rest/filenode')
 api.add_resource(RestFileNode, '/rest/filenode/<int:unique_key>', '/rest/filenode/<unique_key>')
 api.add_resource(RestGeneration, '/rest/generation')
 api.add_resource(RestBuildZip, '/rest/buildzip')
-api.add_resource(RestDownZip, '/rest/downloadzip')
+api.add_resource(RestGetDelZip, '/rest/getdelzip')
 api.add_resource(RestFileDiff, '/rest/filediff')
 api.add_resource(RestCheckout, '/rest/checkout')
+api.add_resource(RestCommit, '/rest/commit')
+api.add_resource(RestDistributionManager, '/rest/distribmanager')
 api.add_resource(RestReset, '/rest/reset')
 # Templates
 api.add_resource(TempBaseEdit, '/baseEdition.html')
 api.add_resource(TempBaseRelA, '/baseRelA.html')
 api.add_resource(TempBaseRelB, '/baseRelB.html')
+api.add_resource(TempBaseRelC, '/baseRelC.html')
+api.add_resource(TempBaseRelDEV, '/baseRelDEV.html')
 api.add_resource(TempEditViewEdit, '/editionViewEdit.html')
 api.add_resource(TempEditDiff, '/editionDiff.html')
 api.add_resource(TempErr, '/err.html')

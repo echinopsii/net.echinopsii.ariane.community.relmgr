@@ -166,6 +166,7 @@ angular.module('ArianeUI')
                         .error(function(data){
                             serviceUI.setState({obj: backupObj.obj, status: "done"});
                             setScopeAndNotify('activeEdit', false);
+                            serviceUI.setNotifyLog("error", "clickSave", "An Error occured after clicking on Save: "+ data.message);
                         });
                 }
             }

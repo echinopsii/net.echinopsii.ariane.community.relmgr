@@ -1,11 +1,14 @@
+{% raw %}
+<hr class="separateur">
+<div class="input_warning" ng-if="warnRelA.warn">{{ warnRelA.warning }}</div>
+<span>{{modeTitle.selected}}</span>
 <hr class="separateur">
 <div class="centerize">
-    {% raw %}
     <select ng-model="cmdGen.cmd" ng-options="key for (key, value) in commandsRelA"></select>
     <button class="btnValidate" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relA')">VALIDATE</button>
     <button class="btnValidate" type="submit" ng-click="clickValidRoll('ROLLBACK', 'relA')">ROLLBACK</button>
     <div>
         <span ng-if="confirmValRoll.active">Are you sure to {{ confirmValRoll.validRoll}} ? <button ng-click="clickConfirmValidRoll('YES')">YES</button> <button ng-click="clickConfirmValidRoll('NO')">NO</button></span>
     </div>
-    {% endraw %}
 </div>
+{% endraw %}

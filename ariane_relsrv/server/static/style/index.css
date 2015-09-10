@@ -95,6 +95,9 @@ ul {
 .error{
     color: red;
 }
+.input_warning{
+    color: red;
+}
 .btnValidate {
     background: #fc0505;
     background-image: -webkit-linear-gradient(top, #fc0505, #d91c84);

@@ -38,6 +38,9 @@ angular.module('ArianeUI')
                 var cdist = cleanElementAttr(dist);
                 return $http.post("http://localhost:5000/rest/distrib", {distrib: JSON.stringify(cdist), copy: true});
             },
+            distribManager: function(mode){
+                return $http.post("http://localhost:5000/rest/distribmanager", {mode: mode})
+            },
             module: function(dist){
                 if (dist.version != "")
                     return $http.get("http://localhost:5000/rest/module?version="+dist.version);
@@ -106,6 +109,15 @@ angular.module('ArianeUI')
                 var data = {version: version};
                 return $http.post("http://localhost:5000/rest/buildzip", data);
             },
+            commit: function(mode, task, comment){
+                var data = {mode: mode, task: task, comment: comment};
+                return $http.post("http://localhost:5000/rest/commit", data);
+            },
+            deleteZip: function(version){
+                var data = {version: version};
+                var config = {params: data};
+                return $http.delete("http://localhost:5000/rest/getdelzip", config);
+            },
             getFileDiff: function(filenode){
                 if(filenode.node_type == "filenode"){
                     var data = {"filenode": filenode};
@@ -113,8 +125,8 @@ angular.module('ArianeUI')
                     return $http.get("http://localhost:5000/rest/filediff", config);
                 }
             },
-            checkout: function(version){
-                return $http.post("http://localhost:5000/rest/checkout", {version: version});
+            checkout: function(version, mode){
+                return $http.post("http://localhost:5000/rest/checkout", {version: version, mode: mode});
             },
             resetDB: function(){
                 return $http.post("http://localhost:5000/rest/reset");
