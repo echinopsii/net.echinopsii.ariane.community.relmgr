@@ -3,6 +3,7 @@
 # REST Server
 #
 # Copyright (C) 2015 echinopsii
+# Author: Stan Renia
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -16,6 +17,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 project_path = os.getcwd()
 project_path = project_path[:project_path.index('/ariane.community.relmgr')]
@@ -69,9 +71,6 @@ headers_html = {'Content-Type': 'text/html'}
 class UI(Resource):
     def get(self):
         return make_response(render_template('index.html'), 200, headers_html)
-class HelloHtml(Resource):
-    def get(self):
-        return make_response(render_template('helloworld.html'), 200, headers_html)
 class TempBaseEdit(Resource):
     def get(self):
         return make_response(render_template('baseEdition.html'), 200, headers_html)
@@ -1370,7 +1369,6 @@ api.add_resource(TempEditDiff, '/editionDiff.html')
 api.add_resource(TempErr, '/err.html')
 # Tests
 api.add_resource(UI, '/', "/index", "/index.html")
-api.add_resource(HelloHtml, '/hellohtml')
 
 if __name__ == '__main__':
     app.run(debug=True)

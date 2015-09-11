@@ -3,6 +3,7 @@
 # Graph Database Fabric
 #
 # Copyright (C) 2015 echinopsii
+# Author: Stan Renia
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
