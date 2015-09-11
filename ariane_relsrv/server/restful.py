@@ -41,7 +41,6 @@ with open(project_path + "/ariane.community.relmgr/bootstrap/confsrv.json", "r")
     conf = json.load(configfile)
 
 ariane = ariane_delivery.DeliveryTree({"login": conf["NEO4J_LOGIN"], "password": conf["NEO4J_PASSWORD"], "type": "neo4j"})
-srv_var_path = conf["VAR_PATH"]
 neo4j_path = conf["NEO4J_PATH"]
 db_export_path = project_path + conf["EXPORT_DB"]
 
@@ -1262,16 +1261,16 @@ class RestBuildZip(Resource):
                 filenames[filenames.index(backup_name)] = tmp_copyname
 
         # Build new zip with distribManager and print build info into 'infobuild.txt' file
-        ftmp_fname = "infobuild.txt"
-        ftmp_path = srv_var_path
+        ftmp_fname = "infobuildDistpkgr.txt"
         # remove infobuild.txt if already exists
-        if os.path.isfile(project_path + ftmp_path + ftmp_fname):
-            os.remove(project_path + ftmp_path + ftmp_fname)
-        os.system("touch " + project_path + ftmp_path + ftmp_fname)
+        if os.path.isfile("/tmp/"+ftmp_fname):
+            os.remove("/tmp/"+ftmp_fname)
+        # os.system("touch " + project_path + ftmp_path + ftmp_fname)
+        os.system("touch /tmp/"+ftmp_fname)
         cur_path = os.getcwd()
         os.chdir(project_path + "/ariane.community.distrib")
         subprocess.Popen("./distribManager.py distpkgr " + version_cmd + " "
-                         "> "+project_path + ftmp_path + ftmp_fname, shell=True)
+                         "> /tmp/"+ftmp_fname, shell=True)
         os.chdir(cur_path)
         # Check end of building
         timeout = 2 * 60
