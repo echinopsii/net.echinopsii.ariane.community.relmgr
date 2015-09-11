@@ -375,10 +375,12 @@ angular.module('ArianeUI')
                         serviceUI.setNotifyLog("info", "ReleaseC", "Build of zip (from TAG) done!");
                     pageStates.relC = "commit";
                     serviceUI.setState({obj: "default", state: "done"});
+                    $scope.confirmValRoll.disableVal = false;
                     if(serviceUI.changePage('release'))
                         serviceUI.actionBroadcast('changePage');
                 })
                 .error(function(data){
+                    $scope.confirmValRoll.disableVal = false;
                     serviceUI.setState({obj: "default", state: "done"});
                     serviceUI.setNotifyLog("error", release, "An error occured while building zip: " + data.message);
                 });
