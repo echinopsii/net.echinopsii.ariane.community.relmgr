@@ -84,6 +84,12 @@ class TempBaseRelB(Resource):
 class TempBaseRelC(Resource):
     def get(self):
         return make_response(render_template('baseReleaseC.html'), 200, headers_html)
+class TempBaseRelD(Resource):
+    def get(self):
+        return make_response(render_template('baseReleaseD.html'), 200, headers_html)
+class TempBaseRelE(Resource):
+    def get(self):
+        return make_response(render_template('baseReleaseE.html'), 200, headers_html)
 class TempBaseRelDEV(Resource):
     def get(self):
         return make_response(render_template('baseReleaseDEV.html'), 200, headers_html)
@@ -711,7 +717,7 @@ class RestDistributionList(Resource):
                 else:
                     arg_d.pop("nID")
                     if d.update(arg_d):
-                        if (d.version == dev.version) or (d.version in dev.version):
+                        if (d.version == dev.version):
                             abort_error("BAD_REQUEST", "Can not save this Distribution. The version: {} already exists".format(d.version))
                         d.save()
                         return make_response(json.dumps({"distrib": d.get_properties(gettype=True)}), 200, headers_json)
@@ -778,8 +784,9 @@ class ReleaseTools(object):
     @staticmethod
     def create_dev_distrib():
         """
-        :return 0: success, -1: invalid argument, 1: interal error, can not find the actual DEV Distribution
+        :return 0: success, 1: interal error, can not find the actual DEV Distribution, 2 | 3: The actual DEV Distribution is already in a '-SNAPSHOT' version
         """
+        snapshot = "-SNAPSHOT"
         dev = ariane.distribution_service.get_dev_distrib()
         if not isinstance(dev, ariane_delivery.Distribution):
             return 1  # abort_error("INTERNAL_ERROR", "Server can not find the actual DEV Distribution")
@@ -787,16 +794,27 @@ class ReleaseTools(object):
         if dev.editable != "true":
             return 2  # The actual DEV Distribution is already in a '-SNAPSHOT' version
 
+        if snapshot in dev.version:
+            return 3  # Same as 2
+
         dev.editable = "false"
         dev.save()
         newdev = ariane_delivery.DistributionService.copy_distrib(dev)
         newdev.editable = "true"
-        newdev.version += "-SNAPSHOT"
+        newdev.version += snapshot
+        modules = ariane.module_service.get_all(newdev)
+        plugins = ariane.plugin_service.get_all(newdev)
+        for m in modules:
+            m.version += snapshot
+            m.save()
+        for p in plugins:
+            p.version += snapshot
+            p.save()
         newdev.save()
         return newdev
 
     @staticmethod
-    def remove_genuine_copy():
+    def remove_genuine_distrib():
         dcopies = ariane.distribution_service.get_all()
         if len(dcopies):
             dcopies = [d for d in dcopies if "copyTemp" in d.version]
@@ -833,6 +851,18 @@ class ReleaseTools(object):
         return 1
 
 class RestDistributionManager(Resource):
+    """ REST endpoint for Managing Distributions stored in database.
+        mode = DEV: Validation of the newly released distribution and creation of the new DEV distribution based on the
+        newly released. Differences only concern the version changes: 'version' => 'version-SNAPSHOT'. Now the
+        UI allows to validate the new DEV distribution: Generate and push new files on git repositories.
+
+        mode = copy: Do a copy of the DEV distribution. The genuine DEV distribution's name
+        and version are renamed with 'copyTemp' at the beginning. The copy is not renamed but its attribute 'editable'
+        is set to 'true' (which is a string and not a boolean). Now the copy is editable with UI. If a Rollback is
+        executed, the copy is deleted and the genuine distribution is reinitialized (be removing 'copyTemp' from its
+        name and version). The copy can be released but user has to remove 'SNAPSHOT' from the version (because it is
+        not a release of a DEV distribution).
+    """
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('distrib', location='json')
@@ -849,7 +879,7 @@ class RestDistributionManager(Resource):
             if not isinstance(newdev, ariane_delivery.Distribution):
                 if newdev == 1:
                     abort_error("INTERNAL_ERROR", "Server can not find the actual DEV Distribution")
-                elif newdev == 2:
+                elif newdev in [2, 3]:
                     abort_error("BAD_REQUEST", "The actual DEV Distribution is already in a '-SNAPSHOT' version")
 
             return make_response(json.dumps({"distrib": newdev.get_properties(gettype=True)}), 200, headers_json)
@@ -917,9 +947,9 @@ class RestCommit(Resource):
 
         # FOR TEST :
         RestCommit.generate_in_testrepos()
-        modules = [self.module_test]
+        # modules = [self.module_test]
         # FOR RELEASE:
-        # modules = ariane.module_service.get_all(dist)
+        modules = ariane.module_service.get_all(dist)
         # plugins = ariane.plugin_service.get_all(dist)
         errs = ""
         path_errs = []
@@ -934,8 +964,9 @@ class RestCommit(Resource):
                     errs += "error_on_commit: "+task + " " + comment + "; "
 
                 if mode == "Release":
-                    if subprocess.call("git tag " + m.version, shell=True) != 0:
-                        errs += "error_on_tag: " + m.version + "; "
+                    if not generator.Degenerator.is_git_tagged(m.version):
+                        if subprocess.call("git tag " + m.version, shell=True) != 0:
+                            errs += "error_on_tag: " + m.version + "; "
                     if subprocess.call("git push origin " + m.version, shell=True) != 0:
                         errs += "error_on_push_origin: " + m.version + "; "
                 elif mode == "DEV":
@@ -946,15 +977,18 @@ class RestCommit(Resource):
 
         if len(path_errs) > 0:
             errs += " Error: Following paths does not exist {} ; ".format(path_errs)
-        message = "Git Commit-Tag-Push done."
         if len(errs) > 0:
-            message += " However some Errors occured. Please correct them manually.\n" + errs
+            message = "Errors occured. Please correct them manually.\n" + errs
+            abort_error("INTERNAL_ERROR", message)
+        else:
+            message = "Git Commit-Tag-Push done."
         return make_response(json.dumps({"message": message}), 200, headers_json)
 
 
 class RestCheckout(Resource):
     """
     Do a 'git checkout' on each generated file in order to go back to the last clean version.
+    if mode = 'files': checkout only generated files and also remove the Distribution copy (come back to initial state).
     """
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
@@ -999,6 +1033,7 @@ class RestCheckout(Resource):
             plugins = ariane.plugin_service.get_all(dist)
 
             def gitcheckout(m, flag, mpath=""):
+                # Execute the git checkout process for each Module or Plugin.
                 mfiles = m.list_files
                 if flag:  # Get module/plugin path directory (i.e: ariane.community.core.directory/) from its own file path
                     mpath = m.get_directory_name() + '/'
@@ -1060,6 +1095,45 @@ class RestCheckout(Resource):
                     if retcall != 0:
                         errs += "error while git pull {}-".format(p)
             return make_response(json.dumps({"message": "git checkout and pull done. " + errs}), 200, headers_json)
+
+        elif mode == "tags":
+            # git tag -d version_module
+            # git push origin :refs/tags/version_module
+            # git reset --hard HEAD~1
+
+            dist = ariane.distribution_service.get_dev_distrib()
+            if not isinstance(dist, ariane_delivery.Distribution):
+                abort_error("INTERNAL_ERROR", "Server can not find the current Distribution to commit")
+
+            # FOR TEST :
+            # modules = [RestCommit.module_test]
+            # FOR RELEASE:
+            modules = ariane.module_service.get_all(dist)
+            # plugins = ariane.plugin_service.get_all(dist)
+            errs = ""
+            path_errs = []
+            for m in modules:
+                mpath = os.path.join(project_path, m.get_directory_name())
+                if os.path.exists(mpath):
+                    os.chdir(mpath)
+                    if not generator.Degenerator.is_git_tagged(m.version):
+                        if subprocess.call("git tag -d" + m.version, shell=True) != 0:
+                            errs += "error_on_tag: " + m.version + "; "
+                    if subprocess.call("git push origin :refs/tags/" + m.version, shell=True) != 0:
+                        errs += "error_on_push_origin: " + m.version + "; "
+                    if subprocess.call("git reset --hard HEAD~1" + m.version, shell=True) != 0:
+                        errs += "error_on_reset: " + m.version + "; "
+                else:
+                    path_errs.append(mpath)
+
+            if len(path_errs) > 0:
+                errs += " Error: Following paths does not exist {} ; ".format(path_errs)
+            if len(errs) > 0:
+                message = "Errors occured. Please correct them manually.\n" + errs
+                abort_error("INTERNAL_ERROR", message)
+            else:
+                message = "Reset tag done."
+            return make_response(json.dumps({"message": message}), 200, headers_json)
 
 class RestFileDiff(Resource):
     def __init__(self):
@@ -1133,6 +1207,7 @@ class RestBuildZip(Resource):
         self.zipfile = ""
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('version', type=str, help='Version of Distribution to build')
+        self.reqparse.add_argument('tags', type=bool, help='True if building .zip from Git tags')
         super(RestBuildZip, self).__init__()
 
     def get(self):
@@ -1145,81 +1220,91 @@ class RestBuildZip(Resource):
         :return:
         """
         args = self.reqparse.parse_args()
-        if args["version"] is not None:
-            version = args["version"]
-            # Command is either 'distpkgr master.SNAPSHOT'
-            # or 'distpkgr {version}.SNAPSHOT' where {version} is version's value (i.e version= '0.6.4')
-            if "SNAPSHOT" in version:
-                version = "master.SNAPSHOT"
+        if args["version"] is None:
+            abort_error("BAD_REQUEST", "You must provide the parameter 'version'")
+
+        if args["tags"] is None:
+            abort_error("BAD_REQUEST", "You must provide the parameter 'tags' (boolean)")
+
+        version = args["version"]
+        from_tags = args["tags"]
+
+        # Command is either 'distpkgr master.SNAPSHOT'
+        # or 'distpkgr {version}.SNAPSHOT' where {version} is version's value (i.e version= '0.6.4')
+        if "SNAPSHOT" in version:
+            version = "master.SNAPSHOT"
+            version_cmd = version
+        else:
+            if from_tags:
                 version_cmd = version
             else:
                 version_cmd = version + ".SNAPSHOT"
 
-            path_zip = self.path_zip
-            ReleaseTools.path_zip = path_zip
-            # Rename existing zip
-            filenames = []
-            for (dp, dn, fn) in os.walk(path_zip):
-                filenames = fn
-                break
-            number_files = len(filenames)
-            tmp_copyname = "tmp_renamed_zip.zip"
-            backup_name = ""
-            if number_files > 0:
-                search_name = "ariane.community.distrib-" + version
-                for fn in filenames:
-                    if search_name in fn:
-                        backup_name = fn
-                        shutil.move(path_zip+fn, path_zip+tmp_copyname)
-                if backup_name != "":
-                    filenames[filenames.index(backup_name)] = tmp_copyname
+        path_zip = self.path_zip
+        ReleaseTools.path_zip = path_zip
+        # Rename existing zip
+        filenames = []
+        for (dp, dn, fn) in os.walk(path_zip):
+            filenames = fn
+            break
+        number_files = len(filenames)
+        tmp_copyname = "tmp_renamed_zip.zip"
+        backup_name = ""
+        if number_files > 0:
+            search_name = "ariane.community.distrib-" + version
+            for fn in filenames:
+                if search_name in fn:
+                    backup_name = fn
+                    shutil.move(path_zip+fn, path_zip+tmp_copyname)
+            if backup_name != "":
+                filenames[filenames.index(backup_name)] = tmp_copyname
 
-            # Build new zip with distribManager and print build info into 'infobuild.txt' file
-            ftmp_fname = "infobuild.txt"
-            ftmp_path = "/ariane.community.relmgr/ariane_relsrv/server/var/"
-            # remove infobuild.txt if already exists
-            if os.path.isfile(project_path + ftmp_path + ftmp_fname):
-                os.remove(project_path + ftmp_path + ftmp_fname)
-            os.system("touch " + project_path + ftmp_path + ftmp_fname)
-            cur_path = os.getcwd()
-            os.chdir(project_path + "/ariane.community.distrib")
-            subprocess.Popen("./distribManager.py distpkgr " + version_cmd + " "
-                             "> "+project_path + ftmp_path + ftmp_fname, shell=True)
-            os.chdir(cur_path)
-            # Check end of building
-            timeout = 2 * 60
-            time = datetime.now().time()
-            stime = time.hour * 3600 + time.minute * 60 + time.second
-            build_done = False
-            new_filenames = []
-            while not build_done:
-                for (dp, dn, fn) in os.walk(path_zip): # TIMEOUT loop
-                    # if a new file is created, building is done
-                    if len(fn) > number_files:
-                        build_done = True
-                        new_filenames = fn
-                # timeout condition
-                stime2 = datetime.now().time()
-                stime2 = stime2.hour * 3600 + stime2.minute * 60 + stime2.second
-                timediff = stime2 - stime
-                if timediff > timeout:
-                    break
-                    #if timediff > 3:  # FOR TEST
-                    #    shutil.copy(path_zip+filenames[0], path_zip+'aladin.zip')
-            if build_done:
-                # get name of the new file
-                zipfile = [f for f in new_filenames if f not in filenames][0]
-                ReleaseTools.zipfile = zipfile
-                # delete copied file or rename it as before
-                if number_files > 0:
-                    if (zipfile == backup_name) and (tmp_copyname in new_filenames):
-                        os.remove(path_zip+tmp_copyname)
-                    else:
-                        if (zipfile != backup_name) and (tmp_copyname in new_filenames):
-                            shutil.move(path_zip+tmp_copyname, path_zip+backup_name)
-                return make_response(json.dumps({"zip": zipfile, "message": "Build Success"}), 200, headers_json)
-            else:
-                abort_error("INTERNAL_ERROR", "Error while building")
+        # Build new zip with distribManager and print build info into 'infobuild.txt' file
+        ftmp_fname = "infobuild.txt"
+        ftmp_path = "/ariane.community.relmgr/ariane_relsrv/server/var/"
+        # remove infobuild.txt if already exists
+        if os.path.isfile(project_path + ftmp_path + ftmp_fname):
+            os.remove(project_path + ftmp_path + ftmp_fname)
+        os.system("touch " + project_path + ftmp_path + ftmp_fname)
+        cur_path = os.getcwd()
+        os.chdir(project_path + "/ariane.community.distrib")
+        subprocess.Popen("./distribManager.py distpkgr " + version_cmd + " "
+                         "> "+project_path + ftmp_path + ftmp_fname, shell=True)
+        os.chdir(cur_path)
+        # Check end of building
+        timeout = 2 * 60
+        time = datetime.now().time()
+        stime = time.hour * 3600 + time.minute * 60 + time.second
+        build_done = False
+        new_filenames = []
+        while not build_done:
+            for (dp, dn, fn) in os.walk(path_zip): # TIMEOUT loop
+                # if a new file is created, building is done
+                if len(fn) > number_files:
+                    build_done = True
+                    new_filenames = fn
+            # timeout condition
+            stime2 = datetime.now().time()
+            stime2 = stime2.hour * 3600 + stime2.minute * 60 + stime2.second
+            timediff = stime2 - stime
+            if timediff > timeout:
+                break
+                #if timediff > 3:  # FOR TEST
+                #    shutil.copy(path_zip+filenames[0], path_zip+'aladin.zip')
+        if build_done:
+            # get name of the new file
+            zipfile = [f for f in new_filenames if f not in filenames][0]
+            ReleaseTools.zipfile = zipfile
+            # delete copied file or rename it as before
+            if number_files > 0:
+                if (zipfile == backup_name) and (tmp_copyname in new_filenames):
+                    os.remove(path_zip+tmp_copyname)
+                else:
+                    if (zipfile != backup_name) and (tmp_copyname in new_filenames):
+                        shutil.move(path_zip+tmp_copyname, path_zip+backup_name)
+            return make_response(json.dumps({"zip": zipfile, "message": "Build Success"}), 200, headers_json)
+        else:
+            abort_error("INTERNAL_ERROR", "Error while building")
 
 class RestGeneration(Resource):
     def __init__(self):
@@ -1277,6 +1362,8 @@ api.add_resource(TempBaseEdit, '/baseEdition.html')
 api.add_resource(TempBaseRelA, '/baseRelA.html')
 api.add_resource(TempBaseRelB, '/baseRelB.html')
 api.add_resource(TempBaseRelC, '/baseRelC.html')
+api.add_resource(TempBaseRelD, '/baseRelD.html')
+api.add_resource(TempBaseRelE, '/baseRelE.html')
 api.add_resource(TempBaseRelDEV, '/baseRelDEV.html')
 api.add_resource(TempEditViewEdit, '/editionViewEdit.html')
 api.add_resource(TempEditDiff, '/editionDiff.html')

@@ -14,7 +14,7 @@ angular.module('ArianeUI')
         $scope.limitLetterNum = 50;
         $scope.enableEdit = false; // User can start to edit
         $scope.activeEdit = false;
-        $scope.page = 'edition';
+        $scope.page = 'view';
         var tmp_subSet = {parent: {}, modules: []};
         var curBaseObj = {};
 

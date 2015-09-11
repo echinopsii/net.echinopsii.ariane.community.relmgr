@@ -43,7 +43,7 @@ __author__ = 'stanrenia'
 class Command(object):
     ariane = None
     g = None
-    commands_dist = ["distribution", "distribution_only", "module_only", "plugin_only", "pom_dist",
+    commands_dist = ["distribution", "core_only", "distribution_only", "module_only", "plugin_only", "pom_dist",
                      "json_plugins", "json_plugin_dist", "json_git_repos", "json_dist"]
     commands_mod = ["pom", "plan", "lib_json", "vsh"]
 

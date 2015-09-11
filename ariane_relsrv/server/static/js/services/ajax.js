@@ -105,8 +105,8 @@ angular.module('ArianeUI')
                 var data = {command: command + ' ' + version};
                 return $http.post("http://localhost:5000/rest/generation", data);
             },
-            buildZip: function(version){
-                var data = {version: version};
+            buildZip: function(version, tags){
+                var data = {version: version, tags: tags}; // tags is boolean
                 return $http.post("http://localhost:5000/rest/buildzip", data);
             },
             commit: function(mode, task, comment){

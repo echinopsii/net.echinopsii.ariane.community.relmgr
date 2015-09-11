@@ -145,6 +145,10 @@ class Generator(object):
         self.generate_module_files(version)
         self.generate_plugin_files(version)
 
+    def generate_core_files(self, version):
+        self.generate_distribution_files(version)
+        self.generate_module_files(version)
+
     def generate_distribution_files(self, version):
         distrib = self.get_distrib(version)
         dist_files = self.ariane.get_files(distrib)

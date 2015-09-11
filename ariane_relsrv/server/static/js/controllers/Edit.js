@@ -12,8 +12,8 @@ angular.module('ArianeUI')
         $scope.isDiff = false;
         $scope.choice = {isNewSubParent: "no", deleting: "no"};
         $scope.parent = {};
-        $scope.page = 'edition';
-        var editionTemplates = [{name: 'edition', url:'editionViewEdit.html'}, {name:'releaseA', url:'editionViewEdit.html'}, {name:'releaseB', url:'editionDiff.html'}];
+        $scope.page = 'view';
+        var editionTemplates = [{name: 'view', url:'editionViewEdit.html'}, {name:'releaseA', url:'editionViewEdit.html'}, {name:'releaseB', url:'editionDiff.html'}];
         $scope.editionTemplate = editionTemplates[0];
         var templateErr = "err.html";
         var editablesView = {
@@ -32,7 +32,7 @@ angular.module('ArianeUI')
         };
         $scope.filediff = {diff: [{line: "", color: ""}], message: ""};
         /* ********************* EVENTS ********************* */
-        $scope.$on('handleEdition', function(){ // event called on page = 'view' | 'edition' | 'releaseA'
+        $scope.$on('handleEdition', function(){ // event called on page = 'view' | 'releaseA'
             if(!$scope.activeEdit) {
                 var old_enableEdit = $scope.enableEdit;
                 backupObj = serviceUI.getSelectedObj();
@@ -42,7 +42,7 @@ angular.module('ArianeUI')
                     $scope.isNewNode = false;
                     $scope.isDeleting = false;
                     $scope.parent = {};
-                    $scope.enableEdit = serviceUI.checkEditable() && $scope.page != "edition"; // IMPORTANT - Enable properties edition if true
+                    $scope.enableEdit = serviceUI.checkEditable() && $scope.page != "view"; // IMPORTANT - Enable properties edition if true
                 }
                 else
                     $scope.enableEdit = false;

@@ -8,8 +8,8 @@ angular.module('ArianeUI')
         var nodeObj = {obj:"default", node:{}};
         var addDelObj = {obj: "default", node: {}};
         var selectedObj = {obj: "default", node: {}};
-        var pageList = ["edition", "releaseA", "releaseB"];
-        var page = "edition";
+        var pageList = ["view", "releaseA", "releaseB"];
+        var page = "view";
         var mode = "Release";
         var enableEdit = false;
         var activeEdit = false;
@@ -87,7 +87,7 @@ angular.module('ArianeUI')
             changePage: function(buttonType){
                 var oldPage = page;
                 if(buttonType == "release"){
-                    if(page == "edition"){
+                    if(page == "view"){
                         page = "releaseA";
                     }
                     else if(page == "releaseA"){
@@ -97,14 +97,16 @@ angular.module('ArianeUI')
                         page = "releaseC";
                     }
                     else if(page == "releaseC")
+                        page = "releaseD";
+                    else if(page == "releaseD")
                         page = "releaseDEV";
                     else if(page == "releaseDEV")
                         page = "releaseA";
                 }
-                else if (buttonType == "edition" || buttonType == "rollback")
+                else if (buttonType == "view" || buttonType == "rollback")
                 {
                     if(page == "releaseA" || page =="releaseB" || page == "releaseC" || page == "releaseDEV")
-                        page = "edition";
+                        page = "view";
                 }
                 return oldPage != page;
             },

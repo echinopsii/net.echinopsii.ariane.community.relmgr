@@ -10,15 +10,9 @@
         </form>
     </div>
     <hr class="separateur">
-    <span>
-        Commit - <label for="task">Task</label><input type="text" id="task" ng-model="cmdRelC.task"/>
-          <label for="comment">Comments</label><input type="text" id="comment" ng-model="cmdRelC.comment"/>
-    </span>
-    <div class="input_warning" ng-if="cmdRelC.warn">{{ cmdRelC.warning }}</div>
-    <hr class="separateur">
-    <button ng-click="TestValidRelC()">TestBuildZip</button>
-    <button class="btnValidate" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relC')">VALIDATE</button>
-    <button class="btnValidate" type="submit" ng-click="clickValidRoll('ROLLBACK', 'relC')">ROLLBACK</button>
+    <!--<button ng-click="clickTestValidate()">TestValidate</button>-->
+    <button class="btnValidate" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relD')">VALIDATE</button>
+    <button class="btnValidate" type="submit" ng-click="clickValidRoll('ROLLBACK', 'relD')">ROLLBACK</button>
     <div>
         <span ng-if="confirmValRoll.active">Are you sure to {{ confirmValRoll.validRoll}} ? <button ng-click="clickConfirmValidRoll('YES')">YES</button> <button ng-click="clickConfirmValidRoll('NO')">NO</button></span>
     </div>
