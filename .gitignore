@@ -5,3 +5,5 @@ py_neo4j_db.iml
 .idea
 .DS_Store
 neoDAO/.DS_Store
+*.iml
+ariane_relsrv/server/var/infobuild.txt
