@@ -1,0 +1,7 @@
+{
+    "VAR_PATH": "/ariane.community.relmgr/ariane_relsrv/server/var/",
+    "EXPORT_DB": "/ariane.community.relmgr/bootstrap/dependency_db/",
+    "NEO4J_PATH": "/ECHINOPSII/srenia/neo4j-community-2.2.3",
+    "NEO4J_LOGIN": "neo4j",
+    "NEO4J_PASSWORD": "admin"
+}

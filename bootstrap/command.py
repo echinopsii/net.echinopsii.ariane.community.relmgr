@@ -48,54 +48,19 @@ class Command(object):
     commands_dist = ["distribution", "core_only", "distribution_only", "module_only", "plugin_only", "pom_dist",
                      "json_plugins", "json_plugin_dist", "json_git_repos", "json_dist"]
     commands_mod = ["pom", "plan", "lib_json", "vsh"]
+    conf = None
 
     def __init__(self):
-        logins = None
-        with open(project_path+module_name+'/bootstrap/neo4j_login.json', 'r') as target:
-            logins = json.load(target)
-        if logins is None:
+        with open(project_path+module_name+'/bootstrap/confsrv.json', 'r') as target:
+            Command.conf = json.load(target)
+        if Command.conf is None:
             raise err.CommandError("GraphDB login file can not be read. It should be '(GraphDB_name)_login.json")
-        for key in logins.keys():
-            if key not in ["login", "password"]:
-                raise err.CommandError("Error in neo4j_login.json")
-        Command.ariane = ariane_delivery.DeliveryTree({"login": logins["login"], "password": logins["password"], "type": "neo4j"})
-        # Command.g = generator.Generator(Command.ariane, {"outputs": "/ECHINOPSII/srenia/ariane_relmgr/tests/outputs",
-        #                                                 "templates": "/ECHINOPSII/srenia/ariane_relmgr/tests/templates"})
+
+        Command.ariane = ariane_delivery.DeliveryTree({"login": Command.conf["NEO4J_LOGIN"], "password": Command.conf["NEO4J_PASSWORD"], "type": "neo4j"})
         Command.g = generator.Generator(Command.ariane, {"outputs": project_path, "templates": project_path})
 
     def import_all_distribs(self):
-        os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "
-                  "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/alldistrib.cypher")
-
-    def import_data_filebyfile(self):
-        fnames = []
-        have_to_import = False
-        vlist = []
-        for (dirpath, dirnames, filenames) in os.walk('dependency_db'):
-            fnames = filenames
-            break
-        for f in fnames:
-            fv = f[len('distrib_'):]
-            fv = fv[:-len('.cypher')]
-            dist = Command.ariane.distribution_service.get_unique({"version": str(fv)})
-            if dist is None:
-                vlist.append(f)
-                have_to_import = True
-        if have_to_import:
-            dnames = []
-            graphDBpath = ""
-            for (dirpath, dirnames, filenames) in os.walk(project_path):
-                dnames = dirnames
-                break
-            for dname in dnames:
-                if str(dname).startswith('neo4j-community'):
-                    graphDBpath = project_path + '/' + dname
-            if graphDBpath != "":
-                for vl in vlist:
-                    os.system(graphDBpath+"/bin/neo4j-shell -file dependency_db/" + vl)
-            else:
-                raise err.CommandError("neo4j-community should be in the projet path: {}".format(project_path))
-        return have_to_import
+        os.system(Command.conf["NEO4J_PATH"]+"/bin/neo4j-shell -file " + project_path + Command.conf["EXPORT_DB"] + "all.cypher")
 
     def get_number_of_distribs(self):
         fnames = []

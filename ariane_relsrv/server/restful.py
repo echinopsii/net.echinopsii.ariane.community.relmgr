@@ -37,10 +37,13 @@ from datetime import datetime
 
 app = Flask(__name__)
 api = Api(app)
-ariane = ariane_delivery.DeliveryTree({"login": "neo4j", "password": "admin", "type": "neo4j"})
-srv_var_path = "/ariane.community.relmgr/ariane_relsrv/server/var/"
-neo4j_path = project_path + "/neo4j-community-2.2.3/"
-db_export_path = project_path + "/ariane.community.relmgr/bootstrap/dependency_db/"
+with open(project_path + "/ariane.community.relmgr/bootstrap/confsrv.json", "r") as configfile:
+    conf = json.load(configfile)
+
+ariane = ariane_delivery.DeliveryTree({"login": conf["NEO4J_LOGIN"], "password": conf["NEO4J_PASSWORD"], "type": "neo4j"})
+srv_var_path = conf["VAR_PATH"]
+neo4j_path = conf["NEO4J_PATH"]
+db_export_path = project_path + conf["EXPORT_DB"]
 
 def abort_error(error, msg):
     if error == "BAD_REQUEST":
@@ -1260,7 +1263,7 @@ class RestBuildZip(Resource):
 
         # Build new zip with distribManager and print build info into 'infobuild.txt' file
         ftmp_fname = "infobuild.txt"
-        ftmp_path = "/ariane.community.relmgr/ariane_relsrv/server/var/"
+        ftmp_path = srv_var_path
         # remove infobuild.txt if already exists
         if os.path.isfile(project_path + ftmp_path + ftmp_fname):
             os.remove(project_path + ftmp_path + ftmp_fname)
