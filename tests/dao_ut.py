@@ -141,8 +141,8 @@ class AppTest(unittest.TestCase):
         listfound = self.ariane.submodule_service.find([self.sub, self.sub2, self.sub3])
         self.assertListEqual([self.sub, self.sub2, self.sub3], listfound)
 
-        listfound = self.ariane.submodule_service.find({"version": "0.2"})
-        self.assertEqual([self.sub, self.sub2], listfound)
+        listfound = self.ariane.submodule_service.find({"version": "0.2.2"})
+        self.assertTrue((self.sub in listfound) and (self.sub2 in listfound))
 
         #   get_unique service method
         unique = self.ariane.submodule_service.get_unique({"name": "rab"})
@@ -154,7 +154,7 @@ class AppTest(unittest.TestCase):
         unique = self.ariane.submodule_service.get_unique({"name": "bob"})
         self.assertIsNone(unique)
 
-        unique = self.ariane.submodule_service.get_unique({"version": "0.2"})
+        unique = self.ariane.submodule_service.get_unique({"version": "0.2.2"})
         self.assertEqual(unique, 0)
 
         #   get_relations service method
@@ -492,28 +492,8 @@ class AppTest(unittest.TestCase):
             import_all()
             dists = self.ariane.distribution_service.get_all()
 
-    def test_export_eachfile(self):
+    def long_test_export_eachfile(self):
         self.export_eachfile()
-
-    def test_export_all(self):
-        self.ariane.delete_all()
-        create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
-        create_db_file('inputs/create_0.6.3.txt')
-        create_db_file('inputs/create_0.6.2.txt')
-        create_db_file('inputs/create_0.6.1.txt')
-        create_db_file('inputs/create_0.6.0.txt')
-        create_db_file('inputs/create_0.5.3.txt')
-        create_db_file('inputs/create_0.5.2.txt')
-        create_db_file('inputs/create_0.5.1.txt')
-        create_db_file('inputs/create_0.5.0.txt')
-
-        os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -c dump > "
-                  "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/alldistrib.cypher")
-
-    def test_export(self):
-        v = "0.6.4-SNAPSHOT"
-        os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -c dump > "
-                  "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/distrib_"+v+".cypher")
 
     def test_import_for_UI(self):
         self.ariane.delete_all()
@@ -545,7 +525,7 @@ class AppTest(unittest.TestCase):
         os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "
                   "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
 
-    def test_import(self):
+    def cypher_test_import(self):
         self.ariane.delete_all()
         create_db_file('inputs/create_0.5.0.txt')
         create_db_file('inputs/create_0.5.1.txt')
@@ -559,7 +539,7 @@ class AppTest(unittest.TestCase):
         os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -c dump > "
                   "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
 
-    def test_copy_distrib(self):
+    def rel_test_copy_distrib(self):
         self.ariane.delete_all()
         create_db_file('inputs/create_0.6.3.txt')
         count = self.ariane.graph_dao.count("Node")
@@ -577,7 +557,42 @@ class AppTest(unittest.TestCase):
         count2 = self.ariane.graph_dao.count("Node")
         self.assertEqual(2*count, count2)
 
-        # def test_maxnid(self):
+    def test_credibility(self):
+        args = {"login": "neo4j", "password":"admin", "type": "neo4j"}
+        ariane = ariane_delivery.DeliveryTree(args)
+        dist_srv = ariane_delivery.DistributionService()
+        print(ariane.distribution_service)
+        print(ariane_delivery.DeliveryTree.distribution_service)
+        files = dist_srv.get_files(self.mod)
+        print(files)
+        distribs = ariane_delivery.DeliveryTree.distribution_service.get_all()
+        print(distribs)
+
+    def test_image(self):
+        self.ariane.delete_all()
+        dist = ariane_delivery.Distribution("community", "0.5.2")
+        mod = ariane_delivery.Module("idm", "0.1.0")
+        mod2 = ariane_delivery.Module("mapping", "0.2.0")
+        p = ariane_delivery.Plugin("RabbitMQ", "0.3.0")
+        sub = ariane_delivery.SubModule("base", "0.1.0")
+        sub2 = ariane_delivery.SubModule("wat", "0.1.0")
+        sub2.add_file(ariane_delivery.FileNode("pom", "pom", "0.1.1", "/a"))
+        subpar = ariane_delivery.SubModuleParent("par", "0.1.0")
+        subpar.add_submodule(sub)
+        mod2.add_submodule(subpar)
+        mod.add_submodule(sub2)
+        mod.add_module_dependency({"module": mod2, "version_min":"0.1.0", "version_max": "0.7.0"})
+        dist.add_module(mod)
+        dist.add_module(mod2)
+        dist.add_plugin(p)
+        dist.save()
+
+        # mod = ariane_delivery.Module("Module_1", "0.1.1")
+        # sub = ariane_delivery.SubModule("Sub_1", "0.1.1")
+        # mod.add_submodule(sub)
+        # mod.save()
+
+    # def test_maxnid(self):
     #     self.ariane.delete_all()
     #     os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "
     #               "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")

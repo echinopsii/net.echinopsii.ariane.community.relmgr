@@ -220,6 +220,7 @@ class NeoGraph(object):
             for key in args.keys():
                 if key == "nID":
                     properties = "nID: "+str(args.get("nID"))+","
+                    break
                 else:
                     properties += ""+str(key)+": '"+str(args.get(key))+"',"
             properties = properties[:-1]

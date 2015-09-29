@@ -22,6 +22,7 @@ from ariane_reltreelib.dao import graphDBFabric
 import json
 __author__ = 'stanrenia'
 
+
 class DeliveryTree(object):
     graph_dao = None
     dao_type = None
@@ -33,11 +34,18 @@ class DeliveryTree(object):
 
     def __init__(self, graph_dao_args):
         DeliveryTree.dao_type, DeliveryTree.graph_dao = graphDBFabric.DaoFabric.make(graph_dao_args)
+        DeliveryTree.distribution_service = DistributionService()
         DeliveryTree.submodule_service = SubModuleService()
         DeliveryTree.module_service = ModuleService()
         DeliveryTree.plugin_service = PluginService()
         DeliveryTree.submodule_parent_service = SubModuleParentService()
-        DeliveryTree.distribution_service = DistributionService()
+
+    def reinit_subclass(self):
+        self.distribution_service = None
+        self.module_service = None
+        self.submodule_parent_service = None
+        self.submodule_service = None
+        self.plugin_service = None
 
     def delete_all(self):
         self.graph_dao.delete_all()
@@ -248,6 +256,7 @@ class DeliveryTree(object):
 class DistributionService(DeliveryTree):
     def __init__(self):
         self._ariane_node = Distribution("model", "model")
+        self.reinit_subclass()
 
     def update_arianenode_lists(self, distrib):
         if isinstance(distrib, Distribution):
@@ -446,6 +455,8 @@ class DistributionService(DeliveryTree):
 class ModuleService(DeliveryTree):
     def __init__(self):
         self._ariane_node = Module("model", "model")
+        self.reinit_subclass()
+
 
     def update_arianenode_lists(self, module):
         if isinstance(module, Module):
@@ -548,6 +559,7 @@ class ModuleService(DeliveryTree):
 class PluginService(DeliveryTree):
     def __init__(self):
         self._ariane_node = Plugin("model", "model")
+        self.reinit_subclass()
 
     def update_arianenode_lists(self, plugin):
         if isinstance(plugin, Plugin):
@@ -655,6 +667,7 @@ class PluginService(DeliveryTree):
 class SubModuleService(DeliveryTree):
     def __init__(self):
         self._ariane_node = SubModule("model", "model")
+        self.reinit_subclass()
 
     def update_arianenode_lists(self, submod):
         submod.list_files = DeliveryTree.get_files(submod)
@@ -707,6 +720,7 @@ class SubModuleService(DeliveryTree):
 class SubModuleParentService(DeliveryTree):
     def __init__(self):
         self._ariane_node = SubModuleParent("model", "model")
+        self.reinit_subclass()
 
     def update_arianenode_lists(self, subpar):
         if isinstance(subpar, SubModuleParent):

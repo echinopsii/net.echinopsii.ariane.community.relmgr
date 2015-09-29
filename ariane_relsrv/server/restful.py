@@ -1250,6 +1250,8 @@ class RestBuildZip(Resource):
             break
         number_files = len(filenames)
         tmp_copyname = "tmp_renamed_zip.zip"
+        if os.path.isfile(path_zip + tmp_copyname):
+            os.remove(path_zip + tmp_copyname)
         backup_name = ""
         if number_files > 0:
             search_name = "ariane.community.distrib-" + version
@@ -1257,6 +1259,7 @@ class RestBuildZip(Resource):
                 if search_name in fn:
                     backup_name = fn
                     shutil.move(path_zip+fn, path_zip+tmp_copyname)
+                    break
             if backup_name != "":
                 filenames[filenames.index(backup_name)] = tmp_copyname
 
@@ -1271,6 +1274,7 @@ class RestBuildZip(Resource):
         os.chdir(project_path + "/ariane.community.distrib")
         subprocess.Popen("./distribManager.py distpkgr " + version_cmd + " "
                          "> /tmp/"+ftmp_fname, shell=True)
+        print("Build Info in /tmp/"+ftmp_fname)
         os.chdir(cur_path)
         # Check end of building
         timeout = 2 * 60
