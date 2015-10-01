@@ -233,6 +233,8 @@ class Generator(object):
                 self.ariane.plugin_service.get_relations(mod_plug)
 
             mf = self.ariane.get_one_file(mod_plug, "pom")
+            if not isinstance(mf, ariane_delivery.FileNode):
+                return
             if mf.type == "pom":
                 grId, artId = self.__generate_pom_mod_plug(mod_plug, mf)
 

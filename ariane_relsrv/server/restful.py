@@ -947,7 +947,7 @@ class RestCommit(Resource):
             abort_error("INTERNAL_ERROR", "Server can not find the current Distribution to commit")
 
         # FOR TEST :
-        RestCommit.generate_in_testrepos()
+        # RestCommit.generate_in_testrepos()
         # modules = [self.module_test]
         # FOR RELEASE:
         modules = ariane.module_service.get_all(dist)

@@ -457,7 +457,6 @@ class ModuleService(DeliveryTree):
         self._ariane_node = Module("model", "model")
         self.reinit_subclass()
 
-
     def update_arianenode_lists(self, module):
         if isinstance(module, Module):
             module.list_files = DeliveryTree.get_files(module)
@@ -522,7 +521,7 @@ class ModuleService(DeliveryTree):
         if module.name not in ["environment", "installer"]:
             self.__make_file_build(module)
             self.__make_file_plan(module)
-        if module.name not in ["environment"]:
+        if module.name not in ["environment", "installer"]:
             self.__make_file_pom(module)
 
         if module.name in ["installer"]:

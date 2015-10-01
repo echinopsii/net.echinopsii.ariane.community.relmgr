@@ -7,7 +7,7 @@
 # module_name1 module_name2 version_min version_max
 
 distribution community 0.6.4-SNAPSHOT
-installer 0.1.0 environment tools
+installer 0.6.4-SNAPSHOT environment
 messaging 0.1.1-SNAPSHOT none api rabbitmq
 idm 0.4.2-SNAPSHOT core base
 portal 0.6.4-SNAPSHOT core base wat idmwat wab wresources

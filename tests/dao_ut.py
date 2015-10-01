@@ -592,6 +592,29 @@ class AppTest(unittest.TestCase):
         # mod.add_submodule(sub)
         # mod.save()
 
+    def test_correct(self):
+        self.ariane.delete_all()
+        os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "
+                  "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
+        dists = self.ariane.distribution_service.get_all()
+        for dist in dists:
+            modules = self.ariane.module_service.get_all(dist)
+            mod = [m for m in modules if m.name == "installer"][0]
+            self.ariane.module_service.update_arianenode_lists(mod)
+            for mf in mod.list_files:
+                if mf.type == "pom":
+                    mf.delete()
+                    break
+            sub = mod.list_submod[0]
+            sub.delete()
+            mod.version = dist.version
+            mod.save()
+            print("DONE")
+        os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -c dump > "
+                  "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
+
+
+
     # def test_maxnid(self):
     #     self.ariane.delete_all()
     #     os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "
