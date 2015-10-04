@@ -34,6 +34,8 @@ from bootstrap import command
 import json
 import subprocess
 from datetime import datetime
+import logging
+import server.log.log_setup as srvlog
 
 app = Flask(__name__)
 api = Api(app)
@@ -43,6 +45,9 @@ with open(project_path + "/ariane.community.relmgr/bootstrap/confsrv.json", "r")
 ariane = ariane_delivery.DeliveryTree({"login": conf["NEO4J_LOGIN"], "password": conf["NEO4J_PASSWORD"], "type": "neo4j"})
 neo4j_path = conf["NEO4J_PATH"]
 db_export_path = project_path + conf["EXPORT_DB"]
+
+srvlog.setup_logging("log/relsrv_logging_conf.json")
+LOGGER = logging.getLogger(__name__)
 
 def abort_error(error, msg):
     if error == "BAD_REQUEST":
@@ -713,6 +718,7 @@ class RestDistributionList(Resource):
                 if copy:
                     cd = ReleaseTools.create_distrib_copy(d)
                     if cd is None:
+                        LOGGER.error("Distribution copy already exists in database")
                         abort_error("FORBIDDEN", "A copy already exists")
                     return make_response(json.dumps({"distrib": cd.get_properties(gettype=True)}), 200, headers_json)
                 else:
@@ -879,14 +885,17 @@ class RestDistributionManager(Resource):
             newdev = ReleaseTools.create_dev_distrib()
             if not isinstance(newdev, ariane_delivery.Distribution):
                 if newdev == 1:
+                    LOGGER.error("Server can not find the actual DEV Distribution")
                     abort_error("INTERNAL_ERROR", "Server can not find the actual DEV Distribution")
                 elif newdev in [2, 3]:
+                    LOGGER.error("The actual DEV Distribution is already in a '-SNAPSHOT' version")
                     abort_error("BAD_REQUEST", "The actual DEV Distribution is already in a '-SNAPSHOT' version")
 
             return make_response(json.dumps({"distrib": newdev.get_properties(gettype=True)}), 200, headers_json)
 
         elif mode == "copy":
             if args["distrib"] is None:
+                LOGGER.warn("You must provide the 'distrib' parameter")
                 abort_error("BAD_REQUEST", "You must provide the 'distrib' parameter")
             arg_d = json.loads(args["distrib"])
             d = ariane.distribution_service.get_unique(arg_d)
@@ -902,9 +911,11 @@ class RestReset(Resource):
         if os.path.isfile(db_export_path + alldistrib_file):
             ariane.delete_all()
             os.system(neo4j_path+"/bin/neo4j-shell -file " + db_export_path + alldistrib_file)
+            LOGGER.info("Successful database reset")
             return make_response(json.dumps({"message": "All distributions have been imported: Database is reset"}),
                                  200, headers_json)
         else:
+            LOGGER.error("Error while importing '"+db_export_path+alldistrib_file+"', file was not found")
             abort_error("INTERNAL_ERROR", "Error while importing '"+db_export_path+alldistrib_file+"', file was not "
                         "found")
 
@@ -928,10 +939,13 @@ class RestCommit(Resource):
     def post(self):
         args = self.reqparse.parse_args()
         if args["mode"] is None:
+            LOGGER.warn("You must provide 'mode' parameter")
             abort_error("BAD_REQUEST", "You must provide 'mode' parameter")
         if args["task"] is None:
+            LOGGER.warn("You must provide 'task' parameter")
             abort_error("BAD_REQUEST", "You must provide 'task' parameter")
         if args["comment"] is None:
+            LOGGER.warn("You must provide 'comment' parameter")
             abort_error("BAD_REQUEST", "You must provide 'comment' parameter")
 
         mode = args["mode"]
@@ -944,8 +958,10 @@ class RestCommit(Resource):
 
         dist = ariane.distribution_service.get_dev_distrib()
         if not isinstance(dist, ariane_delivery.Distribution):
+            LOGGER.error("Server can not find in database the current Distribution to commit")
             abort_error("INTERNAL_ERROR", "Server can not find the current Distribution to commit")
 
+        LOGGER.info("Start Distribution("+dist.version+") commit-tag-push ...")
         # FOR TEST :
         # RestCommit.generate_in_testrepos()
         # modules = [self.module_test]
@@ -960,18 +976,23 @@ class RestCommit(Resource):
             if os.path.exists(mpath):
                 os.chdir(mpath)
                 if subprocess.call("git add ./", shell=True) != 0:
+                    LOGGER.warn("error_on_add("+m.name+");")
                     errs += "error_on_add("+m.name+"); "
                 if subprocess.call(commit, shell=True) != 0:
+                    LOGGER.warn("error_on_commit("+m.name+"): "+task + " " + comment + "; ")
                     errs += "error_on_commit("+m.name+"): "+task + " " + comment + "; "
 
                 if mode == "Release":
                     if not generator.Degenerator.is_git_tagged(m.version):
                         if subprocess.call("git tag " + m.version, shell=True) != 0:
+                            LOGGER.warn("error_on_tag("+m.name+"): " + m.version + "; ")
                             errs += "error_on_tag("+m.name+"): " + m.version + "; "
                     if subprocess.call("git push origin " + m.version, shell=True) != 0:
+                        LOGGER.warn("error_on_push_origin("+m.name+"): " + m.version + ";")
                         errs += "error_on_push_origin("+m.name+"): " + m.version + "; "
                 elif mode == "DEV":
                     if subprocess.call("git push ", shell=True) != 0:
+                        LOGGER.warn("error_on_push("+m.name+"): " + m.version + ";")
                         errs += "error_on_push("+m.name+"): " + m.version + "; "
             else:
                 path_errs.append(mpath)
@@ -980,9 +1001,12 @@ class RestCommit(Resource):
             errs += " Error: Following paths does not exist {} ; ".format(path_errs)
         if len(errs) > 0:
             message = "Errors occured. Please correct them manually.\n" + errs
+            LOGGER.error("Errors occured while commiting the Distribution. Check Warning logs for more information."
+                         "You should complete the failed commits manually")
             abort_error("INTERNAL_ERROR", message)
         else:
             message = "Git Commit-Tag-Push done."
+        LOGGER.info("Distribution ("+dist.version+") Commit-Tag-Push done")
         return make_response(json.dumps({"message": message}), 200, headers_json)
 
 
@@ -1012,6 +1036,7 @@ class RestCheckout(Resource):
 
         mode = args["mode"]
         if mode == "files":
+            LOGGER.info("Start files checkout ...")
             backpath = os.getcwd()
             # First Checkout 'ariane.community.distrib' files: most of these files are versioned so we need to
             # remove them. Because they are not currently in the git repository, 'git checkout' command doesn't work
@@ -1071,16 +1096,21 @@ class RestCheckout(Resource):
             # Delete copy distrib and rename Initial distrib
             cd = ariane.distribution_service.get_unique({"version": version})
             if not isinstance(cd, ariane_delivery.Distribution):
+                LOGGER.error("Temporary Distribution version {} was not found. Can not remove it".format(version))
                 abort_error("BAD_REQUEST", "Temporary Distribution version {} was not found. Can not remove it".format(version))
             ret_rmcompy = ReleaseTools.remove_distrib_copy(cd)
             if ret_rmcompy == 1:
+                LOGGER.error("Distribution copy model was not found. Can not reinitialize the Database")
                 abort_error("BAD_REQUEST", "Distribution copy model was not found. Can not reinitialize the Database")
             elif ret_rmcompy == -1:
+                LOGGER.error("Given distribution {} is not the copy, Can not reinitialize the Database".format(cd))
                 abort_error("BAD_REQUEST", "Given distribution {} is not the copy, Can not reinitialize the Database".format(cd))
             else:
+                LOGGER.info("git checkout done. Database reinitialized")
                 return make_response(json.dumps({"message": "git checkout done. Database reinitialized."}), 200, headers_json)
 
         elif mode == "directories":
+            LOGGER.info("Start repositories git checkout and git pull")
             paths = [ReleaseTools.get_distrib_path(dist)]
             modules = ariane.module_service.get_all(dist)
             plugins = ariane.plugin_service.get_all(dist)
@@ -1095,13 +1125,17 @@ class RestCheckout(Resource):
                     retcall = subprocess.call('git pull', shell=True, cwd=p)
                     if retcall != 0:
                         errs += "error while git pull {}-".format(p)
+            if errs != "":
+                LOGGER.warn("Git Checkout done but errors occured for some repositories: "+errs)
+            else:
+                LOGGER.info("Git Checkout done")
             return make_response(json.dumps({"message": "git checkout and pull done. " + errs}), 200, headers_json)
 
         elif mode == "tags":
             # git tag -d version_module
             # git push origin :refs/tags/version_module
             # git reset --hard HEAD~1
-
+            LOGGER.info("Start Tags reset")
             dist = ariane.distribution_service.get_dev_distrib()
             if not isinstance(dist, ariane_delivery.Distribution):
                 abort_error("INTERNAL_ERROR", "Server can not find the current Distribution to commit")
@@ -1131,9 +1165,11 @@ class RestCheckout(Resource):
                 errs += " Error: Following paths does not exist {} ; ".format(path_errs)
             if len(errs) > 0:
                 message = "Errors occured. Please correct them manually.\n" + errs
+                LOGGER.error(message)
                 abort_error("INTERNAL_ERROR", message)
             else:
-                message = "Reset tag done."
+                message = "Tags reset done."
+            LOGGER.info(message)
             return make_response(json.dumps({"message": message}), 200, headers_json)
 
 class RestFileDiff(Resource):
@@ -1164,6 +1200,7 @@ class RestFileDiff(Resource):
                             out = out[:-1]
                     return make_response(json.dumps({"diff": out, "isDiff": flag_diff}), 200, headers_json)
             else:
+                LOGGER.error("Given parameter {} does not match an existing file in database".format(fnode))
                 abort_error("BAD_REQUEST", "Given parameter {} does not match an existing file in database".format(fnode))
 
 class RestGetDelZip(Resource):
@@ -1220,6 +1257,7 @@ class RestBuildZip(Resource):
         command.py handles the change of working directory
         :return:
         """
+        LOGGER.info("Start Zip Build")
         args = self.reqparse.parse_args()
         if args["version"] is None:
             abort_error("BAD_REQUEST", "You must provide the parameter 'version'")
@@ -1307,8 +1345,10 @@ class RestBuildZip(Resource):
                 else:
                     if (zipfile != backup_name) and (tmp_copyname in new_filenames):
                         shutil.move(path_zip+tmp_copyname, path_zip+backup_name)
+            LOGGER.info("Build success")
             return make_response(json.dumps({"zip": zipfile, "message": "Build Success"}), 200, headers_json)
         else:
+            LOGGER.error("Error while building")
             abort_error("INTERNAL_ERROR", "Error while building")
 
 class RestGeneration(Resource):
