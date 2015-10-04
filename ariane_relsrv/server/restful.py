@@ -960,19 +960,19 @@ class RestCommit(Resource):
             if os.path.exists(mpath):
                 os.chdir(mpath)
                 if subprocess.call("git add ./", shell=True) != 0:
-                    errs += "error_on_add; "
+                    errs += "error_on_add("+m.name+"); "
                 if subprocess.call(commit, shell=True) != 0:
-                    errs += "error_on_commit: "+task + " " + comment + "; "
+                    errs += "error_on_commit("+m.name+"): "+task + " " + comment + "; "
 
                 if mode == "Release":
                     if not generator.Degenerator.is_git_tagged(m.version):
                         if subprocess.call("git tag " + m.version, shell=True) != 0:
-                            errs += "error_on_tag: " + m.version + "; "
+                            errs += "error_on_tag("+m.name+"): " + m.version + "; "
                     if subprocess.call("git push origin " + m.version, shell=True) != 0:
-                        errs += "error_on_push_origin: " + m.version + "; "
+                        errs += "error_on_push_origin("+m.name+"): " + m.version + "; "
                 elif mode == "DEV":
                     if subprocess.call("git push ", shell=True) != 0:
-                        errs += "error_on_push: " + m.version + "; "
+                        errs += "error_on_push("+m.name+"): " + m.version + "; "
             else:
                 path_errs.append(mpath)
 

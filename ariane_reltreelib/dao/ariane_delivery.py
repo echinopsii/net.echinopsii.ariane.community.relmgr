@@ -498,8 +498,10 @@ class ModuleService(DeliveryTree):
 
         return list_mod
 
-    def get_relations(self, args):
-        return self._get_relations(args, ["COMPOSED OF", "DEPENDS ON"])
+    def get_relations(self, args, rels=None):
+        if rels is None:
+            return self._get_relations(args, ["COMPOSED OF", "DEPENDS ON"])
+        return self._get_relations(args, rels)
 
     def __get_name_version_master(self, version):
         if "SNAPSHOT" in version:
@@ -801,6 +803,15 @@ class ArianeRelation(object):
             DeliveryTree.graph_dao.save_relation({"start_nID": self.start.id, "relation": self.relation,
                                                   "end_nID": self.end.id, "properties": self.properties,
                                                   "rel_node": self.rel_node})
+
+    @staticmethod
+    def make_vmin_vmax(version):
+        v = version.split('.')
+        v[-1] = '0'
+        vmin = '.'.join(v)
+        v[1] = str(int(v[1]) + 1)
+        vmax = '.'.join(v)
+        return vmin, vmax
 
     def __repr__(self):
         return "Relation: ("+self.start.__repr__()+")-[relation = "+self.relation+" ; "+str(self.properties)+"" \
@@ -1131,6 +1142,7 @@ class Module(ArianeNode):
                 for f in self.list_files:
                     f.version = self.version
                 self.update_filesname()
+                self.__update_dependencies()
                 self._old_version = self.version
 
     def delete(self):
@@ -1206,6 +1218,17 @@ class Module(ArianeNode):
         properties["version"] = rel.end.version
         if properties not in self.list_module_dependency:
             self.list_module_dependency.append(properties)
+
+    def __update_dependencies(self):
+        rels = DeliveryTree.module_service.get_relations(self, ["DEPENDS ON"])
+        for rel in rels:
+            if not isinstance(rel, ArianeRelation):
+                continue
+            if (rel.end == self) and (isinstance(rel.start, Module) or isinstance(rel.start, Plugin)):
+                vmin, vmax = ArianeRelation.make_vmin_vmax(self.version)
+                rel.properties["version_min"] = vmin
+                rel.properties["version_max"] = vmax
+                rel.save()
 
     def __set_git_repos(self):
         repos = "net.echinopsii.ariane.community."

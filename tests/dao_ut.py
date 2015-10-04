@@ -71,6 +71,23 @@ class AppTest(unittest.TestCase):
 
         self.assertEqual(self.distrib, my_distrib)
 
+    def test_relation_update(self):
+        self.ariane.delete_all()
+        os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "
+                  "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/distrib_0.6.4-SNAPSHOT.cypher")
+
+        dist = self.ariane.distribution_service.get_all()[0]
+        mods = self.ariane.module_service.get_all(dist)
+        portal = [m for m in mods if m.name == "portal"][0]
+        self.assertTrue(isinstance(portal, ariane_delivery.Module))
+        portal.version = "0.7.0"
+        portal.save()
+        relations = self.ariane.module_service.get_relations(portal, ["DEPENDS ON"])
+        for r in relations:
+            if r.end == portal and (isinstance(r.start, ariane_delivery.Module) or isinstance(r.start, ariane_delivery.Plugin)):
+                self.assertEqual(r.properties["version_min"], "0.7.0")
+                self.assertEqual(r.properties["version_max"], "0.8.0")
+
     def test_update_submodule(self):
         self.sub.version = "oyoyo"
         self.sub.save()
@@ -612,7 +629,6 @@ class AppTest(unittest.TestCase):
             print("DONE")
         os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -c dump > "
                   "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
-
 
 
     # def test_maxnid(self):

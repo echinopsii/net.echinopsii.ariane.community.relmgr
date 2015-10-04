@@ -318,7 +318,7 @@ class Generator(object):
                 submodules.extend(s.list_submod)
                 submodules.remove(s)
         submodules = sorted(submodules, key=lambda submod: submod.order)
-        vmin, vmax = self.__make_vmin_vmax(mod_plug.version)
+        vmin, vmax = ariane_delivery.ArianeRelation.make_vmin_vmax(mod_plug.version)
         if snapshot:
             m_version = mod_plug.version
             m_version = str(m_version).replace("-", ".")
