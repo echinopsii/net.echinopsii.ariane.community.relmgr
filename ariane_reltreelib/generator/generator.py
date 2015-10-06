@@ -52,13 +52,14 @@ class Degenerator(object):
         else:
             tags = subprocess.check_output("git tag", shell=True)
         # check_output gives the command output in bytes format, so we decode it.
-        tags = (tags.decode()).split('\n')
-        if tags[-1] == '':
-            tags = tags[:-1]
-        for tag in tags:
-            if tag == version:
-                tag_flag = True
-                break
+        if (isinstance(tags, bytes)) and (len(tags)):
+            tags = (tags.decode()).split('\n')
+            if tags[-1] == '':
+                tags = tags[:-1]
+            for tag in tags:
+                if tag == version:
+                    tag_flag = True
+                    break
 
         return tag_flag
 

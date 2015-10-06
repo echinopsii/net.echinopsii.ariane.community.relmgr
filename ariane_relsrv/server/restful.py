@@ -35,7 +35,7 @@ import json
 import subprocess
 from datetime import datetime
 import logging
-import server.log.log_setup as srvlog
+from ariane_relsrv.server.log import log_setup as srvlog
 
 app = Flask(__name__)
 api = Api(app)
