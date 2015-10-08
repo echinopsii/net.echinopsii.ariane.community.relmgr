@@ -37,6 +37,7 @@ angular.module('ArianeUI')
         $scope.page = 'view';
         $scope.mode = "Release";  // mode = "Release" | "DEV"
         var pageStates = {relC: "commit"};
+        var pageErrors = {relC: ""};
         $scope.modeTitle = {selected: "", releaseA: "Edition - Validate to generate files", releaseB: "Check file differences - Validate to build zip",
                             releaseC: "Download zip - Validate to commit+tag+push files AND to build the new zip from tags", releaseD: "Download new zip from tags - Validate to go manage Plugins",
                             releaseE: "Manage Plugins",releaseDEV: "Choose the new DEV SNAPSHOT version - Validate to create"};
@@ -280,6 +281,7 @@ angular.module('ArianeUI')
                                 }
                             })
                             .error(function(data){
+                                pageErrors.relC = "error_tag";
                                 serviceUI.setNotifyLog("error", "ReleaseC", "Error while committing distribution: " + data.message);
                                 serviceUI.setState({obj: "default", state: "done"});
                             });
@@ -335,6 +337,39 @@ angular.module('ArianeUI')
             }
         }
         function Rollback(release) {
+            if(release == "relD" || (release == "relC" && pageErrors.relC == "error_tag")){
+                serviceAjax.checkout($scope.dists[0].version, "tags")
+                    .success(function(data){
+                        var mode = 'Release' + release[release.indexOf('rel')];
+                        pageErrors.relC = "";
+                        serviceUI.setState({obj: "default", state: "done"});
+                        serviceUI.setNotifyLog("info", mode, data.message);
+                        if(serviceUI.changePage('rollback'))
+                            serviceUI.actionBroadcast('changePage');
+                    })
+                    .error(function(data){
+                        var mode = 'Release' + release[release.indexOf('rel')];
+                        serviceUI.setState({obj: "default", state: "done"});
+                        if(serviceUI.changePage('rollback'))
+                            serviceUI.actionBroadcast('changePage');
+                        serviceUI.setNotifyLog("error", mode,  "An error occured: " + data.message);
+                    });
+            }
+            if(release == "relD" || release == "relC"){
+                serviceAjax.deleteZip($scope.dists[0].version)
+                    .success(function(data){  // Handle multiple zip files.
+                        var filename = data.zip;
+                        for(var i=0, len=$scope.download.zip.length;i<len;i++){
+                            if($scope.download.zip[i] == filename){
+                                $scope.download.zip[i] = "";
+                                break;
+                            }
+                        }
+                        $scope.download.zip = $scope.download.zip.filter(function(e){ return e != "";});
+                        serviceUI.setNotifyLog("info", "releaseC", data.message);
+                    })
+                    .error(function(data){serviceUI.setNotifyLog("error", "releaseC", "Error while deleting zip file" + data.message)});
+            }
             if(release == "relD" || release == "relC" || release == "relB" || release == "relA"){
                 if(serviceUI.setState({obj: "release", state:"generation"})){
                     serviceAjax.checkout($scope.dists[0].version, "files")
@@ -353,38 +388,6 @@ angular.module('ArianeUI')
                         serviceUI.setNotifyLog("error", mode,  "An error occured: " + data.message);
                         });
                 }
-            }
-            if(release == "relC"){
-                serviceAjax.deleteZip($scope.dists[0].version)
-                    .success(function(data){  // Handle multiple zip files.
-                        var filename = data.zip;
-                        for(var i=0, len=$scope.download.zip.length;i<len;i++){
-                            if($scope.download.zip[i] == filename){
-                                $scope.download.zip[i] = "";
-                                break;
-                            }
-                        }
-                        $scope.download.zip = $scope.download.zip.filter(function(e){ return e != "";});
-                        serviceUI.setNotifyLog("info", "releaseC", data.message);
-                    })
-                    .error(function(data){serviceUI.setNotifyLog("error", "releaseC", "Error while deleting zip file" + data.message)});
-            }
-            if(release == "relD"){
-                serviceAjax.checkout($scope.dists[0].version, "tags")
-                    .success(function(data){
-                        var mode = 'Release' + release[release.indexOf('rel')];
-                        serviceUI.setState({obj: "default", state: "done"});
-                        serviceUI.setNotifyLog("info", mode, data.message);
-                        if(serviceUI.changePage('rollback'))
-                            serviceUI.actionBroadcast('changePage');
-                    })
-                    .error(function(data){
-                        var mode = 'Release' + release[release.indexOf('rel')];
-                        serviceUI.setState({obj: "default", state: "done"});
-                        if(serviceUI.changePage('rollback'))
-                            serviceUI.actionBroadcast('changePage');
-                        serviceUI.setNotifyLog("error", mode,  "An error occured: " + data.message);
-                    });
             }
         }
         function callBuildZip(release, flag){
