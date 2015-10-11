@@ -406,6 +406,7 @@ angular.module('ArianeUI')
                         serviceUI.actionBroadcast('changePage');
                 })
                 .error(function(data){
+                    pageErrors.relC = "error_tag";
                     $scope.confirmValRoll.disableVal = false;
                     serviceUI.setState({obj: "default", state: "done"});
                     serviceUI.setNotifyLog("error", release, "An error occured while building zip: " + data.message);

@@ -964,30 +964,42 @@ class RestCommit(Resource):
                 LOGGER.error("error_on_add("+m.name+");")
                 errs += "error_on_add("+m.name+"); "
             else:
-                if subprocess.call(commit, shell=True) != 0:
-                    LOGGER.error("error_on_commit("+m.name+"): "+task + " " + comment + "; ")
-                    errs += "error_on_commit("+m.name+"): "+task + " " + comment + "; "
+                LOGGER.info(m.name+"("+m.version+") add")
+                pipe = subprocess.Popen(commit, shell=True, stdout=subprocess.PIPE)
+                git_cmd_out = pipe.communicate()[0]
+                # Handle 'git tag' errors or warnings. (Warning if 'nothing to tag' is returned by the command)
+                if (isinstance(git_cmd_out, bytes)) and (len(git_cmd_out) > 0):
+                    git_cmd_out = (git_cmd_out.decode()).split('\n')
                 else:
+                    git_cmd_out = ""
+                for line in git_cmd_out:
+                    if "nothing" in line:
+                        warns += "warning_on_tag("+m.name+" "+m.version+"): "+line+"; "
+                        LOGGER.warn("warning_on_tag("+m.name+" "+m.version+"): "+line+"; ")
+                        break
+                    if "error" in line:
+                        LOGGER.error("error_on_commit("+m.name+"): "+task + " "+ comment + ""+line+"; ")
+                        errs += "error_on_commit("+m.name+"): "+task + " "+ comment + ""+line+"; "
+                        break
+                if errs == "":
                     if mode == "Release":
-                        git_cmd_out = subprocess.check_output("git tag " + m.version, shell=True)
-                        # Handle 'git tag' errors or warnings. (Warning if 'nothing to tag' is returned by the command)
-                        if (isinstance(git_cmd_out, bytes)) and (len(git_cmd_out) > 0):
-                            git_cmd_out = (git_cmd_out.decode()).split('\n')
+                        LOGGER.info(m.name+"("+m.version+") commited")
+                        if subprocess.call("git tag " + m.version, shell=True) != 0:
+                            LOGGER.error("error_on_tag("+m.name+" "+m.version+"); ")
+                            errs += "error_on_tag("+m.name+" "+m.version+"); "
                         else:
-                            git_cmd_out = ""
-                        if "nothing" in git_cmd_out:
-                            warns += "warning_on_tag("+m.name+" "+m.version+"): "+git_cmd_out+"; "
-                            LOGGER.warn("warning_on_tag("+m.name+" "+m.version+"): "+git_cmd_out+"; ")
-                        if (git_cmd_out != "") and ("nothing" not in git_cmd_out):
-                            errs += "error_on_tag("+m.name+" "+m.version+"): "+git_cmd_out+""
-                        else:
+                            LOGGER.info(m.name+"("+m.version+") tagged")
                             if subprocess.call("git push origin " + m.version, shell=True) != 0:
                                 LOGGER.error("error_on_push_origin("+m.name+"): " + m.version + ";")
                                 errs += "error_on_push_origin("+m.name+"): " + m.version + "; "
+                            else:
+                                LOGGER.info(m.name+"("+m.version+") origin pushed")
                     elif mode == "DEV":
                         if subprocess.call("git push ", shell=True) != 0:
                             LOGGER.error("error_on_push("+m.name+"): " + m.version + ";")
                             errs += "error_on_push("+m.name+"): " + m.version + "; "
+                        else:
+                            LOGGER.info(m.name+"("+m.version+") pushed (DEV mode)")
         else:
             rets["path_errs"] = mpath
         rets["errs"] = errs
@@ -1038,6 +1050,7 @@ class RestCommit(Resource):
 
         for m in modules:
             if m.name not in MODULES_TO_TAG:
+                LOGGER.warn(m.name+"("+m.version+") not in module to tag")
                 continue
             mpath = os.path.join(project_path, m.get_directory_name())
             rets = RestCommit.commit_element(m, mpath, commit, task, comment, mode)
@@ -1173,13 +1186,13 @@ class RestCheckout(Resource):
             if os.path.exists(dpath):
                 os.chdir(dpath)
                 if subprocess.call("git tag -d " + dist.version, shell=True) != 0:
-                    errs += "error_on_tag: " + dist.version + "; "
+                    errs += "error_on_tag: distrib(" + dist.version + "); "
                 else:
                     if subprocess.call("git push origin :refs/tags/" + dist.version, shell=True) != 0:
-                        errs += "error_on_push_origin: " + dist.version + "; "
+                        errs += "error_on_push_origin: distrib( " + dist.version + "); "
                     else:
                         if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
-                            errs += "error_on_reset: " + dist.version + "; "
+                            errs += "error_on_reset:distrib( " + dist.version + "); "
 
             for m in modules:
                 if m.name not in MODULES_TO_TAG:
@@ -1188,13 +1201,13 @@ class RestCheckout(Resource):
                 if os.path.exists(mpath):
                     os.chdir(mpath)
                     if subprocess.call("git tag -d " + m.version, shell=True) != 0:
-                        errs += "error_on_tag: " + m.version + "; "
+                        errs += "error_on_tag: "+m.name+"(" + m.version + "); "
                     else:
                         if subprocess.call("git push origin :refs/tags/" + m.version, shell=True) != 0:
-                            errs += "error_on_push_origin: " + m.version + "; "
+                            errs += "error_on_push_origin: "+m.name+"(" + m.version + "); "
                         else:
                             if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
-                                errs += "error_on_reset: " + m.version + "; "
+                                errs += "error_on_reset: "+m.name+"(" + m.version + "); "
                 else:
                     path_errs.append(mpath)
 
@@ -1339,16 +1352,13 @@ class RestBuildZip(Resource):
         # Build new zip with distribManager and print build info into 'infobuild.txt' file
         ftmp_fname = "infobuildDistpkgr.txt"
         # remove infobuild.txt if already exists
-        if os.path.isfile("/tmp/"+ftmp_fname):
-            os.remove("/tmp/"+ftmp_fname)
-        # os.system("touch " + project_path + ftmp_path + ftmp_fname)
-        os.system("touch /tmp/"+ftmp_fname)
-        cur_path = os.getcwd()
-        os.chdir(project_path + "/ariane.community.distrib")
+        if os.path.isfile(ftmp_fname):
+            os.remove(ftmp_fname)
+        os.system("touch "+ftmp_fname)
         subprocess.Popen("./distribManager.py distpkgr " + version_cmd + " "
-                         "> /tmp/"+ftmp_fname, shell=True)
-        print("Build Info in /tmp/"+ftmp_fname)
-        os.chdir(cur_path)
+                         "> "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname, shell=True,
+                         cwd=project_path + "/ariane.community.distrib")
+        print("Build Info in "+ftmp_fname)
         # Check end of building
         timeout = 2 * 60
         time = datetime.now().time()
