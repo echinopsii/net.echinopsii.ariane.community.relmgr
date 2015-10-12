@@ -128,7 +128,7 @@ angular.module('ArianeUI')
                 }
                 else if (buttonType == "view" || buttonType == "rollback")
                 {
-                    if(page == "releaseA" || page =="releaseB" || page == "releaseC" || page == "releaseDEV")
+                    if(page == "releaseA" || page =="releaseB" || page == "releaseC" || page == "releaseD" || page == "releaseDEV")
                         page = "view";
                 }
                 return oldPage != page;

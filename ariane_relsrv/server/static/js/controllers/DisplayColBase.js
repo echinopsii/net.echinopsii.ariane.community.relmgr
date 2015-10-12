@@ -39,7 +39,7 @@ angular.module('ArianeUI')
         var pageStates = {relC: "commit"};
         var pageErrors = {relC: ""};
         $scope.modeTitle = {selected: "", releaseA: "Edition - Validate to generate files", releaseB: "Check file differences - Validate to build zip",
-                            releaseC: "Download zip - Validate to commit+tag+push files AND to build the new zip from tags", releaseD: "Download new zip from tags - Validate to go manage Plugins",
+                            releaseC: "Download zip - Validate to commit+tag+push files", releaseD: "Build the new zip from tags and Download new zip from tags - Validate to go manage Plugins",
                             releaseE: "Manage Plugins",releaseDEV: "Choose the new DEV SNAPSHOT version - Validate to create"};
         // templates
         var baseTemplates = [{name: 'view', url:'baseEdition.html'}, {name:'releaseA', url:'baseRelA.html'}, {name:'releaseB', url:'baseRelB.html'},
@@ -271,8 +271,9 @@ angular.module('ArianeUI')
                                 serviceUI.setNotifyLog("info", "ReleaseC", data.message);
                                 if($scope.mode == "Release"){
                                     serviceUI.setNotifyLog("info", "ReleaseC", "Now building the new zip file from tags. Waiting...");
-                                    pageStates.relC = "build";
-                                    callBuildZip(release, true);
+                                    // pageStates.relC = "build";
+                                    if(serviceUI.changePage('release'))
+                                        serviceUI.actionBroadcast('changePage');
                                 }
                                 else if($scope.mode == "DEV"){
                                     serviceUI.setPage('view');
@@ -294,8 +295,7 @@ angular.module('ArianeUI')
             }
             else if(release == "relD"){
                 serviceUI.setNotifyLog("info", "ReleaseD", "Validation of the Zip file generated from tags");
-                if(serviceUI.changePage('release'))
-                    serviceUI.actionBroadcast('changePage');
+                callBuildZip(release, true);
             }
             else if(release == "relE"){
                 // PLUGIN MANAGER -- TODO: IMPLEMENT PLUGIN MANAGER
@@ -356,6 +356,7 @@ angular.module('ArianeUI')
                     });
             }
             if(release == "relD" || release == "relC"){
+                pageStates.relC = "commit";
                 serviceAjax.deleteZip($scope.dists[0].version)
                     .success(function(data){  // Handle multiple zip files.
                         var filename = data.zip;
