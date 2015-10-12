@@ -982,24 +982,29 @@ class RestCommit(Resource):
                         errs += "error_on_commit("+m.name+"): "+task + " "+ comment + ""+line+"; "
                         break
                 if errs == "":
-                    if mode == "Release":
-                        LOGGER.info(m.name+"("+m.version+") commited")
-                        if subprocess.call("git tag " + m.version, shell=True) != 0:
-                            LOGGER.error("error_on_tag("+m.name+" "+m.version+"); ")
-                            errs += "error_on_tag("+m.name+" "+m.version+"); "
-                        else:
-                            LOGGER.info(m.name+"("+m.version+") tagged")
-                            if subprocess.call("git push origin " + m.version, shell=True) != 0:
-                                LOGGER.error("error_on_push_origin("+m.name+"): " + m.version + ";")
-                                errs += "error_on_push_origin("+m.name+"): " + m.version + "; "
+                    if subprocess.call("git push ", shell=True) != 0:
+                        LOGGER.error("error_on_push("+m.name+"): " + m.version + ";")
+                        errs += "error_on_push("+m.name+"): " + m.version + "; "
+                    else:
+                        if mode == "Release":
+                            LOGGER.info(m.name+"("+m.version+") commited")
+                            if subprocess.call("git tag " + m.version, shell=True) != 0:
+                                LOGGER.error("error_on_tag("+m.name+" "+m.version+"); ")
+                                errs += "error_on_tag("+m.name+" "+m.version+"); "
                             else:
-                                LOGGER.info(m.name+"("+m.version+") origin pushed")
-                    elif mode == "DEV":
-                        if subprocess.call("git push ", shell=True) != 0:
-                            LOGGER.error("error_on_push("+m.name+"): " + m.version + ";")
-                            errs += "error_on_push("+m.name+"): " + m.version + "; "
-                        else:
-                            LOGGER.info(m.name+"("+m.version+") pushed (DEV mode)")
+                                LOGGER.info(m.name+"("+m.version+") tagged")
+                                if subprocess.call("git push origin " + m.version, shell=True) != 0:
+                                    LOGGER.error("error_on_push_origin("+m.name+"): " + m.version + ";")
+                                    errs += "error_on_push_origin("+m.name+"): " + m.version + "; "
+                                else:
+                                    LOGGER.info(m.name+"("+m.version+") origin pushed")
+                        elif mode == "DEV":
+                            pass  # Moved up
+                            # if subprocess.call("git push ", shell=True) != 0:
+                            #     LOGGER.error("error_on_push("+m.name+"): " + m.version + ";")
+                            #     errs += "error_on_push("+m.name+"): " + m.version + "; "
+                            # else:
+                            #     LOGGER.info(m.name+"("+m.version+") pushed (DEV mode)")
         else:
             rets["path_errs"] = mpath
         rets["errs"] = errs
@@ -1208,6 +1213,11 @@ class RestCheckout(Resource):
                         else:
                             if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
                                 errs += "error_on_reset: "+m.name+"(" + m.version + "); "
+                            else:
+                                if subprocess.call("git push --force origin master", shell=True) != 0:
+                                    errs += "error_on_reset_commit: "+m.name+"(" + m.version + "); "
+                                else:
+                                    LOGGER.info("Last commit was reset in "+m.name+" repository")
                 else:
                     path_errs.append(mpath)
 
