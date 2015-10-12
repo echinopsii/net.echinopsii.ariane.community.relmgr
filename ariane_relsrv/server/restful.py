@@ -1042,11 +1042,11 @@ class RestCommit(Resource):
         path_errs = []
         commit = "git commit -m \""+task+" "+comment+"\" ./"
 
-        rets = RestCommit.commit_element(dist, os.path.join(project_path, ReleaseTools.get_distrib_path(dist)), commit, task, comment, mode)
-        errs += rets["errs"]
-        warns += rets["warns"]
-        if rets["path_errs"] != "":
-            path_errs.append(rets["path_errs"])
+        # rets = RestCommit.commit_element(dist, os.path.join(project_path, ReleaseTools.get_distrib_path(dist)), commit, task, comment, mode)
+        # errs += rets["errs"]
+        # warns += rets["warns"]
+        # if rets["path_errs"] != "":
+            # path_errs.append(rets["path_errs"])
 
         for m in modules:
             if m.name not in MODULES_TO_TAG:
@@ -1182,17 +1182,17 @@ class RestCheckout(Resource):
             errs = ""
             path_errs = []
             # Handle 'distrib' module
-            dpath = os.path.join(project_path, ReleaseTools.get_distrib_path(dist))
-            if os.path.exists(dpath):
-                os.chdir(dpath)
-                if subprocess.call("git tag -d " + dist.version, shell=True) != 0:
-                    errs += "error_on_tag: distrib(" + dist.version + "); "
-                else:
-                    if subprocess.call("git push origin :refs/tags/" + dist.version, shell=True) != 0:
-                        errs += "error_on_push_origin: distrib( " + dist.version + "); "
-                    else:
-                        if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
-                            errs += "error_on_reset:distrib( " + dist.version + "); "
+            # dpath = os.path.join(project_path, ReleaseTools.get_distrib_path(dist))
+            # if os.path.exists(dpath):
+            #     os.chdir(dpath)
+            #     if subprocess.call("git tag -d " + dist.version, shell=True) != 0:
+            #         errs += "error_on_tag: distrib(" + dist.version + "); "
+            #     else:
+            #         if subprocess.call("git push origin :refs/tags/" + dist.version, shell=True) != 0:
+            #             errs += "error_on_push_origin: distrib( " + dist.version + "); "
+            #         else:
+            #             if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
+            #                 errs += "error_on_reset:distrib( " + dist.version + "); "
 
             for m in modules:
                 if m.name not in MODULES_TO_TAG:
