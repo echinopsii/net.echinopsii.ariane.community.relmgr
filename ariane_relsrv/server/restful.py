@@ -19,6 +19,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import re
+
 project_path = os.getcwd()
 project_path = project_path[:project_path.index('/ariane.community.relmgr')]
 import sys
@@ -936,8 +938,11 @@ class RestReset(Resource):
             abort_error("INTERNAL_ERROR", "Error while importing '"+db_export_path+alldistrib_file+"', file was not "
                         "found")
 
+
+
 class RestCommit(Resource):
     module_test = ariane_delivery.Module("testrepos", "testversion")
+    commit_comment = ""
 
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
@@ -1045,7 +1050,8 @@ class RestCommit(Resource):
         errs = ""
         warns = ""
         path_errs = []
-        commit = "git commit -m \""+task+" "+comment+"\" ./"
+        RestCommit.commit_comment = task+" "+comment
+        commit = "git commit -m \""+RestCommit.commit_comment+"\" ./"
 
         # rets = RestCommit.commit_element(dist, os.path.join(project_path, ReleaseTools.get_distrib_path(dist)), commit, task, comment, mode)
         # errs += rets["errs"]
@@ -1173,7 +1179,8 @@ class RestCheckout(Resource):
         elif mode == "tags":
             # git tag -d version_module
             # git push origin :refs/tags/version_module
-            # git reset --hard HEAD~1
+            # if git log -1 --pretty=%B | grep "last commit ticket + last commit comment" == 0
+            #    git reset --hard HEAD~1
             LOGGER.info("Start Tags reset")
             dist = ariane.distribution_service.get_dev_distrib()
             if not isinstance(dist, ariane_delivery.Distribution):
@@ -1211,13 +1218,18 @@ class RestCheckout(Resource):
                         if subprocess.call("git push origin :refs/tags/" + m.version, shell=True) != 0:
                             errs += "error_on_push_origin: "+m.name+"(" + m.version + "); "
                         else:
-                            if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
-                                errs += "error_on_reset: "+m.name+"(" + m.version + "); "
+                            if subprocess.call("git log -1 --pretty=%B | grep '" +
+                                               re.escape(RestCommit.commit_comment) + "'",
+                                               shell=True) != 0:
+                                LOGGER.info("No need to reset last commit in "+m.name+" repository")
                             else:
-                                if subprocess.call("git push --force origin master", shell=True) != 0:
-                                    errs += "error_on_reset_commit: "+m.name+"(" + m.version + "); "
+                                if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
+                                    errs += "error_on_reset: "+m.name+"(" + m.version + "); "
                                 else:
-                                    LOGGER.info("Last commit was reset in "+m.name+" repository")
+                                    if subprocess.call("git push --force origin master", shell=True) != 0:
+                                        errs += "error_on_reset_commit: "+m.name+"(" + m.version + "); "
+                                    else:
+                                        LOGGER.info("Last commit was reset in "+m.name+" repository")
                 else:
                     path_errs.append(mpath)
 
@@ -1365,10 +1377,11 @@ class RestBuildZip(Resource):
         if os.path.isfile(ftmp_fname):
             os.remove(ftmp_fname)
         os.system("touch "+ftmp_fname)
-        subprocess.Popen("./distribManager.py distpkgr " + version_cmd + " "
-                         "> "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname, shell=True,
+        subprocess.Popen("./distribManager.py distpkgr " + version_cmd,
+                         #+ " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname
+                         shell=True,
                          cwd=project_path + "/ariane.community.distrib")
-        print("Build Info in "+ftmp_fname)
+        #print("Build Info in "+ftmp_fname)
         # Check end of building
         timeout = 2 * 60
         time = datetime.now().time()
