@@ -269,7 +269,6 @@ angular.module('ArianeUI')
                             .success(function(data){
                                 serviceUI.setNotifyLog("info", "ReleaseC", data.message);
                                 if($scope.mode == "Release"){
-                                    serviceUI.setNotifyLog("info", "ReleaseC", "Now building the new zip file from tags. Waiting...");
                                     if(serviceUI.changePage('release'))
                                         serviceUI.actionBroadcast('changePage');
                                 }
@@ -457,7 +456,6 @@ angular.module('ArianeUI')
         };
         $scope.TestValidRelD = function(){
             if(serviceUI.setState({obj: "release", state:"zip"})){
-                serviceUI.setNotifyLog("info", "ReleaseC", data.message);
                 $scope.download.zip.push("New_testReleaseD_from_tags.zip");
                 serviceUI.setState({obj: "default", state: "done"});
                 if(serviceUI.changePage('release'))
