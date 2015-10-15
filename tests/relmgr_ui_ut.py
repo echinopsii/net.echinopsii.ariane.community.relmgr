@@ -25,6 +25,7 @@ import subprocess
 import os
 from ariane_reltreelib.dao import ariane_delivery
 from ariane_relsrv.server.restful import project_path
+from ariane_relsrv.server.restful import ariane, ReleaseTools
 
 class TestREST(unittest.TestCase):
 
@@ -36,9 +37,14 @@ class TestREST(unittest.TestCase):
 
     def test_tag_clean_cmd(self):
         mcore = ["directory", "mapping", "portal", "injector"]
-        mods = ["installer", "distrib", "environment"]
-        for m in mods:
-            mod = ariane_delivery.Module(m, "0.7.0", "")
+        mods = ["installer", "environment"]
+        mlist = mcore
+        mlist.extend(mods)
+        for m in mlist:
+            typ = ""
+            if m in mcore:
+                typ = "core"
+            mod = ariane_delivery.Module(m, "0.7.0", typ)
             versions = ["0.7.0"] #, "0.7.1", "0.7.2", "0.7.3"]
             path = os.path.join(project_path, mod.get_directory_name())
             if not os.path.exists(path):
@@ -48,6 +54,7 @@ class TestREST(unittest.TestCase):
                 if subprocess.call("git tag -d " + mod.version, shell=True, cwd=path) == 0:
                     if subprocess.call("git push origin :refs/tags/" + mod.version, shell=True, cwd=path) == 0:
                         subprocess.call("git reset --hard HEAD~1", shell=True, cwd=path)
+                        subprocess.call("git push --force origin master", shell=True, cwd=path)
 
     def test_maven_build(self):
         # subprocess.Popen("./distribManager.py distpkgr " + "0.7.0.SNAPSHOT" + " "
@@ -67,5 +74,17 @@ class TestREST(unittest.TestCase):
               #                "> "+ filepath, shell=True)
             os.chdir(backpath)
 
-    def test_env(self):
-        os.system("env")
+    def test_show_tags(self):
+        dist = ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
+        dpath = ReleaseTools.get_distrib_path(dist)
+        tags = subprocess.check_output("git tag", shell=True, cwd=os.path.join(project_path, dpath))
+        tags = tags.decode()
+        print("*** List of tags: ***")
+        print("distrib: " + tags.replace("\n", ", "))
+
+        mylist = ariane.module_service.get_all(dist)
+        mylist.extend(ariane.plugin_service.get_all(dist))
+        for m in mylist:
+            tags = subprocess.check_output("git tag", shell=True, cwd=os.path.join(project_path, m.get_directory_name()))
+            tags = tags.decode()
+            print("module/plugin: " + m.name + " " + tags.replace("\n", ", "))

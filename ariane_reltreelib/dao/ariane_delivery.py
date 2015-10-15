@@ -901,9 +901,9 @@ class ArianeNode(object):
         if node_type == "Distribution":
             node = Distribution(args["name"], args["version"], args["nID"], editable=args["editable"])
         elif node_type == "Module":
-            node = Module(args["name"], args["version"], args["type"], args["nID"], order=args["order"])
+            node = Module(args["name"], args["version"], args["type"], args["nID"], order=args["order"], git_repos=args["git_repos"])
         elif node_type == "Plugin":
-            node = Plugin(args["name"], args["version"], args["nID"])
+            node = Plugin(args["name"], args["version"], args["nID"], git_repos=args["git_repos"])
         elif node_type == "SubModule":
             node = SubModule(args["name"], args["version"], args["groupId"], args["artifactId"], args["nID"],
                              order=args["order"])
@@ -1043,12 +1043,12 @@ class Distribution(ArianeNode):
 
 class Module(ArianeNode):
 
-    def __init__(self, name, version, type="none", id=0, order=0):
+    def __init__(self, name, version, type="none", id=0, order=0, git_repos=""):
         super().__init__(name, version)
         self.id = id
         self.node_type = self.__class__.__name__
         self.type = type
-        self.git_repos = self.__set_git_repos()
+        self.git_repos = self.__set_git_repos(git_repos)
         self.order = order
         self.directory_name = ""
         self.list_submod = []
@@ -1230,11 +1230,11 @@ class Module(ArianeNode):
                 rel.properties["version_max"] = vmax
                 rel.save()
 
-    def __set_git_repos(self):
-        repos = "net.echinopsii.ariane.community."
-        if self.type == "core":
-            repos += "core."
-        repos += self.name + '.git'
+    def __set_git_repos(self, newrepos=""):
+        if newrepos == "":
+            repos = "https://github.com/echinopsii/net.echinopsii."
+        else:
+            repos = newrepos
         return repos.lower()
 
     def get_directory_name(self):
@@ -1345,22 +1345,23 @@ class SubModule(ArianeNode):
 
 class Plugin(ArianeNode):
 
-    def __init__(self, name, version, id=0):
+    def __init__(self, name, version, id=0, git_repos=""):
         super().__init__(name, version)
         self.node_type = self.__class__.__name__
         self.id = id
         self.type = "plugin"
+        self.git_repos = self.__set_git_repos(git_repos)
         self.directory_name = ""
         self.list_submod = []
         self.list_module_dependency = []
         self._len_list_submod = 0
         self._len_list_mod_dep = 0
         self._old_version = version
-        self.dir = {"name": self.name, "version": self.version, "nID": self.id}
+        self.dir = {"name": self.name, "version": self.version, "git_repos": self.git_repos, "nID": self.id}
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
     def _get_dir(self):
-        self.dir = {"name": self.name, "version": self.version, "nID": self.id}
+        self.dir = {"name": self.name, "version": self.version, "git_repos": self.git_repos, "nID": self.id}
         return self.dir
 
     def update(self, args):
@@ -1371,6 +1372,8 @@ class Plugin(ArianeNode):
                     self.name = args[key]
                 elif key == "version" and self.version != args[key]:
                     self.version = args[key]
+                elif key == "git_repos" and self.git_repos != args[key]:
+                    self.git_repos = args[key]
                 else:
                     continue
                 flag = True
@@ -1490,6 +1493,13 @@ class Plugin(ArianeNode):
         properties["version"] = rel.end.version
         if properties not in self.list_module_dependency:
             self.list_module_dependency.append(properties)
+
+    def __set_git_repos(self, newrepos=""):
+        if newrepos == "":
+            repos = "https://github.com/echinopsii/net.echinopsii."
+        else:
+            repos = newrepos
+        return repos.lower()
 
     def get_directory_name(self):
         if self.directory_name == "":

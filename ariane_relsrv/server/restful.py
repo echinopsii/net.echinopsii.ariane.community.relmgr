@@ -1377,8 +1377,8 @@ class RestBuildZip(Resource):
         if os.path.isfile(ftmp_fname):
             os.remove(ftmp_fname)
         os.system("touch "+ftmp_fname)
-        subprocess.Popen("./distribManager.py distpkgr " + version_cmd,
-                         #+ " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname
+        subprocess.Popen("./distribManager.py distpkgr " + version_cmd
+                         + " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname,
                          shell=True,
                          cwd=project_path + "/ariane.community.distrib")
         #print("Build Info in "+ftmp_fname)
