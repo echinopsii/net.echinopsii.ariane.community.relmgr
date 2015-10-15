@@ -946,6 +946,7 @@ class RestCommit(Resource):
 
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('isdistrib', type=bool)
         self.reqparse.add_argument('mode', type=str)
         self.reqparse.add_argument('task', type=str)
         self.reqparse.add_argument('comment', type=str)
@@ -1018,6 +1019,9 @@ class RestCommit(Resource):
 
     def post(self):
         args = self.reqparse.parse_args()
+        if args["isdistrib"] is None:
+            LOGGER.warn("You must provide 'isdistrib' parameter")
+            abort_error("BAD_REQUEST", "You must provide 'isdistrib' parameter")
         if args["mode"] is None:
             LOGGER.warn("You must provide 'mode' parameter")
             abort_error("BAD_REQUEST", "You must provide 'mode' parameter")
@@ -1028,6 +1032,7 @@ class RestCommit(Resource):
             LOGGER.warn("You must provide 'comment' parameter")
             abort_error("BAD_REQUEST", "You must provide 'comment' parameter")
 
+        isdistrib = args["isdistrib"]
         mode = args["mode"]
         task = args["task"]
         comment = args["comment"]
@@ -1045,7 +1050,6 @@ class RestCommit(Resource):
         # RestCommit.generate_in_testrepos()
         # modules = [self.module_test]
         # FOR RELEASE:
-        modules = ariane.module_service.get_all(dist)
         # plugins = ariane.plugin_service.get_all(dist)
         errs = ""
         warns = ""
@@ -1053,22 +1057,25 @@ class RestCommit(Resource):
         RestCommit.commit_comment = task+" "+comment
         commit = "git commit -m \""+RestCommit.commit_comment+"\" ./"
 
-        # rets = RestCommit.commit_element(dist, os.path.join(project_path, ReleaseTools.get_distrib_path(dist)), commit, task, comment, mode)
-        # errs += rets["errs"]
-        # warns += rets["warns"]
-        # if rets["path_errs"] != "":
-            # path_errs.append(rets["path_errs"])
-
-        for m in modules:
-            if m.name not in MODULES_TO_TAG:
-                LOGGER.warn(m.name+"("+m.version+") not in module to tag")
-                continue
-            mpath = os.path.join(project_path, m.get_directory_name())
-            rets = RestCommit.commit_element(m, mpath, commit, task, comment, mode)
+        if isdistrib:
+            rets = RestCommit.commit_element(dist, os.path.join(project_path, ReleaseTools.get_distrib_path(dist)), commit, task, comment, mode)
             errs += rets["errs"]
             warns += rets["warns"]
             if rets["path_errs"] != "":
                 path_errs.append(rets["path_errs"])
+        else:
+            modules = ariane.module_service.get_all(dist)
+
+            for m in modules:
+                if m.name not in MODULES_TO_TAG:
+                    LOGGER.warn(m.name+"("+m.version+") not in module to tag")
+                    continue
+                mpath = os.path.join(project_path, m.get_directory_name())
+                rets = RestCommit.commit_element(m, mpath, commit, task, comment, mode)
+                errs += rets["errs"]
+                warns += rets["warns"]
+                if rets["path_errs"] != "":
+                    path_errs.append(rets["path_errs"])
 
         if len(path_errs) > 0:
             errs += " Error: Following paths does not exist {} ; ".format(path_errs)
@@ -1077,7 +1084,10 @@ class RestCommit(Resource):
                       "(Check Warning logs for more information).\n" + errs
             abort_error("INTERNAL_ERROR", message)
         else:
-            message = "Distribution ("+dist.version+") Commit-Tag-Push done"
+            if isdistrib:
+                message = "'distrib' module from Distribution ("+dist.version+") Commit-Tag-Push done"
+            else:
+                message = "Modules from Distribution ("+dist.version+") Commit-Tag-Push done"
         LOGGER.info(message)
         return make_response(json.dumps({"message": message + warns}), 200, headers_json)
 
@@ -1091,6 +1101,7 @@ class RestCheckout(Resource):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('version', type=str)
         self.reqparse.add_argument('mode', type=str)
+        self.reqparse.add_argument('isdistrib', type=bool)
         super(RestCheckout, self).__init__()
 
     def post(self):
@@ -1102,6 +1113,10 @@ class RestCheckout(Resource):
         dist = ariane.distribution_service.get_unique({"version": version})
         if not isinstance(dist, ariane_delivery.Distribution):
             abort_error("BAD_REQUEST", "Given Distribution version ({})does not exists".format(version))
+
+        if args["isdistrib"] is None:
+            abort_error("BAD_REQUEST", "You must specify 'isdistrib' parameter for the Checkout WebService")
+        isdistrib = args["isdistrib"]
 
         if args["mode"] is None:
             abort_error("BAD_REQUEST", "You must specify a mode for the Checkout WebService")
@@ -1194,17 +1209,27 @@ class RestCheckout(Resource):
             errs = ""
             path_errs = []
             # Handle 'distrib' module
-            # dpath = os.path.join(project_path, ReleaseTools.get_distrib_path(dist))
-            # if os.path.exists(dpath):
-            #     os.chdir(dpath)
-            #     if subprocess.call("git tag -d " + dist.version, shell=True) != 0:
-            #         errs += "error_on_tag: distrib(" + dist.version + "); "
-            #     else:
-            #         if subprocess.call("git push origin :refs/tags/" + dist.version, shell=True) != 0:
-            #             errs += "error_on_push_origin: distrib( " + dist.version + "); "
-            #         else:
-            #             if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
-            #                 errs += "error_on_reset:distrib( " + dist.version + "); "
+            if isdistrib:
+                dpath = os.path.join(project_path, ReleaseTools.get_distrib_path(dist))
+                if os.path.exists(dpath):
+                    os.chdir(dpath)
+                    if subprocess.call("git tag -d " + dist.version, shell=True) != 0:
+                        errs += "error_on_tag: distrib(" + dist.version + "); "
+                    else:
+                        if subprocess.call("git push origin :refs/tags/" + dist.version, shell=True) != 0:
+                            errs += "error_on_push_origin: distrib( " + dist.version + "); "
+                        else:
+                            if subprocess.call("git log -1 --pretty=%B | grep '" +
+                                                re.escape(RestCommit.commit_comment) + "'", shell=True) != 0:
+                                LOGGER.info("No need to reset last commit in distrib repository")
+                            else:
+                                if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
+                                    errs += "error_on_reset:distrib( " + dist.version + "); "
+                                else:
+                                    if subprocess.call("git push --force origin master", shell=True) != 0:
+                                        errs += "error_on_reset_commit: distrib(" + dist.version + "); "
+                                    else:
+                                        LOGGER.info("Last commit was reset in distrib repository")
 
             for m in modules:
                 if m.name not in MODULES_TO_TAG:

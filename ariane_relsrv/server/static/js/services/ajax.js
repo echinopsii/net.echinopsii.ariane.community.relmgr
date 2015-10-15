@@ -130,8 +130,8 @@ angular.module('ArianeUI')
                 var data = {version: version, tags: tags}; // tags is boolean
                 return $http.post("http://localhost:5000/rest/buildzip", data);
             },
-            commit: function(mode, task, comment){
-                var data = {mode: mode, task: task, comment: comment};
+            commit: function(mode, isdistrib, task, comment){
+                var data = {isdistrib: isdistrib, mode: mode, task: task, comment: comment};
                 return $http.post("http://localhost:5000/rest/commit", data);
             },
             deleteZip: function(version){

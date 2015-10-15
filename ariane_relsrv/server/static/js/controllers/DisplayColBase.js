@@ -36,8 +36,8 @@ angular.module('ArianeUI')
         $scope.activeEdit = false;
         $scope.page = 'view';
         $scope.mode = "Release";  // mode = "Release" | "DEV"
-        var pageStates = {relC: "commit"};
-        var pageErrors = {relC: ""};
+        var pageStates = {relD: "commit"};
+        var pageErrors = {relC: "", relD: ""};
         $scope.modeTitle = {selected: "", releaseA: "Edition - Validate to generate files", releaseB: "Check file differences - Validate to build zip",
                             releaseC: "Download zip - Validate to commit+tag+push files", releaseD: "Build the new zip from tags and Download new zip from tags - Validate to go manage Plugins",
                             releaseE: "Manage Plugins",releaseDEV: "Choose the new DEV SNAPSHOT version - Validate to create"};
@@ -264,14 +264,12 @@ angular.module('ArianeUI')
             }
             else if(release == "relC"){
                 if(serviceUI.setState({obj: "release", state:"zip"})){
-                    if(pageStates.relC == "commit"){
                         // GIT COMMIT TAG PUSH
-                        serviceAjax.commit($scope.mode, $scope.cmdRelC.task, $scope.cmdRelC.comment)
+                        serviceAjax.commit($scope.mode, false, $scope.cmdRelC.task, $scope.cmdRelC.comment)
                             .success(function(data){
                                 serviceUI.setNotifyLog("info", "ReleaseC", data.message);
                                 if($scope.mode == "Release"){
                                     serviceUI.setNotifyLog("info", "ReleaseC", "Now building the new zip file from tags. Waiting...");
-                                    // pageStates.relC = "build";
                                     if(serviceUI.changePage('release'))
                                         serviceUI.actionBroadcast('changePage');
                                 }
@@ -279,6 +277,7 @@ angular.module('ArianeUI')
                                     serviceUI.setPage('view');
                                     $scope.mode = "Release";
                                     serviceUI.actionBroadcast('changePage');
+                                    //TODO See if its better to jump to relE directly
                                 }
                             })
                             .error(function(data){
@@ -286,16 +285,30 @@ angular.module('ArianeUI')
                                 serviceUI.setNotifyLog("error", "ReleaseC", "Error while committing distribution: " + data.message);
                                 serviceUI.setState({obj: "default", state: "done"});
                             });
+                }
+            }
+            else if(release == "relD"){
+                if(serviceUI.setState({obj: "release", state:"zip"})) {
+                    if(pageStates.relD == "commit"){
+                        serviceAjax.commit($scope.mode, true, $scope.cmdRelC.task, $scope.cmdRelC.comment)
+                            .success(function(data){
+                                serviceUI.setNotifyLog("info", "ReleaseD", data.message);
+                                    pageStates.relD = "build";
+                                    serviceUI.setNotifyLog("info", "ReleaseD", "Now building the new zip file from tags. Waiting...");
+                                    callBuildZip(release, true);
+                            })
+                            .error(function(data){
+                                pageErrors.relD = "error_tag_distrib";
+                                serviceUI.setNotifyLog("error", "ReleaseD", "Error while committing the 'distrib' Distribution module: " + data.message);
+                                serviceUI.setState({obj: "default", state: "done"});
+                            });
+                        serviceUI.setNotifyLog("info", "ReleaseD", "Validation of the Zip file generated from tags");
                     }
-                    else if(pageStates.relC == "build"){
+                    else if(pageStates.relD == "build"){
                         serviceUI.setNotifyLog("info", "ReleaseC", "Now building the new zip file from tags. Waiting...");
                         callBuildZip(release, true);
                     }
                 }
-            }
-            else if(release == "relD"){
-                serviceUI.setNotifyLog("info", "ReleaseD", "Validation of the Zip file generated from tags");
-                callBuildZip(release, true);
             }
             else if(release == "relE"){
                 // PLUGIN MANAGER -- TODO: IMPLEMENT PLUGIN MANAGER
@@ -356,7 +369,7 @@ angular.module('ArianeUI')
                     });
             }
             if(release == "relD" || release == "relC"){
-                pageStates.relC = "commit";
+                pageStates.relD = "commit";
                 serviceAjax.deleteZip($scope.dists[0].version)
                     .success(function(data){  // Handle multiple zip files.
                         var filename = data.zip;
@@ -400,14 +413,14 @@ angular.module('ArianeUI')
                         serviceUI.setNotifyLog("info", "ReleaseB", "Build of zip done!");
                     else if(release == "relC")
                         serviceUI.setNotifyLog("info", "ReleaseC", "Build of zip (from TAG) done!");
-                    pageStates.relC = "commit";
+                    pageStates.relD = "commit";
                     serviceUI.setState({obj: "default", state: "done"});
                     $scope.confirmValRoll.disableVal = false;
                     if(serviceUI.changePage('release'))
                         serviceUI.actionBroadcast('changePage');
                 })
                 .error(function(data){
-                    pageErrors.relC = "error_tag";
+                    pageErrors.relD = "error_build_from_tags";
                     $scope.confirmValRoll.disableVal = false;
                     serviceUI.setState({obj: "default", state: "done"});
                     serviceUI.setNotifyLog("error", release, "An error occured while building zip: " + data.message);
@@ -424,21 +437,29 @@ angular.module('ArianeUI')
 
         $scope.TestValidRelC = function(){
             if(serviceUI.setState({obj: "release", state:"zip"})){
-                if(pageStates.relC == "commit"){
                     // GIT COMMIT TAG PUSH
-                    serviceAjax.commit($scope.mode, $scope.cmdRelC.task, $scope.cmdRelC.comment)
-                        .success(function(data){
+                    //serviceAjax.commit($scope.mode, $scope.cmdRelC.task, $scope.cmdRelC.comment)
+                    //    .success(function(data){
                             serviceUI.setNotifyLog("info", "ReleaseC", data.message);
                             $scope.download.zip.push("New_testReleaseC.zip");
                             serviceUI.setState({obj: "default", state: "done"});
                             if(serviceUI.changePage('release'))
                                 serviceUI.actionBroadcast('changePage');
-                        })
-                        .error(function(data){
+                        //})
+                        /*.error(function(data){
                             serviceUI.setNotifyLog("error", "ReleaseC", "Error while committing distribution: " + data.message);
                             serviceUI.setState({obj: "default", state: "done"});
-                        });
-                }
+                        });*/
+
+            }
+        };
+        $scope.TestValidRelD = function(){
+            if(serviceUI.setState({obj: "release", state:"zip"})){
+                serviceUI.setNotifyLog("info", "ReleaseC", data.message);
+                $scope.download.zip.push("New_testReleaseD_from_tags.zip");
+                serviceUI.setState({obj: "default", state: "done"});
+                if(serviceUI.changePage('release'))
+                    serviceUI.actionBroadcast('changePage');
             }
         };
 
