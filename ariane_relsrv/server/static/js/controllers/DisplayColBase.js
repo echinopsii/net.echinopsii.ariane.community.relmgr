@@ -193,7 +193,7 @@ angular.module('ArianeUI')
                 var distrib = serviceUI.getBaseObj();
                 distrib = distrib.node;
                 serviceUI.setNotifyLog("info", "View", "Entering into Release mode. Waiting for repositories pull and for Distribution copying process ...");
-                serviceAjax.checkout(distrib.version, "directories")
+                serviceAjax.checkout(distrib.version, "directories", false)
                     .success(function(data){
                         serviceAjax.distribCopy(distrib)
                             .success(function(data){
@@ -351,7 +351,9 @@ angular.module('ArianeUI')
         }
         function Rollback(release) {
             if(release == "relD" || (release == "relC" && pageErrors.relC == "error_tag")){
-                serviceAjax.checkout($scope.dists[0].version, "tags")
+                var isdistrib = false;
+                if(release == "relD") isdistrib = true;
+                serviceAjax.checkout($scope.dists[0].version, "tags", isdistrib)
                     .success(function(data){
                         var mode = 'Release' + release[release.indexOf('rel')];
                         pageErrors.relC = "";
@@ -386,7 +388,7 @@ angular.module('ArianeUI')
             }
             if(release == "relD" || release == "relC" || release == "relB" || release == "relA"){
                 if(serviceUI.setState({obj: "release", state:"generation"})){
-                    serviceAjax.checkout($scope.dists[0].version, "files")
+                    serviceAjax.checkout($scope.dists[0].version, "files", false)
                     .success(function(data){
                         var mode = 'Release' + release[release.indexOf('rel')];
                         serviceUI.setState({obj: "default", state: "done"});

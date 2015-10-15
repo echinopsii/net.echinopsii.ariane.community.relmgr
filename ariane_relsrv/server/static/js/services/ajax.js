@@ -146,8 +146,8 @@ angular.module('ArianeUI')
                     return $http.get("http://localhost:5000/rest/filediff", config);
                 }
             },
-            checkout: function(version, mode){
-                return $http.post("http://localhost:5000/rest/checkout", {version: version, mode: mode});
+            checkout: function(version, mode, isdistrib){
+                return $http.post("http://localhost:5000/rest/checkout", {version: version, isdistrib: isdistrib, mode: mode});
             },
             resetDB: function(){
                 return $http.post("http://localhost:5000/rest/reset");
