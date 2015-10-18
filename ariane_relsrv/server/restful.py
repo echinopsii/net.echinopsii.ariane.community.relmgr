@@ -798,14 +798,13 @@ class ReleaseTools(object):
     @staticmethod
     def create_distrib_copy(d):
         dev = ariane.distribution_service.get_dev_distrib()
-        if dev.editable != "true":
+        if dev.editable == "true":
             cd = ariane_delivery.DistributionService.copy_distrib(d)
-            cd.editable = "true"
-            cd.save()
             # Modify current Distrib name but save this name by adding 'copyTemp' before
             ReleaseTools.distrib_copy_id = d.id
             d.name = "copyTemp" + d.name
             d.version = "copyTemp" + d.version
+            d.editable = "false"
             d.save()
             return cd
         return None
@@ -910,7 +909,9 @@ class RestDistributionManager(Resource):
                     abort_error("INTERNAL_ERROR", "Server can not find the actual DEV Distribution")
                 elif newdev in [2, 3]:
                     abort_error("BAD_REQUEST", "The actual DEV Distribution is already in a '-SNAPSHOT' version")
-
+            LOGGER.info("DEV Distribution created in database. Now removing the copy...")
+            ReleaseTools.remove_genuine_distrib()
+            LOGGER.info("Distribution copy was removed")
             return make_response(json.dumps({"distrib": newdev.get_properties(gettype=True)}), 200, headers_json)
 
         elif mode == "copy":

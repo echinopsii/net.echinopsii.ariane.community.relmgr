@@ -332,7 +332,7 @@ class DistributionService(DeliveryTree):
                     csub.add_submodule(ss)
             return csub
 
-        cd = Distribution(dist.name, dist.version)
+        cd = Distribution(dist.name, dist.version, editable=dist.editable)
         DeliveryTree.distribution_service.update_arianenode_lists(dist)
         for df in dist.list_files:
             cd.add_file(FileNode(df.name, df.type, df.version, df.path))
