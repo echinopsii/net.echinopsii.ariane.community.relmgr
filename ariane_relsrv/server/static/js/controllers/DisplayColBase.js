@@ -438,20 +438,11 @@ angular.module('ArianeUI')
 
         $scope.TestValidRelC = function(){
             if(serviceUI.setState({obj: "release", state:"zip"})){
-                    // GIT COMMIT TAG PUSH
-                    //serviceAjax.commit($scope.mode, $scope.cmdRelC.task, $scope.cmdRelC.comment)
-                    //    .success(function(data){
-                            serviceUI.setNotifyLog("info", "ReleaseC", data.message);
-                            $scope.download.zip.push("New_testReleaseC.zip");
-                            serviceUI.setState({obj: "default", state: "done"});
-                            if(serviceUI.changePage('release'))
-                                serviceUI.actionBroadcast('changePage');
-                        //})
-                        /*.error(function(data){
-                            serviceUI.setNotifyLog("error", "ReleaseC", "Error while committing distribution: " + data.message);
-                            serviceUI.setState({obj: "default", state: "done"});
-                        });*/
-
+                serviceUI.setNotifyLog("info", "ReleaseC", "FOR TEST: Git tag push validated");
+                $scope.download.zip.push("New_testReleaseC.zip");
+                serviceUI.setState({obj: "default", state: "done"});
+                if(serviceUI.changePage('release'))
+                    serviceUI.actionBroadcast('changePage');
             }
         };
         $scope.TestValidRelD = function(){

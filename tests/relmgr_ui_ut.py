@@ -29,6 +29,15 @@ from ariane_relsrv.server.restful import ariane, ReleaseTools
 
 class TestREST(unittest.TestCase):
 
+    def test_import_all_cypher(self):
+        ariane.delete_all()
+        os.system("/home/ikito/ECHINOPSII/srenia/neo4j-community-2.2.6/bin/neo4j-shell -file "
+                  "/home/ikito/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
+
+    def test_export_new_distrib(self):
+        os.system("/home/ikito/ECHINOPSII/srenia/neo4j-community-2.2.6/bin/neo4j-shell -c dump > "
+                  "/home/ikito/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
+
     def test_checkout_files(self):
         version = "0.7.0"
         mode = "tags"
@@ -88,3 +97,49 @@ class TestREST(unittest.TestCase):
             tags = subprocess.check_output("git tag", shell=True, cwd=os.path.join(project_path, m.get_directory_name()))
             tags = tags.decode()
             print("module/plugin: " + m.name + " " + tags.replace("\n", ", "))
+
+    def test_create_dev_distrib(self):
+        mdist = ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
+        if not isinstance(mdist, ariane_delivery.Distribution):
+            print("ERROR: mdist is not distribution")
+            return
+        ReleaseTools.create_distrib_copy(mdist)
+        print("copy created")
+
+    def test_remove_genuine_copy(self):
+        ReleaseTools.remove_genuine_distrib()
+
+    def test_modif(self):
+        d = ariane.distribution_service.get_unique({"version": "0.7.0"})
+        ariane.distribution_service.update_arianenode_lists(d)
+        rabit = None
+        for pl in d.list_plugin:
+            if pl["Plugin"].name == "rabbitmq":
+                rabit = pl["Plugin"]
+        rabit.version = "0.2.4"
+        rabit.save()
+        p = ariane_delivery.Plugin("procos", "0.1.0")
+        d.add_plugin(p)
+        d.save()
+
+        d2 = ariane.distribution_service.get_unique({"version": "0.7.1-SNAPSHOT"})
+        ariane.distribution_service.update_arianenode_lists(d2)
+        rabit2 = None
+        for pl in d2.list_plugin:
+            if pl["Plugin"].name == "rabbitmq":
+                rabit2 = pl["Plugin"]
+        rabit2.version = "0.2.5-SNAPSHOT"
+        rabit2.save()
+        p = ariane_delivery.Plugin("procos", "0.1.1-b01")
+        d2.add_plugin(p)
+        d2.save()
+
+    def test_modif2(self):
+        d = ariane.distribution_service.get_unique({"version": "0.7.1-SNAPSHOT"})
+        ariane.distribution_service.update_arianenode_lists(d)
+        rabit = None
+        for pl in d.list_plugin:
+            if pl["Plugin"].name == "procos":
+                rabit = pl["Plugin"]
+        rabit.version = "0.1.1-b01"
+        rabit.save()

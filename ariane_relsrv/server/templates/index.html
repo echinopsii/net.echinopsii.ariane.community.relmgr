@@ -65,7 +65,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <div class="colBody" ng-controller="DisplayColNodesCtrl">
         <span class="listRoot">Components <!-- ****************** Components ****************** -->
             <button class="btnExtend" ng-click="toggleModList()">+/-</button>
-            <button class="btnAction" ng-if="page=='view' && !isPlugin && enableEdit" ng-disabled="activeEdit" ng-click="addElement('module')">Add</button>
+            <button class="btnAction" ng-if="page=='releaseA' && !isPlugin && enableEdit" ng-disabled="activeEdit" ng-click="addElement('module')">Add</button>
         </span>
         <div class="ModList" ng-show="isModToggle()">
             <ul ng-repeat="module in modules">
@@ -73,7 +73,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <li ng-class="module.selected ? 'ModSelected' : 'ModNotSelected'">
                     <span>
                         <label ng-click="clickMod(module)">{{ module.name }} {{module.version}}</label><span ng-if="module.order"> ({{ module.order }})</span>
-                        <span ng-if="page=='view' && module.selected && enableEdit">
+                        <span ng-if="page=='releaseA' && module.selected && enableEdit">
                             <!--<button class="btnAction" ng-click="addElement('submodule')">Add</button>-->
                             <button class="btnAction" ng-disabled="activeEdit" ng-click="delElement(module)">Delete</button>
                         </span>
@@ -87,7 +87,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <div class="listRoot">Modules
             (<span ng-if="subSet.parent">{{subSet.parent.name}}</span>)
             <button class="btnExtend" ng-click="toggleSubList()">+/-</button>
-            <button class="btnAction" ng-if="page=='view' && subSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('submodule', subSet.parent)">Add</button>
+            <button class="btnAction" ng-if="page=='releaseA' && subSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('submodule', subSet.parent)">Add</button>
         </div>
             {% endraw %}
         <div class="SubList" ng-show="isSubToggle()">
@@ -97,10 +97,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     <span>
                         <label ng-class="submodule.selected ? 'SubSelected' : 'SubNotSelected'" ng-click="clickSub(submodule)">{{ submodule.name }} ({{ submodule.order }})</label>
                         <button class="btnExtend" ng-if="submodule.issubparent" ng-click="toggleModSub(submodule)">+/-</button>
-                        <span ng-if="page=='view' && submodule.issubparent && submodule.selected && enableEdit">
+                        <span ng-if="page=='releaseA' && submodule.issubparent && submodule.selected && enableEdit">
                             <button class="btnAction" ng-disabled="activeEdit" ng-click="addElement('submodule', submodule)">Add</button>
                         </span>
-                        <button class="btnAction" ng-if="page=='view' && submodule.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(submodule)">Delete</button>
+                        <button class="btnAction" ng-if="page=='releaseA' && submodule.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(submodule)">Delete</button>
                     </span>
                         <div class="ModSubList" ng-if="submodule.issubparent" ng-show="isModSubToggle(submodule)">
                             <ul ng-repeat="sub in submodule.sublist" ng-include="'field_renderer.html'">
@@ -116,13 +116,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             (<span ng-if="fileSet.parent">{{fileSet.parent.name | prefix:'Distrib_':fileSet.parent:'node_type':'distrib' | sufix:'version':fileSet.parent:'node_type':'distrib'}}</span>)
             {% endraw %}
             <button class="btnExtend" ng-disabled="0" ng-click="toggleFileList()">+/-</button>
-            <button class="btnAction" ng-if="page=='view' && fileSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('filenode')">Add</button>
+            <button class="btnAction" ng-if="page=='releaseA' && fileSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('filenode')">Add</button>
         </div>
         <div class="FileList" ng-show="isFileToggle()">
             <ul ng-repeat="filenode in fileSet.filenodes">
             {% raw %}
                 <li ng-class="filenode.selected ? 'FileSelected' : 'FileNotSelected'" ng-click="clickFile(filenode)">{{ filenode.name | limitDisplay : limitLetterNum }}
-                    <button class="btnAction" ng-if="page=='view' && filenode.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(filenode)">Delete</button>
+                    <button class="btnAction" ng-if="page=='releaseA' && filenode.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(filenode)">Delete</button>
                 </li>
             {% endraw %}
             </ul>
@@ -163,8 +163,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <span>
             <label ng-class="sub.selected ? 'SubSelected' : 'SubdNotSelected'" ng-click="clickSub(sub)">{{ sub.name }} ({{ sub.order }})</label>
             <button class="btnExtend" ng-if="sub.issubparent" ng-click="toggleModSub(sub)">+/-</button>
-            <span ng-if="page=='view' && sub.issubparent && sub.selected && enableEdit"><button class="btnAction" ng-disabled="activeEdit" ng-click="addElement('submodule', sub)">Add</button></span>
-            <button class="btnAction" ng-if="page=='view' && sub.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(sub)">Delete</button>
+            <span ng-if="page=='releaseA' && sub.issubparent && sub.selected && enableEdit"><button class="btnAction" ng-disabled="activeEdit" ng-click="addElement('submodule', sub)">Add</button></span>
+            <button class="btnAction" ng-if="page=='releaseA' && sub.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(sub)">Delete</button>
         </span>
         <div class="ModSubList" ng-if="sub.issubparent" ng-show="isModSubToggle(sub)">
             <ul ng-repeat="sub in sub.sublist">
