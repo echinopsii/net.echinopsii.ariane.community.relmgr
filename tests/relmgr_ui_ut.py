@@ -83,6 +83,13 @@ class TestREST(unittest.TestCase):
               #                "> "+ filepath, shell=True)
             os.chdir(backpath)
 
+    def test_update_gitrepos_url(self):
+        d = ariane.distribution_service.get_dev_distrib()
+        ariane.distribution_service.update_arianenode_lists(d)
+        for m in d.list_module:
+            m.git_repos = "https://stash.echinopsii.net/scm/~srenia/"
+            m.save()
+
     def test_show_tags(self):
         dist = ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
         dpath = ReleaseTools.get_distrib_path(dist)
@@ -109,7 +116,7 @@ class TestREST(unittest.TestCase):
     def test_remove_genuine_copy(self):
         ReleaseTools.remove_genuine_distrib()
 
-    def test_modif(self):
+    def test_modif_plugins_after_release(self):
         d = ariane.distribution_service.get_unique({"version": "0.7.0"})
         ariane.distribution_service.update_arianenode_lists(d)
         rabit = None
@@ -133,13 +140,3 @@ class TestREST(unittest.TestCase):
         p = ariane_delivery.Plugin("procos", "0.1.1-b01")
         d2.add_plugin(p)
         d2.save()
-
-    def test_modif2(self):
-        d = ariane.distribution_service.get_unique({"version": "0.7.1-SNAPSHOT"})
-        ariane.distribution_service.update_arianenode_lists(d)
-        rabit = None
-        for pl in d.list_plugin:
-            if pl["Plugin"].name == "procos":
-                rabit = pl["Plugin"]
-        rabit.version = "0.1.1-b01"
-        rabit.save()

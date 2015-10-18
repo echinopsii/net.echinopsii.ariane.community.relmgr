@@ -782,18 +782,29 @@ class ReleaseTools(object):
         dist = ariane.distribution_service.get_dev_distrib()
         if dist.editable == "true":
             ariane.distribution_service.update_arianenode_lists(dist)
-            if ReleaseTools.DIST_SNAPSHOT is None:
-                dists = ariane.distribution_service.get_all()
-                dists = [d for d in dists if "copy" in d.name]
-                if len(dists) == 1:
-                    ReleaseTools.DIST_SNAPSHOT = dists[0]
-                else:
-                    return -1
-            for m in ReleaseTools.DIST_SNAPSHOT.list_module:
-                for devm in dist.list_module:
-                    if m.name == devm.name:
-                        if devm.version > m.version:
-                            MODULES_TO_TAG.append(devm.name)
+            for m in dist.list_module:
+                mpath = os.path.join(project_path, m.get_directory_name())
+                last_tag = generator.Degenerator.get_last_tag(path=mpath)
+                if m.version > last_tag:
+                    MODULES_TO_TAG.append(m.name)
+
+        # if dist.editable == "true":
+        #     ariane.distribution_service.update_arianenode_lists(dist)
+        #     if ReleaseTools.DIST_SNAPSHOT is None:
+        #         dists = ariane.distribution_service.get_all()
+        #         dists = [d for d in dists if "copy" in d.name]
+        #         if len(dists) == 1:
+        #             ReleaseTools.DIST_SNAPSHOT = dists[0]
+        #         else:
+        #             return -1
+        #     for m in ReleaseTools.DIST_SNAPSHOT.list_module:
+        #         for devm in dist.list_module:
+        #             if m.name == devm.name:
+        #                 mversion = m.version
+        #                 if "-SNAPSHOT" in mversion:
+        #                     mversion = mversion[:-len("-SNAPSHOT")]
+        #                 if devm.version > mversion:
+        #                     MODULES_TO_TAG.append(devm.name)
 
     @staticmethod
     def create_distrib_copy(d):
@@ -866,6 +877,7 @@ class ReleaseTools(object):
         if isinstance(dist, ariane_delivery.Distribution):
             dist.name = dist.name[len("copyTemp"):]
             dist.version = dist.version[len("copyTemp"):]
+            dist.editable = "true"
             dist.save()
             return 0
         distribs = ariane.distribution_service.get_all()
@@ -874,6 +886,7 @@ class ReleaseTools(object):
                 d.version = d.version[len("copyTemp"):]
                 if "copyTemp" in d.name:
                     d.name = d.name[len("copyTemp"):]
+                dist.editable = "true"
                 d.save()
                 return 0
         return 1
@@ -1409,7 +1422,10 @@ class RestBuildZip(Resource):
                          cwd=project_path + "/ariane.community.distrib")
         #print("Build Info in "+ftmp_fname)
         # Check end of building
-        timeout = 2 * 60
+        if from_tags:
+            timeout = 6 * 60
+        else:
+            timeout = 2 * 60
         time = datetime.now().time()
         stime = time.hour * 3600 + time.minute * 60 + time.second
         build_done = False

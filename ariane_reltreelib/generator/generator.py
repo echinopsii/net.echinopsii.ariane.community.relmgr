@@ -63,6 +63,20 @@ class Degenerator(object):
 
         return tag_flag
 
+    @staticmethod
+    def get_last_tag(path=None):
+        if path is not None:
+            if os.path.exists(path):
+                tags = subprocess.check_output("git tag", shell=True, cwd=path)
+        else:
+            tags = subprocess.check_output("git tag", shell=True)
+        # check_output gives the command output in bytes format, so we decode it.
+        if (isinstance(tags, bytes)) and (len(tags) > 0):
+            tags = (tags.decode()).split('\n')
+            if tags[-1] == '':
+                tags = tags[:-1]
+            return tags[len(tags)-1]
+
 class Generator(object):
     ariane_deliverytool_module_path = os.path.dirname(ariane_reltreelib.__file__)
     ariane = None

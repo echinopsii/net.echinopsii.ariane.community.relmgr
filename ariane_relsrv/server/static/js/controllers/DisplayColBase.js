@@ -36,10 +36,10 @@ angular.module('ArianeUI')
         $scope.activeEdit = false;
         $scope.page = 'view';
         $scope.mode = "Release";  // mode = "Release" | "DEV"
-        var pageStates = {relD: "commit"};
+        var pageStates = {relD: "tobuild"};
         var pageErrors = {relC: "", relD: ""};
         $scope.modeTitle = {selected: "", releaseA: "Edition - Validate to generate files", releaseB: "Check file differences - Validate to build zip",
-                            releaseC: "Download zip - Validate to commit+tag+push files", releaseD: "Build the new zip from tags and Download new zip from tags - Validate to go manage Plugins",
+                            releaseC: "Download zip - Validate to commit+tag+push files", releaseD: "Validate to build zip from tags",
                             releaseE: "Manage Plugins",releaseDEV: "Choose the new DEV SNAPSHOT version - Validate to create"};
         // templates
         var baseTemplates = [{name: 'view', url:'baseEdition.html'}, {name:'releaseA', url:'baseRelA.html'}, {name:'releaseB', url:'baseRelB.html'},
@@ -288,25 +288,26 @@ angular.module('ArianeUI')
             }
             else if(release == "relD"){
                 if(serviceUI.setState({obj: "release", state:"zip"})) {
-                    if(pageStates.relD == "commit"){
-                        serviceAjax.commit($scope.mode, true, $scope.cmdRelC.task, $scope.cmdRelC.comment)
+                    if(pageStates.relD == "tobuild"){
+                        serviceUI.setNotifyLog("info", "ReleaseD", "Now building the new zip file from tags. Waiting...");
+                        callBuildZip(release, true);
+                    }
+                    else if(pageStates.relD == "tovalid"){
+                        if(serviceUI.changePage('release'))
+                            serviceUI.actionBroadcast('changePage');
+                    }
+                    // *** The following commented code is used to commit the 'distrib' module,
+                        // We want to use this functionality independently.
+                        /*serviceAjax.commit($scope.mode, true, $scope.cmdRelC.task, $scope.cmdRelC.comment)
                             .success(function(data){
-                                serviceUI.setNotifyLog("info", "ReleaseD", data.message);
-                                    pageStates.relD = "build";
-                                    serviceUI.setNotifyLog("info", "ReleaseD", "Now building the new zip file from tags. Waiting...");
-                                    callBuildZip(release, true);
-                            })
-                            .error(function(data){
+                                serviceUI.setNotifyLog("info", "ReleaseD", data.message);*/
+                                //pageStates.relD = "build";
+                        //})
+                            /*.error(function(data){
                                 pageErrors.relD = "error_tag_distrib";
                                 serviceUI.setNotifyLog("error", "ReleaseD", "Error while committing the 'distrib' Distribution module: " + data.message);
                                 serviceUI.setState({obj: "default", state: "done"});
-                            });
-                        serviceUI.setNotifyLog("info", "ReleaseD", "Validation of the Zip file generated from tags");
-                    }
-                    else if(pageStates.relD == "build"){
-                        serviceUI.setNotifyLog("info", "ReleaseC", "Now building the new zip file from tags. Waiting...");
-                        callBuildZip(release, true);
-                    }
+                            });*/
                 }
             }
             else if(release == "relE"){
@@ -369,8 +370,7 @@ angular.module('ArianeUI')
                         serviceUI.setNotifyLog("error", mode,  "An error occured: " + data.message);
                     });
             }
-            if(release == "relD" || release == "relC"){
-                pageStates.relD = "commit";
+            if(release == "relD" && pageStates.relD != "tobuild"){
                 serviceAjax.deleteZip($scope.dists[0].version)
                     .success(function(data){  // Handle multiple zip files.
                         var filename = data.zip;
@@ -385,6 +385,7 @@ angular.module('ArianeUI')
                     })
                     .error(function(data){serviceUI.setNotifyLog("error", "releaseC", "Error while deleting zip file" + data.message)});
             }
+            pageStates.relD = "tobuild";
             if(release == "relD" || release == "relC" || release == "relB" || release == "relA"){
                 if(serviceUI.setState({obj: "release", state:"generation"})){
                     serviceAjax.checkout($scope.dists[0].version, "files", false)
@@ -412,13 +413,16 @@ angular.module('ArianeUI')
                     $scope.download.zip.push(data.zip);
                     if (release == "relB")
                         serviceUI.setNotifyLog("info", "ReleaseB", "Build of zip done!");
-                    else if(release == "relC")
-                        serviceUI.setNotifyLog("info", "ReleaseC", "Build of zip (from TAG) done!");
-                    pageStates.relD = "commit";
                     serviceUI.setState({obj: "default", state: "done"});
                     $scope.confirmValRoll.disableVal = false;
-                    if(serviceUI.changePage('release'))
-                        serviceUI.actionBroadcast('changePage');
+                    if (release != "relD"){
+                        if(serviceUI.changePage('release'))
+                            serviceUI.actionBroadcast('changePage');
+                    }
+                    else {
+                        serviceUI.setNotifyLog("info", "ReleaseD", "Build of zip (from TAG) done!");
+                        pageStates.relD = "tovalid";
+                    }
                 })
                 .error(function(data){
                     pageErrors.relD = "error_build_from_tags";
