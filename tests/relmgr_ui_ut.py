@@ -45,7 +45,7 @@ class TestREST(unittest.TestCase):
         print(r.status_code, r.reason, r.text)
 
     def test_tag_clean_cmd(self):
-        mcore = ["directory", "mapping", "portal", "injector"]
+        mcore = ["directory", "mapping", "portal", "injector", "idm"]
         mods = ["installer", "environment"]
         mlist = ["directory", "mapping", "portal", "injector"]
         mlist.extend(mods)
@@ -53,8 +53,8 @@ class TestREST(unittest.TestCase):
             typ = ""
             if m in mcore:
                 typ = "core"
-            mod = ariane_delivery.Module(m, "0.7.0", typ)
-            versions = ["0.7.0"] #, "0.7.1", "0.7.2", "0.7.3"]
+            mod = ariane_delivery.Module(m, "0.7.1", typ)
+            versions = ["0.7.1"] #, "0.7.1", "0.7.2", "0.7.3"]
             path = os.path.join(project_path, mod.get_directory_name())
             if not os.path.exists(path):
                 return

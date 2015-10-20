@@ -293,6 +293,26 @@ angular.module('ArianeUI')
                         callBuildZip(release, true);
                     }
                     else if(pageStates.relD == "tovalid"){
+                        if(serviceUI.setState({obj: "release", state:"zip"})){
+                            serviceAjax.distribManager("DEV")
+                                .success(function(data){
+                                    $scope.dists = [];
+                                    $scope.dists.push(data.distrib);
+                                    serviceUI.setBaseObj({obj: "default", node: $scope.dists[0]});
+                                    if ($scope.mode == "Release")
+                                        serviceUI.setMode('DEV');
+                                    else serviceUI.setMode('Release');
+                                    serviceUI.actionBroadcast('changeMode');
+
+                                    serviceUI.setNotifyLog("info", "ReleaseDEV", "New DEV Distribution was created");
+                                    if(serviceUI.changePage('release'))
+                                        serviceUI.actionBroadcast('changePage');
+                                    serviceUI.setState({obj: "default", state: "done"});
+                                })
+                                .error(function(data){
+                                    serviceUI.setNotifyLog("error", "ReleaseDEV", "New DEV Distribution creation failed. " + data.message);
+                                });
+                        }
                         if(serviceUI.changePage('release'))
                             serviceUI.actionBroadcast('changePage');
                     }
@@ -327,26 +347,7 @@ angular.module('ArianeUI')
                 }*/
             }
             else if(release == "relDEV"){
-                if(serviceUI.setState({obj: "release", state:"zip"})){
-                    serviceAjax.distribManager("DEV")
-                        .success(function(data){
-                            $scope.dists = [];
-                            $scope.dists.push(data.distrib);
-                            serviceUI.setBaseObj({obj: "default", node: $scope.dists[0]});
-                            if ($scope.mode == "Release")
-                                serviceUI.setMode('DEV');
-                            else serviceUI.setMode('Release');
-                            serviceUI.actionBroadcast('changeMode');
 
-                            serviceUI.setNotifyLog("info", "ReleaseDEV", "New DEV Distribution was created");
-                            if(serviceUI.changePage('release'))
-                                serviceUI.actionBroadcast('changePage');
-                            serviceUI.setState({obj: "default", state: "done"});
-                        })
-                        .error(function(data){
-                            serviceUI.setNotifyLog("error", "ReleaseDEV", "New DEV Distribution creation failed. " + data.message);
-                        });
-                }
             }
         }
         function Rollback(release) {
