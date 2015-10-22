@@ -157,7 +157,7 @@ class Generator(object):
         return vmin, vmax
 
     def generate_all_distribution(self, version):
-        self.generate_distribution_files(version)
+        self.generate_distribution_files(version, with_plugins=True)
         self.generate_module_files(version)
         self.generate_plugin_files(version)
 
@@ -165,7 +165,7 @@ class Generator(object):
         self.generate_distribution_files(version)
         self.generate_module_files(version)
 
-    def generate_distribution_files(self, version):
+    def generate_distribution_files(self, version, with_plugins=False):
         distrib = self.get_distrib(version)
         dist_files = self.ariane.get_files(distrib)
         for df in dist_files:
@@ -173,12 +173,20 @@ class Generator(object):
                 self.generate_pom_dist(version, df)
             elif df.type == "json_dist":
                 self.generate_json_dist(version, df)
-            elif df.type == "json_plugins":
+            elif df.type == "json_git_repos":
+                self.generate_json_git_repos(version, df)
+
+        if with_plugins:
+            self.generate_distrib_plugin_files(version)
+
+    def generate_distrib_plugin_files(self, version):
+        distrib = self.get_distrib(version)
+        dist_files = self.ariane.get_files(distrib)
+        for df in dist_files:
+            if df.type == "json_plugins":
                 self.generate_json_plugins(version, df)
             elif df.type == "json_plugin_dist":
                 self.generate_json_plugin_dist(version, df)
-            elif df.type == "json_git_repos":
-                self.generate_json_git_repos(version, df)
 
     def generate_module_files(self, version):
         modules = self.get_modules_list(version)

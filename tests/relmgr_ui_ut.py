@@ -47,7 +47,7 @@ class TestREST(unittest.TestCase):
     def test_tag_clean_cmd(self):
         mcore = ["directory", "mapping", "portal", "injector", "idm"]
         mods = ["installer", "environment"]
-        mlist = ["directory", "mapping", "portal", "injector"]
+        mlist = ["directory", "mapping", "portal", "injector", "idm"]
         mlist.extend(mods)
         for m in mlist:
             typ = ""

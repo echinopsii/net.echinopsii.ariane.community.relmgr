@@ -51,6 +51,8 @@ db_export_path = project_path + conf["EXPORT_DB"]
 srvlog.setup_logging("log/relsrv_logging_conf.json")
 LOGGER = logging.getLogger(__name__)
 MODULES_TO_TAG = []
+PLUGINS_TO_TAG = []
+
 
 def abort_error(error, msg):
     LOGGER.error("(HTTP RESPONSE CODE: '"+error+"') " + msg)
@@ -766,7 +768,6 @@ class ReleaseTools(object):
     zipfile = ""
     path_zip = ""
     distrib_copy_id = 0
-    DIST_SNAPSHOT = None
 
     def __init__(self):
         pass
@@ -787,24 +788,6 @@ class ReleaseTools(object):
                 last_tag = generator.Degenerator.get_last_tag(path=mpath)
                 if m.version > last_tag:
                     MODULES_TO_TAG.append(m.name)
-
-        # if dist.editable == "true":
-        #     ariane.distribution_service.update_arianenode_lists(dist)
-        #     if ReleaseTools.DIST_SNAPSHOT is None:
-        #         dists = ariane.distribution_service.get_all()
-        #         dists = [d for d in dists if "copy" in d.name]
-        #         if len(dists) == 1:
-        #             ReleaseTools.DIST_SNAPSHOT = dists[0]
-        #         else:
-        #             return -1
-        #     for m in ReleaseTools.DIST_SNAPSHOT.list_module:
-        #         for devm in dist.list_module:
-        #             if m.name == devm.name:
-        #                 mversion = m.version
-        #                 if "-SNAPSHOT" in mversion:
-        #                     mversion = mversion[:-len("-SNAPSHOT")]
-        #                 if devm.version > mversion:
-        #                     MODULES_TO_TAG.append(devm.name)
 
     @staticmethod
     def create_distrib_copy(d):
@@ -961,17 +944,11 @@ class RestCommit(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('isdistrib', type=bool)
+        self.reqparse.add_argument('isplugin', type=bool)
         self.reqparse.add_argument('mode', type=str)
         self.reqparse.add_argument('task', type=str)
         self.reqparse.add_argument('comment', type=str)
         super(RestCommit, self).__init__()
-
-    @staticmethod
-    def generate_in_testrepos():
-        path = os.path.join(project_path, RestCommit.module_test.get_directory_name())
-        if os.path.exists(path):
-            subprocess.call("touch addedfile.json", shell=True, cwd=path)
-            subprocess.call("echo addedline >> another.xml", shell=True, cwd=path)
 
     @staticmethod
     def commit_element(m, mpath, commit, task, comment, mode):
@@ -1036,6 +1013,9 @@ class RestCommit(Resource):
         if args["isdistrib"] is None:
             LOGGER.warn("You must provide 'isdistrib' parameter")
             abort_error("BAD_REQUEST", "You must provide 'isdistrib' parameter")
+        if args["isplugin"] is None:
+            LOGGER.warn("You must provide 'isplugin' parameter")
+            abort_error("BAD_REQUEST", "You must provide 'isplugin' parameter")
         if args["mode"] is None:
             LOGGER.warn("You must provide 'mode' parameter")
             abort_error("BAD_REQUEST", "You must provide 'mode' parameter")
@@ -1047,6 +1027,7 @@ class RestCommit(Resource):
             abort_error("BAD_REQUEST", "You must provide 'comment' parameter")
 
         isdistrib = args["isdistrib"]
+        isplugin = args["isplugin"]
         mode = args["mode"]
         task = args["task"]
         comment = args["comment"]
@@ -1060,11 +1041,6 @@ class RestCommit(Resource):
             abort_error("INTERNAL_ERROR", "Server can not find the current Distribution to commit")
 
         LOGGER.info("Start Distribution("+dist.version+") commit-tag-push ...")
-        # FOR TEST :
-        # RestCommit.generate_in_testrepos()
-        # modules = [self.module_test]
-        # FOR RELEASE:
-        # plugins = ariane.plugin_service.get_all(dist)
         errs = ""
         warns = ""
         path_errs = []
@@ -1078,12 +1054,19 @@ class RestCommit(Resource):
             if rets["path_errs"] != "":
                 path_errs.append(rets["path_errs"])
         else:
-            modules = ariane.module_service.get_all(dist)
-
-            for m in modules:
-                if m.name not in MODULES_TO_TAG:
-                    LOGGER.warn(m.name+"("+m.version+") not in module to tag")
-                    continue
+            if isplugin:
+                mod_plugs = ariane.plugin_service.get_all(dist)
+            else:
+                mod_plugs = ariane.module_service.get_all(dist)
+            for m in mod_plugs:
+                if isplugin:
+                    if m.name not in PLUGINS_TO_TAG:
+                        LOGGER.warn(m.name+"("+m.version+") not in plugins to tag")
+                        continue
+                else:
+                    if m.name not in MODULES_TO_TAG:
+                        LOGGER.warn(m.name+"("+m.version+") not in modules to tag")
+                        continue
                 mpath = os.path.join(project_path, m.get_directory_name())
                 rets = RestCommit.commit_element(m, mpath, commit, task, comment, mode)
                 errs += rets["errs"]
@@ -1100,6 +1083,8 @@ class RestCommit(Resource):
         else:
             if isdistrib:
                 message = "'distrib' module from Distribution ("+dist.version+") Commit-Tag-Push done"
+            elif isplugin:
+                message = "Plugins from Distribution ("+dist.version+") Commit-Tag-Push done"
             else:
                 message = "Modules from Distribution ("+dist.version+") Commit-Tag-Push done"
         LOGGER.info(message)
@@ -1116,6 +1101,7 @@ class RestCheckout(Resource):
         self.reqparse.add_argument('version', type=str)
         self.reqparse.add_argument('mode', type=str)
         self.reqparse.add_argument('isdistrib', type=bool)
+        self.reqparse.add_argument('isplugin', type=bool)
         super(RestCheckout, self).__init__()
 
     def post(self):
@@ -1132,35 +1118,34 @@ class RestCheckout(Resource):
             abort_error("BAD_REQUEST", "You must specify 'isdistrib' parameter for the Checkout WebService")
         isdistrib = args["isdistrib"]
 
+        if args["isplugin"] is None:
+            abort_error("BAD_REQUEST", "You must specify 'isdistrib' parameter for the Checkout WebService")
+        isplugin = args["isplugin"]
+
         if args["mode"] is None:
             abort_error("BAD_REQUEST", "You must specify a mode for the Checkout WebService")
         mode = args["mode"]
         if mode == "files":
             LOGGER.info("Start files checkout ...")
-            backpath = os.getcwd()
             # First Checkout 'ariane.community.distrib' files: most of these files are versioned so we need to
-            # remove them. Because they are not currently in the git repository, 'git checkout' command doesn't work
+            # remove them.
             dirpath = os.path.join(project_path, ReleaseTools.get_distrib_path(dist))
             subprocess.call("git clean -f", shell=True, cwd=dirpath)
             subprocess.call("git checkout .", shell=True, cwd=dirpath)
             LOGGER.info("distrib clean and checkout")
             # Second, Checkout all other Modules/Plugins files. There are 2 verisoned files (.plan et .json build)
-            # so we remove them. For the not versioned files we use 'git checkout'
+            # so we remove them. For the not versioned files we use 'git checkout'. Plugin checkout is optionnal
             modules = ariane.module_service.get_all(dist)
-            plugins = ariane.plugin_service.get_all(dist)
+            if isplugin:
+                plugins = ariane.plugin_service.get_all(dist)
+                modules.extend(plugins)
 
             for m in modules:
                 dirpath = os.path.join(project_path, m.get_directory_name() + '/')
                 subprocess.call("git clean -f", shell=True, cwd=dirpath)
                 subprocess.call("git checkout .", shell=True, cwd=dirpath)
                 LOGGER.info(m.name + " clean and checkout")
-            for p in plugins:
-                dirpath = os.path.join(project_path, p.get_directory_name() + '/')
-                subprocess.call("git clean -f", shell=True, cwd=dirpath)
-                subprocess.call("git checkout .", shell=True, cwd=dirpath)
-                LOGGER.info(p.name + " clean and checkout")
 
-            os.chdir(backpath)
             # Delete copy distrib and rename Initial distrib
             cd = ariane.distribution_service.get_unique({"version": version})
             if not isinstance(cd, ariane_delivery.Distribution):
@@ -1184,25 +1169,15 @@ class RestCheckout(Resource):
             errs = ""
             for p in paths:
                 if os.path.exists(p):
-                    retcall = subprocess.call('git checkout ./', shell=True, cwd=p)
-                    if retcall != 0:
+                    if subprocess.call('git checkout ./', shell=True, cwd=p) != 0:
                         errs += "error while git checkout {}-".format(p)
-                    retcall = subprocess.call('git pull', shell=True, cwd=p)
-                    if retcall != 0:
+                    if subprocess.call('git pull', shell=True, cwd=p) != 0:
                         errs += "error while git pull {}-".format(p)
             if errs != "":
                 LOGGER.warn("Git Checkout done but errors occured for some repositories: "+errs)
             else:
                 LOGGER.info("Git Checkout done")
 
-            # GET CURRENT master SNAPSHOT Distribution and the modules + plugins list, before entering into Release Mode.
-            distsnap = ariane.distribution_service.get_all()
-            distsnap = [d for d in distsnap if "SNAPSHOT" in d.version]
-            if len(distsnap) != 1:
-                abort_error("INTERNAL_ERROR", "There is zero or multiple master SNAPSHOT Distributions. Check the database")
-            distsnap = distsnap[0]
-            ariane.distribution_service.update_arianenode_lists(distsnap)
-            ReleaseTools.DIST_SNAPSHOT = distsnap
             return make_response(json.dumps({"message": "git checkout and pull done. " + errs}), 200, headers_json)
 
         elif mode == "tags":
@@ -1210,6 +1185,7 @@ class RestCheckout(Resource):
             # git push origin :refs/tags/version_module
             # if git log -1 --pretty=%B | grep "last commit ticket + last commit comment" == 0
             #    git reset --hard HEAD~1
+            backpath = os.getcwd()
             LOGGER.info("Start Tags reset")
             dist = ariane.distribution_service.get_dev_distrib()
             if not isinstance(dist, ariane_delivery.Distribution):
@@ -1218,8 +1194,10 @@ class RestCheckout(Resource):
             # FOR TEST :
             # modules = [RestCommit.module_test]
             # FOR RELEASE:
-            modules = ariane.module_service.get_all(dist)
-            # plugins = ariane.plugin_service.get_all(dist)
+            if isplugin:
+                mod_plugs = ariane.plugin_service.get_all(dist)
+            else:
+                mod_plugs = ariane.module_service.get_all(dist)
             errs = ""
             path_errs = []
             # Handle 'distrib' module
@@ -1245,9 +1223,13 @@ class RestCheckout(Resource):
                                     else:
                                         LOGGER.info("Last commit was reset in distrib repository")
 
-            for m in modules:
-                if m.name not in MODULES_TO_TAG:
-                    continue
+            for m in mod_plugs:
+                if isplugin:
+                    if m.name not in PLUGINS_TO_TAG:
+                        continue
+                else:
+                    if m.name not in MODULES_TO_TAG:
+                        continue
                 mpath = os.path.join(project_path, m.get_directory_name())
                 if os.path.exists(mpath):
                     os.chdir(mpath)
@@ -1272,6 +1254,7 @@ class RestCheckout(Resource):
                 else:
                     path_errs.append(mpath)
 
+            os.chdir(backpath)
             if len(path_errs) > 0:
                 errs += " Error: Following paths does not exist {} ; ".format(path_errs)
             if len(errs) > 0:
@@ -1470,6 +1453,7 @@ class RestGeneration(Resource):
         """
         Use a subprocess calling "bootstrap/command.py 'command (arguments for command.py)'" to execute the File Generation.
         command.py handles the change of working directory
+         ** Note: 'distrib_plugin_only' command is used to only generate distribution plugin files (2 files). **
         :return:
         """
         args = self.reqparse.parse_args()

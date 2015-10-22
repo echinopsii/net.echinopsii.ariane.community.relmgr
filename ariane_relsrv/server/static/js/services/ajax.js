@@ -130,8 +130,8 @@ angular.module('ArianeUI')
                 var data = {version: version, tags: tags}; // tags is boolean
                 return $http.post("http://localhost:5000/rest/buildzip", data);
             },
-            commit: function(mode, isdistrib, task, comment){
-                var data = {isdistrib: isdistrib, mode: mode, task: task, comment: comment};
+            commit: function(mode, task, comment, isdistrib, isplugin){
+                var data = {isdistrib: isdistrib,isplugin: isplugin, mode: mode, task: task, comment: comment};
                 return $http.post("http://localhost:5000/rest/commit", data);
             },
             deleteZip: function(version){
@@ -146,8 +146,8 @@ angular.module('ArianeUI')
                     return $http.get("http://localhost:5000/rest/filediff", config);
                 }
             },
-            checkout: function(version, mode, isdistrib){
-                return $http.post("http://localhost:5000/rest/checkout", {version: version, isdistrib: isdistrib, mode: mode});
+            checkout: function(version, mode, isdistrib, isplugin){
+                return $http.post("http://localhost:5000/rest/checkout", {version: version, isdistrib: isdistrib, isplugin: isplugin, mode: mode});
             },
             resetDB: function(){
                 return $http.post("http://localhost:5000/rest/reset");

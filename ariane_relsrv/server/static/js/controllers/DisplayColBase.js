@@ -193,7 +193,7 @@ angular.module('ArianeUI')
                 var distrib = serviceUI.getBaseObj();
                 distrib = distrib.node;
                 serviceUI.setNotifyLog("info", "View", "Entering into Release mode. Waiting for repositories pull and for Distribution copying process ...");
-                serviceAjax.checkout(distrib.version, "directories", false)
+                serviceAjax.checkout(distrib.version, "directories", false, false)
                     .success(function(data){
                         serviceAjax.distribCopy(distrib)
                             .success(function(data){
@@ -265,7 +265,7 @@ angular.module('ArianeUI')
             else if(release == "relC"){
                 if(serviceUI.setState({obj: "release", state:"zip"})){
                         // GIT COMMIT TAG PUSH
-                        serviceAjax.commit($scope.mode, false, $scope.cmdRelC.task, $scope.cmdRelC.comment)
+                        serviceAjax.commit($scope.mode, $scope.cmdRelC.task, $scope.cmdRelC.comment, false, false)
                             .success(function(data){
                                 serviceUI.setNotifyLog("info", "ReleaseC", data.message);
                                 if($scope.mode == "Release"){
@@ -354,7 +354,7 @@ angular.module('ArianeUI')
             if(release == "relD" || (release == "relC" && pageErrors.relC == "error_tag")){
                 var isdistrib = false;
                 if(release == "relD") isdistrib = true;
-                serviceAjax.checkout($scope.dists[0].version, "tags", isdistrib)
+                serviceAjax.checkout($scope.dists[0].version, "tags", isdistrib, false)
                     .success(function(data){
                         var mode = 'Release' + release[release.indexOf('rel')];
                         pageErrors.relC = "";
@@ -389,7 +389,7 @@ angular.module('ArianeUI')
             pageStates.relD = "tobuild";
             if(release == "relD" || release == "relC" || release == "relB" || release == "relA"){
                 if(serviceUI.setState({obj: "release", state:"generation"})){
-                    serviceAjax.checkout($scope.dists[0].version, "files", false)
+                    serviceAjax.checkout($scope.dists[0].version, "files", false, false)
                     .success(function(data){
                         var mode = 'Release' + release[release.indexOf('rel')];
                         serviceUI.setState({obj: "default", state: "done"});
