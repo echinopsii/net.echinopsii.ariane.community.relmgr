@@ -1229,7 +1229,8 @@ class RestCheckout(Resource):
             modules = ariane.module_service.get_all(dist)
             plugins = ariane.plugin_service.get_all(dist)
             paths.extend([os.path.join(project_path, m.get_directory_name()) for m in modules])
-            paths.extend([os.path.join(project_path, p.get_directory_name()) for p in plugins])
+            if isplugin:
+                paths.extend([os.path.join(project_path, p.get_directory_name()) for p in plugins])
             errs = ""
             for p in paths:
                 if os.path.exists(p):
