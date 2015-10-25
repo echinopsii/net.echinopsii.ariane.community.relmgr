@@ -309,9 +309,7 @@ angular.module('ArianeUI')
                                             serviceUI.actionBroadcast('changePage');
                                         })
                                         .error(function(data){
-                                            serviceUI.setNotifyLog("error", "ReleaseC_DEV", "Old DEV Distribution copy could not have been removed." +
-                                                                   " Try to do it manually");
-                                            $scope.mode = "Release";
+                                            serviceUI.setNotifyLog("error", "ReleaseC_DEV", "An unexpected error occured");
                                             serviceUI.setPage('view');
                                             serviceUI.actionBroadcast('changePage');
                                         });
@@ -384,7 +382,7 @@ angular.module('ArianeUI')
             }
         }
         function Rollback(release) {
-            if(release == "relD" || (release == "relC" && pageErrors.relC == "error_tag")){
+            if(($scope.mode == "Release")&&(release == "relD" || (release == "relC" && pageErrors.relC == "error_tag"))){
                 var isdistrib = false;
                 if(release == "relD") isdistrib = true;
                 serviceAjax.checkout($scope.dists[0].version, "tags", isdistrib, false)
@@ -404,7 +402,7 @@ angular.module('ArianeUI')
                         serviceUI.setNotifyLog("error", mode,  "An error occured: " + data.message);
                     });
             }
-            if(release == "relD" && pageStates.relD != "tobuild"){
+            if(($scope.mode == "Release") && (release == "relD" && pageStates.relD != "tobuild")){
                 serviceAjax.deleteZip($scope.dists[0].version)
                     .success(function(data){  // Handle multiple zip files.
                         var filename = data.zip;
@@ -499,17 +497,7 @@ angular.module('ArianeUI')
                 serviceUI.setNotifyLog("info", "ReleaseC", "FOR TEST: Git tag push validated");
                 $scope.download.zip.push("New_testReleaseC.zip");
                 serviceUI.setState({obj: "default", state: "done"});
-                if(serviceUI.changePage('release'))
-                    serviceUI.actionBroadcast('changePage');
-            }
-        };
-        $scope.TestValiRelD_tovalid = function(){
-            pageStates.relD = "tovalid";
-        };
-        $scope.TestValidRelD = function(){
-            if(serviceUI.setState({obj: "release", state:"zip"})){
-                $scope.download.zip.push("New_testReleaseD_from_tags.zip");
-                serviceUI.setState({obj: "default", state: "done"});
+                pageStates.relD = "tovalid";
                 if(serviceUI.changePage('release'))
                     serviceUI.actionBroadcast('changePage');
             }

@@ -722,6 +722,7 @@ class RestDistributionList(Resource):
             dev = ariane.distribution_service.get_dev_distrib()
             if dev == d:
                 if copy:
+                    LOGGER.info("Creating a copy this distribution in order to work on it")
                     cd = ReleaseTools.create_distrib_copy(d)
                     if cd is None:
                         abort_error("FORBIDDEN", "Distribution copy already exists in database")
