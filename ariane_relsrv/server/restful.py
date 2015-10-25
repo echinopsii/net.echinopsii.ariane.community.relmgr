@@ -793,6 +793,10 @@ class ReleaseTools(object):
     def create_distrib_copy(d):
         dev = ariane.distribution_service.get_dev_distrib()
         if dev.editable == "true":
+            distribs = ariane.distribution_service.get_all()
+            exist_cpy = [d for d in distribs if "copyTemp" in d.version]
+            if len(exist_cpy) > 0:
+                return -1
             cd = ariane_delivery.DistributionService.copy_distrib(d)
             # Modify current Distrib name but save this name by adding 'copyTemp' before
             ReleaseTools.distrib_copy_id = d.id
@@ -838,7 +842,7 @@ class ReleaseTools(object):
     @staticmethod
     def remove_genuine_distrib():
         dcopies = ariane.distribution_service.get_all()
-        if len(dcopies):
+        if len(dcopies) > 0:
             dcopies = [d for d in dcopies if "copyTemp" in d.version]
             for d in dcopies:
                 d.delete()
@@ -869,10 +873,44 @@ class ReleaseTools(object):
                 d.version = d.version[len("copyTemp"):]
                 if "copyTemp" in d.name:
                     d.name = d.name[len("copyTemp"):]
-                dist.editable = "true"
+                d.editable = "true"
                 d.save()
                 return 0
         return 1
+
+    @staticmethod
+    def reset_dev_distrib():
+        dev = ariane.distribution_service.get_dev_distrib()
+        if not isinstance(dev, ariane_delivery.Distribution):
+            return 1
+        if dev.editable != "true":
+            return 2
+        cpy_dev = ariane.distribution_service.get_all()
+        cpy_dev = [cd for cd in cpy_dev if "copyTemp" in cd.version]
+        if len(cpy_dev) == 0:
+            return 3
+        if len(cpy_dev) > 1:
+            return 4
+
+        cpy_dev = cpy_dev[0]
+        cpy_mod = ariane.module_service.get_all(cpy_dev)
+        dev_mod = ariane.module_service.get_all(dev)
+        cpy_plug = ariane.plugin_service.get_all(cpy_dev)
+        dev_plug = ariane.plugin_service.get_all(dev)
+        for m in cpy_mod:
+            for dm in dev_mod:
+                if m.name == dm.name:
+                    dm.version = m.version
+                    dm.save()
+        for p in cpy_plug:
+            for dp in dev_plug:
+                if p.name == dp.name:
+                    dp.version = p.version
+                    dp.save()
+
+        dev.version = cpy_dev.version[len("copyTemp"):]
+        dev.save()
+
 
 class RestDistributionManager(Resource):
     """ REST endpoint for Managing Distributions stored in database.
@@ -891,14 +929,20 @@ class RestDistributionManager(Resource):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('distrib', location='json')
         self.reqparse.add_argument('mode', type=str)
+        self.reqparse.add_argument('action', type=str)
         super(RestDistributionManager, self).__init__()
 
     def post(self):
         args = self.reqparse.parse_args()
+        action = None
+        if args["action"] is not None:
+            action = args["action"]
+
         if args["mode"] is None:
             abort_error("BAD_REQUEST", "You must provide the 'mode' parameter")
         mode = args["mode"]
         if mode == "DEV":
+            LOGGER.info("Creating the new DEV Distribution...")
             newdev = ReleaseTools.create_dev_distrib()
             if not isinstance(newdev, ariane_delivery.Distribution):
                 if newdev == 1:
@@ -907,17 +951,27 @@ class RestDistributionManager(Resource):
                     abort_error("BAD_REQUEST", "The actual DEV Distribution is already in a '-SNAPSHOT' version")
             LOGGER.info("DEV Distribution created in database. Now removing the copy...")
             ReleaseTools.remove_genuine_distrib()
-            LOGGER.info("Distribution copy was removed")
-            return make_response(json.dumps({"distrib": newdev.get_properties(gettype=True)}), 200, headers_json)
+            LOGGER.info("Old Distribution copy was removed")
+            newdevcp = ReleaseTools.create_distrib_copy(newdev)
+            if not isinstance(newdev, ariane_delivery.Distribution):
+                if newdevcp == -1:
+                    abort_error("INTERNAL_ERROR", "Error occured while copying the New DEV Distribution into the "
+                                                  "database: A copy already exists.")
+                abort_error("INTERNAL_ERROR", "Error occured while copying the New DEV Distribution into the database")
 
-        elif mode == "copy":
-            if args["distrib"] is None:
-                LOGGER.warn("You must provide the 'distrib' parameter")
-                abort_error("BAD_REQUEST", "You must provide the 'distrib' parameter")
-            arg_d = json.loads(args["distrib"])
-            d = ariane.distribution_service.get_unique(arg_d)
-            if not isinstance(d, ariane_delivery.Distribution):
-                abort_error("BAD_REQUEST", "Given parameter {} must be a Distribution".format(d))
+            LOGGER.info("New Distribution copy was created. Now working on the DEV Distribution copy")
+            return make_response(json.dumps({"distrib": newdevcp.get_properties(gettype=True)}), 200, headers_json)
+
+        elif action == "getDEV":
+            dev = ariane.distribution_service.get_dev_distrib()
+            if not isinstance(dev, ariane_delivery.Distribution):
+                abort_error("BAD_REQUEST", "No DEV Distribution in database")
+            return make_response(json.dumps({"distrib": dev.get_properties(gettype=True)}), 200, headers_json)
+
+        elif action == "removeDEVcopy":
+            ReleaseTools.remove_genuine_distrib()
+            return make_response(json.dumps({}), 200, headers_json)
+
         else:
             abort_error("BAD_REQUEST", "Given parameter 'mode' is invalid")
 
@@ -961,7 +1015,7 @@ class RestCommit(Resource):
                 LOGGER.error("error_on_add("+m.name+");")
                 errs += "error_on_add("+m.name+"); "
             else:
-                LOGGER.info(m.name+"("+m.version+") add")
+                LOGGER.info(m.name+"("+m.version+") added")
                 pipe = subprocess.Popen(commit, shell=True, stdout=subprocess.PIPE)
                 git_cmd_out = pipe.communicate()[0]
                 # Handle 'git tag' errors or warnings. (Warning if 'nothing to tag' is returned by the command)
@@ -983,6 +1037,7 @@ class RestCommit(Resource):
                         LOGGER.error("error_on_push("+m.name+"): " + m.version + ";")
                         errs += "error_on_push("+m.name+"): " + m.version + "; "
                     else:
+                        LOGGER.info(m.name+"("+m.version+") pushed")
                         if mode == "Release":
                             LOGGER.info(m.name+"("+m.version+") commited")
                             if subprocess.call("git tag " + m.version, shell=True) != 0:
@@ -995,13 +1050,6 @@ class RestCommit(Resource):
                                     errs += "error_on_push_origin("+m.name+"): " + m.version + "; "
                                 else:
                                     LOGGER.info(m.name+"("+m.version+") origin pushed")
-                        elif mode == "DEV":
-                            pass  # Moved up
-                            # if subprocess.call("git push ", shell=True) != 0:
-                            #     LOGGER.error("error_on_push("+m.name+"): " + m.version + ";")
-                            #     errs += "error_on_push("+m.name+"): " + m.version + "; "
-                            # else:
-                            #     LOGGER.info(m.name+"("+m.version+") pushed (DEV mode)")
         else:
             rets["path_errs"] = mpath
         rets["errs"] = errs
@@ -1040,7 +1088,7 @@ class RestCommit(Resource):
         if not isinstance(dist, ariane_delivery.Distribution):
             abort_error("INTERNAL_ERROR", "Server can not find the current Distribution to commit")
 
-        LOGGER.info("Start Distribution("+dist.version+") commit-tag-push ...")
+        LOGGER.info("Start " + mode + " Distribution("+dist.version+") commit-tag-push ...")
         errs = ""
         warns = ""
         path_errs = []
@@ -1067,12 +1115,12 @@ class RestCommit(Resource):
                     if m.name not in MODULES_TO_TAG:
                         LOGGER.warn(m.name+"("+m.version+") not in modules to tag")
                         continue
-                mpath = os.path.join(project_path, m.get_directory_name())
-                rets = RestCommit.commit_element(m, mpath, commit, task, comment, mode)
-                errs += rets["errs"]
-                warns += rets["warns"]
-                if rets["path_errs"] != "":
-                    path_errs.append(rets["path_errs"])
+                    mpath = os.path.join(project_path, m.get_directory_name())
+                    rets = RestCommit.commit_element(m, mpath, commit, task, comment, mode)
+                    errs += rets["errs"]
+                    warns += rets["warns"]
+                    if rets["path_errs"] != "":
+                        path_errs.append(rets["path_errs"])
 
         if len(path_errs) > 0:
             errs += " Error: Following paths does not exist {} ; ".format(path_errs)
@@ -1082,11 +1130,11 @@ class RestCommit(Resource):
             abort_error("INTERNAL_ERROR", message)
         else:
             if isdistrib:
-                message = "'distrib' module from Distribution ("+dist.version+") Commit-Tag-Push done"
+                message = "'distrib' module from" + mode + "Distribution ("+dist.version+") Commit-Tag-Push done"
             elif isplugin:
-                message = "Plugins from Distribution ("+dist.version+") Commit-Tag-Push done"
+                message = "Plugins from  " + mode + " Distribution ("+dist.version+") Commit-Tag-Push done"
             else:
-                message = "Modules from Distribution ("+dist.version+") Commit-Tag-Push done"
+                message = "Modules from  " + mode + " Distribution ("+dist.version+") Commit-Tag-Push done"
         LOGGER.info(message)
         return make_response(json.dumps({"message": message + warns}), 200, headers_json)
 
@@ -1125,7 +1173,7 @@ class RestCheckout(Resource):
         if args["mode"] is None:
             abort_error("BAD_REQUEST", "You must specify a mode for the Checkout WebService")
         mode = args["mode"]
-        if mode == "files":
+        if mode in ["files", "files_DEV"]:
             LOGGER.info("Start files checkout ...")
             # First Checkout 'ariane.community.distrib' files: most of these files are versioned so we need to
             # remove them.
@@ -1147,17 +1195,32 @@ class RestCheckout(Resource):
                 LOGGER.info(m.name + " clean and checkout")
 
             # Delete copy distrib and rename Initial distrib
-            cd = ariane.distribution_service.get_unique({"version": version})
-            if not isinstance(cd, ariane_delivery.Distribution):
-                abort_error("BAD_REQUEST", "Temporary Distribution version {} was not found. Can not remove it".format(version))
-            ret_rmcompy = ReleaseTools.remove_distrib_copy(cd)
-            if ret_rmcompy == 1:
-                abort_error("BAD_REQUEST", "Distribution copy model was not found. Can not reinitialize the Database")
-            elif ret_rmcompy == -1:
-                abort_error("BAD_REQUEST", "Given distribution {} is not the copy, Can not reinitialize the Database".format(cd))
-            else:
-                LOGGER.info("git checkout done. Database reinitialized")
-                return make_response(json.dumps({"message": "git checkout done. Database reinitialized."}), 200, headers_json)
+            if mode == "files":
+                LOGGER.info("Removing the working copy...")
+                cd = ariane.distribution_service.get_unique({"version": version})
+                if not isinstance(cd, ariane_delivery.Distribution):
+                    abort_error("BAD_REQUEST", "Temporary Distribution version {} was not found. Can not remove it".format(version))
+                ret_rmcompy = ReleaseTools.remove_distrib_copy(cd)
+                if ret_rmcompy == 1:
+                    abort_error("BAD_REQUEST", "Distribution copy model was not found. Can not reinitialize the Database")
+                elif ret_rmcompy == -1:
+                    abort_error("BAD_REQUEST", "Given distribution {} is not the copy, Can not reinitialize the Database".format(cd))
+                LOGGER.info("Working copy was removed")
+
+            elif mode == "files_DEV":
+                LOGGER.info("Reseting the working copy...")
+                ret = ReleaseTools.reset_dev_distrib()
+                if ret == 1:
+                    abort_error("BAD_REQUEST", "DEV Distribution was not found")
+                elif ret == 2:
+                    abort_error("BAD_REQUEST", "DEV Distribution is not editable")
+                elif ret == 3:
+                    abort_error("BAD_REQUEST", "No copy was found. Can not reset the DEV Distribution")
+                elif ret == 4:
+                    abort_error("BAD_REQUEST", "Multiple copies were found in database")
+                LOGGER.info("Working copy was reseted")
+            LOGGER.info("git checkout done. Database reinitialized")
+            return make_response(json.dumps({"message": "git checkout done. Database reinitialized."}), 200, headers_json)
 
         elif mode == "directories":
             LOGGER.info("Start repositories git checkout and git pull")
@@ -1230,29 +1293,29 @@ class RestCheckout(Resource):
                 else:
                     if m.name not in MODULES_TO_TAG:
                         continue
-                mpath = os.path.join(project_path, m.get_directory_name())
-                if os.path.exists(mpath):
-                    os.chdir(mpath)
-                    if subprocess.call("git tag -d " + m.version, shell=True) != 0:
-                        errs += "error_on_tag: "+m.name+"(" + m.version + "); "
-                    else:
-                        if subprocess.call("git push origin :refs/tags/" + m.version, shell=True) != 0:
-                            errs += "error_on_push_origin: "+m.name+"(" + m.version + "); "
+                    mpath = os.path.join(project_path, m.get_directory_name())
+                    if os.path.exists(mpath):
+                        os.chdir(mpath)
+                        if subprocess.call("git tag -d " + m.version, shell=True) != 0:
+                            errs += "error_on_tag: "+m.name+"(" + m.version + "); "
                         else:
-                            if subprocess.call("git log -1 --pretty=%B | grep '" +
-                                               re.escape(RestCommit.commit_comment) + "'",
-                                               shell=True) != 0:
-                                LOGGER.info("No need to reset last commit in "+m.name+" repository")
+                            if subprocess.call("git push origin :refs/tags/" + m.version, shell=True) != 0:
+                                errs += "error_on_push_origin: "+m.name+"(" + m.version + "); "
                             else:
-                                if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
-                                    errs += "error_on_reset: "+m.name+"(" + m.version + "); "
+                                if subprocess.call("git log -1 --pretty=%B | grep '" +
+                                                   re.escape(RestCommit.commit_comment) + "'",
+                                                   shell=True) != 0:
+                                    LOGGER.info("No need to reset last commit in "+m.name+" repository")
                                 else:
-                                    if subprocess.call("git push --force origin master", shell=True) != 0:
-                                        errs += "error_on_reset_commit: "+m.name+"(" + m.version + "); "
+                                    if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
+                                        errs += "error_on_reset: "+m.name+"(" + m.version + "); "
                                     else:
-                                        LOGGER.info("Last commit was reset in "+m.name+" repository")
-                else:
-                    path_errs.append(mpath)
+                                        if subprocess.call("git push --force origin master", shell=True) != 0:
+                                            errs += "error_on_reset_commit: "+m.name+"(" + m.version + "); "
+                                        else:
+                                            LOGGER.info("Last commit was reset in "+m.name+" repository")
+                    else:
+                        path_errs.append(mpath)
 
             os.chdir(backpath)
             if len(path_errs) > 0:

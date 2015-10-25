@@ -25,18 +25,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 <span>{{modeTitle.selected}}</span>
 <hr class="separateur">
 <div class="centerize">
-    <div> Download Section:
-        <form id="formdownload" action="/rest/getdelzip" method="post">
-            <select ng-model="download.selected" ng-options="name for name in download.zip"></select>
-            <button type="submit" ng-disabled="download.selected == null" ng-click="clickDownload()">Download!</button>
-        </form>
-    </div>
     <hr class="separateur">
     <span>
         Commit - <label for="task">Task</label><input type="text" id="task" ng-model="cmdRelC.task"/>
           <label for="comment">Comments</label><input type="text" id="comment" ng-model="cmdRelC.comment"/>
     </span>
-    <div class="input_warning" ng-if="cmdRelC.warn">{{ cmdRelC.warning }}</div>
+        <div class="input_warning" ng-if="cmdRelC.warn">{{ cmdRelC.warning }}</div>
     <hr class="separateur">
     <button ng-click="TestValidRelC()">TestValidTags</button>
     <button class="btnValidate" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relC')">VALIDATE</button>
