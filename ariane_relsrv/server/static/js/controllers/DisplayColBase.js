@@ -49,11 +49,11 @@ angular.module('ArianeUI')
         var templateErr = "err.html";
         // inputs/outputs
         $scope.confirmValRoll = {msg: "VALIDATE", confirm:false, active: false, disableVal: false};
-        $scope.commandsRelA = {Core: "core_only", Modules_Only: "module_only", Plugins_Only: "plugin_only", TestOK:"testOK", TestNOK: "testNOK"};
+        $scope.commandsRelA = {Core: "core_only", Plugins_Only: "plugin_only", TestOK:"testOK", TestNOK: "testNOK"};
         $scope.commandsRelE = {Plugins_Only: "plugin_only"};
         $scope.cmdRelC = {task: null, comment: null, warning: "You must fill everything", warn: false};
         $scope.cmdRelDEV = {version: null, warning: "You must fill the version field", warn: false};
-        $scope.cmdGen = {cmd: $scope.commandsRelA["Modules_Only"]};
+        $scope.cmdGen = {cmd: $scope.commandsRelA.Core};
         $scope.download = {zip: [], selected: null, click: false};
         $scope.btnActive = {release: false, dev: false, refresh: true, reset: {active: true, showConfirm: false}};
         // view variables

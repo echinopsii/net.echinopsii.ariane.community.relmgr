@@ -1142,6 +1142,7 @@ class Module(ArianeNode):
                 for f in self.list_files:
                     f.version = self.version
                 self.update_filesname()
+                FileNode.update_environment_filename(self.name, self.version)
                 self.__update_dependencies()
                 self._old_version = self.version
 
@@ -1640,7 +1641,7 @@ class FileNode(object):
         self.dir = {"name": self.name, "version": self.version, "type": self.type,
                     "path": self.path, "nID": self.id}
         self.list_type = ["pom", "plan", "json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_plugins",
-                          "vsh", "json_git_repos"]
+                          "vsh", "json_git_repos", "plantpl"]
         self.list_relation = []
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
@@ -1708,38 +1709,74 @@ class FileNode(object):
         return None
 
     def udpdate_name(self, version):
-        if "SNAPSHOT" in version:
-            version = "master.SNAPSHOT"
-        if "-" in version:
-            version = str(version).replace('-', '.')
-        if "_" in version:
-            version = str(version).replace('_', '.')
+        if self.type not in ["plantpl"]:
+            if "SNAPSHOT" in version:
+                version = "master.SNAPSHOT"
+            if "-" in version:
+                version = str(version).replace('-', '.')
+            if "_" in version:
+                version = str(version).replace('_', '.')
 
-        if self.type in ["json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_git_repos"]:
-            tmp = self.name.split('-')
-            if len(tmp) > 0:
-                prefix = tmp[:-1]
-                prefix = '-'.join(prefix)
-                sufix = tmp[len(tmp)-1]
-                sufix = sufix.split('.')
-                sufix = '.' + sufix[len(sufix)-1]
-            else:
-                raise "Error, incorrect file name for {}".format(self)
-            self.name = prefix + '-' + version + sufix
-        elif self.type == "plan":
-            tmp = self.name.split('_')
-            if len(tmp) > 0:
-                prefix = tmp[:-1]
-                prefix = '-'.join(prefix)
-                sufix = tmp[len(tmp)-1]
-                sufix = sufix.split('.')
-                sufix = '.' + sufix[len(sufix)-1]
-            else:
-                raise "Error, incorrect file name for {}".format(self)
-            self.name = prefix + '_' + version + sufix
+            if self.type in ["json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_git_repos"]:
+                tmp = self.name.split('-')
+                if len(tmp) > 0:
+                    prefix = tmp[:-1]
+                    prefix = '-'.join(prefix)
+                    sufix = tmp[len(tmp)-1]
+                    sufix = sufix.split('.')
+                    sufix = '.' + sufix[len(sufix)-1]
+                else:
+                    raise "Error, incorrect file name for {}".format(self)
+                self.name = prefix + '-' + version + sufix
+            elif self.type == "plan":
+                tmp = self.name.split('_')
+                if len(tmp) > 0:
+                    prefix = tmp[:-1]
+                    prefix = '-'.join(prefix)
+                    sufix = tmp[len(tmp)-1]
+                    sufix = sufix.split('.')
+                    sufix = '.' + sufix[len(sufix)-1]
+                else:
+                    raise "Error, incorrect file name for {}".format(self)
+                self.name = prefix + '_' + version + sufix
+
+    @staticmethod
+    def update_environment_filename(name, version):
+        if name not in ["directory", "idm", "injector", "portal", "mapping", "messaging"]:
+            return
+        if "SNAPSHOT" not in version:
+            return
+        dist = DeliveryTree.distribution_service.get_dev_distrib()
+        if not isinstance(dist, Distribution):
+            return
+        if "SNAPSHOT" not in dist.version:
+            return
+        modules = DeliveryTree.module_service.get_all(dist)
+        env = [m for m in modules if m.name == "environment"]
+        if not len(env) == 1:
+            return
+        env = env[0]
+        env_files = DeliveryTree.get_files(env)
+        file = None
+        for f in env_files:
+            if (f.type == "plantpl") and (name in f.name):
+                file = f
+                break
+        if file is None:
+            return
+
+        tmp = file.name.split('_')
+        if len(tmp) > 0:
+            prefix = tmp[0]
+            sufix = tmp[1]
+            sufix = sufix[-len(".plan.tpl"):]
+            file.name = prefix + '_' + version + sufix
+            file.save()
+        else:
+            raise "Error, incorrect file name for {}".format(file)
 
     def is_versioned(self):
-        return self.type in ["json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_git_repos", "plan"]
+        return self.type in ["json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_git_repos", "plan", "plantpl"]
 
     def get_properties(self, gettype=False):
         prop = self._get_dir()

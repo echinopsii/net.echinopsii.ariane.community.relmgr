@@ -626,8 +626,6 @@ class AppTest(unittest.TestCase):
         os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -c dump > "
                   "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
 
-
-
     # def test_maxnid(self):
     #     self.ariane.delete_all()
     #     os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "

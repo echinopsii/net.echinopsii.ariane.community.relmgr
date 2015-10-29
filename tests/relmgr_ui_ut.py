@@ -140,3 +140,20 @@ class TestREST(unittest.TestCase):
         p = ariane_delivery.Plugin("procos", "0.1.1-b01")
         d2.add_plugin(p)
         d2.save()
+
+    def test_update_file(self):
+        pass
+
+
+    # def test_add_environment_files(self):
+    #     dist = ariane.distribution_service.get_unique({"version": "0.7.1-SNAPSHOT"})
+    #     modules = ariane.module_service.get_all(dist)
+    #     env_mod = [m for m in modules if m.name == "environment"][0]
+    #     mod_dict = {"directory": "0.6.4.SNAPSHOT", "idm": "0.4.2.SNAPSHOT", "injector": "0.6.4.SNAPSHOT",
+    #                 "portal": "0.6.4.SNAPSHOT", "mapping": "0.6.4.SNAPSHOT", "messaging": "0.1.1.SNAPSHOT"}
+    #     for m in modules:
+    #         if m.name not in mod_dict.keys():
+    #             continue
+    #         env_mod.add_file(ariane_delivery.FileNode("net.echinopsii."+m.get_directory_name()+"_"
+    #                                                   +mod_dict[m.name]+".plan.tpl", "plantpl", m.version,
+    #                                                   "ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/"))

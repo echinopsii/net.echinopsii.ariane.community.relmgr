@@ -92,11 +92,14 @@ class Generator(object):
         self.modules_dict = {}
         self.plugin_dict = {}
         self.distrib_dict = {}
+        self.exception_release_mod = []
+        self.exception_release_plug = []
         self.exception_sub_plan = []
         self.exception_sub_lib = []
         self.exception_mod_file_gen = []
         self.extension_sub_lib = []
         self.exception_vsh = []
+        self.exception_mod_on_dev_only = []
 
     def get_distrib(self, version):
         # if version not in self.distrib_dict.keys():
@@ -112,6 +115,12 @@ class Generator(object):
         if version not in self.plugin_dict.keys():
             self.plugin_dict[version] = self.ariane.plugin_service.get_all(self.get_distrib(version))
         return [p for p in self.plugin_dict[version]]
+
+    def set_release_module_exceptions(self, exce_list):
+        self.exception_release_mod = [e for e in exce_list]
+
+    def set_release_plugin_exceptions(self, exce_list):
+        self.exception_release_plug = [e for e in exce_list]
 
     def get_submodule_lib_extensions(self):
         if self.extension_sub_lib.__len__() == 0:
@@ -136,6 +145,12 @@ class Generator(object):
             with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/module_file_gen_exceptions.json', 'r') as data_file:
                 self.exception_mod_file_gen = json.load(data_file)
         return self.exception_mod_file_gen
+
+    def get_module_on_dev_only(self):
+        if self.exception_mod_on_dev_only.__len__() == 0:
+            with open(Generator.ariane_deliverytool_module_path + "/resources/exceptions/module_gen_on_dev_only_exceptions.json", 'r') as data_file:
+                self.exception_mod_file_gen = json.load(data_file)
+        return self.exception_mod_on_dev_only
 
     def get_vsh_exceptions(self):
         if self.exception_vsh.__len__() == 0:
@@ -191,12 +206,19 @@ class Generator(object):
     def generate_module_files(self, version):
         modules = self.get_modules_list(version)
         file_gen_exception = self.get_module_file_gen_exceptions()
+        mod_on_dev_only = self.get_module_on_dev_only()
+        isSNAPSHOT = "SNAPSHOT" in version
 
         for mod in modules:
-            if mod.name in file_gen_exception:
+            if mod.name in file_gen_exception:  # Currently no exception since 'environment' files are generated
                 continue
-            if Degenerator.is_git_tagged(mod.version, path=self.dir_output+mod.get_directory_name()):
+            if mod.name in self.exception_release_mod:
                 continue
+            if not isSNAPSHOT:
+                if Degenerator.is_git_tagged(mod.version, path=self.dir_output+mod.get_directory_name()):
+                    continue
+                if mod.name in mod_on_dev_only:
+                    continue
             self.ariane.module_service.update_arianenode_lists(mod)
             mod_files = self.ariane.get_files(mod)
             for f in mod_files:
@@ -206,6 +228,8 @@ class Generator(object):
                     self.generate_lib_json(mod, f)
                 elif f.type == "vsh":
                     self.generate_vsh_installer(version, modules, f)
+                elif f.type == "plantpl":
+                    self.generate_plan_tpl(version, f)
                 elif f.type == "pom":
                     grId, artId = self.__generate_pom_mod_plug(mod, f)
 
@@ -219,10 +243,14 @@ class Generator(object):
         :param version:
         :return:
         """
+        isSNAPSHOT = "SNAPSHOT" in version
         plugins = self.get_plugins_list(version)
 
         for plug in plugins:
-            if Degenerator.is_git_tagged(plug.version, path=self.dir_output+plug.get_directory_name()):
+            if not isSNAPSHOT:
+                if Degenerator.is_git_tagged(plug.version, path=self.dir_output+plug.get_directory_name()):
+                    continue
+            if plug.name in self.exception_release_plug:
                 continue
             self.ariane.plugin_service.update_arianenode_lists(plug)
             plug_files = self.ariane.get_files(plug)
@@ -552,6 +580,32 @@ class Generator(object):
         args = {"plugin": {"name": p.name, "version": v}}
 
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
+            target.write(template.render(args))
+
+    def generate_plan_tpl(self, version, fplantpl):
+        # Only for DEV generation
+        if "-SNAPSHOT" not in version:
+            return
+        modules = self.get_modules_list(version)
+        module = None
+        for m in modules:
+            if m.name in fplantpl.name:
+                module = m
+                break
+        if module is None:
+            return
+        if "-SNAPSHOT" not in module.version:
+            return
+        version_tag = module.version[:-len("-SNAPSHOT")]
+        if Degenerator.is_git_tagged(version_tag, path=self.dir_output+module.get_directory_name()):
+            return
+
+        template = self.env.get_template(fplantpl.path+"relmgr_environment_"+module.name+"_template.tpl")
+        m_version = module.version
+        version_point = str(m_version).replace("-", ".")
+        args = {"version": m_version, "version_point": version_point}
+
+        with open(self.dir_output+fplantpl.path+fplantpl.name, 'w') as target:
             target.write(template.render(args))
 
     def compare_files(self, file_type, filename1, filename2):

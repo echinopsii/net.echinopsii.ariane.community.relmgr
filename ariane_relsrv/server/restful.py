@@ -50,8 +50,6 @@ db_export_path = project_path + conf["EXPORT_DB"]
 
 srvlog.setup_logging("log/relsrv_logging_conf.json")
 LOGGER = logging.getLogger(__name__)
-MODULES_TO_TAG = []
-PLUGINS_TO_TAG = []
 
 
 def abort_error(error, msg):
@@ -787,8 +785,13 @@ class ReleaseTools(object):
             for m in dist.list_module:
                 mpath = os.path.join(project_path, m.get_directory_name())
                 last_tag = generator.Degenerator.get_last_tag(path=mpath)
-                if m.version > last_tag:
-                    MODULES_TO_TAG.append(m.name)
+                mversion = m.version
+                if "-SNAPSHOT" in mversion:
+                    mversion = mversion[:-len("-SNAPSHOT")]
+                if mversion > last_tag:
+                    RestCommit.MODULES_TO_TAG.append(m.name)
+                else:
+                    RestGeneration.MODULES_EXCEPTIONS.append(m.name)
 
     @staticmethod
     def create_distrib_copy(d):
@@ -824,20 +827,26 @@ class ReleaseTools(object):
         if snapshot in dev.version:
             return 3  # Same as 2
 
+        newdev = ariane_delivery.DistributionService.copy_distrib(dev)
         dev.editable = "false"
         dev.save()
-        newdev = ariane_delivery.DistributionService.copy_distrib(dev)
         newdev.editable = "true"
+        newdev.version = ReleaseTools.update_version(newdev.version)
         newdev.version += snapshot
+        newdev.save()
         modules = ariane.module_service.get_all(newdev)
-        plugins = ariane.plugin_service.get_all(newdev)
         for m in modules:
+            if snapshot in m.version:
+                newdev.delete()
+                return 3
+            m.version = ReleaseTools.update_version(m.version)
             m.version += snapshot
             m.save()
-        for p in plugins:
-            p.version += snapshot
-            p.save()
-        newdev.save()
+
+        # plugins = ariane.plugin_service.get_all(newdev)
+        # for p in plugins:
+        #     p.version += snapshot
+        #     p.save()
         return newdev
 
     @staticmethod
@@ -912,6 +921,15 @@ class ReleaseTools(object):
         dev.version = cpy_dev.version[len("copyTemp"):]
         dev.save()
 
+    @staticmethod
+    def update_version(version, position="minor", operation="inc"):
+        if position == "minor":
+            v = version.split('.')
+            if operation == "inc":
+                v[-1] = str(int(v[-1]) + 1)  # Increments minor number of the version
+            version = '.'.join(v)
+
+        return version
 
 class RestDistributionManager(Resource):
     """ REST endpoint for Managing Distributions stored in database.
@@ -949,7 +967,7 @@ class RestDistributionManager(Resource):
                 if newdev == 1:
                     abort_error("INTERNAL_ERROR", "Server can not find the actual DEV Distribution")
                 elif newdev in [2, 3]:
-                    abort_error("BAD_REQUEST", "The actual DEV Distribution is already in a '-SNAPSHOT' version")
+                    abort_error("BAD_REQUEST", "A module of the actual DEV Distribution is already in a '-SNAPSHOT' version")
             LOGGER.info("DEV Distribution created in database. Now removing the copy...")
             ReleaseTools.remove_genuine_distrib()
             LOGGER.info("Old Distribution copy was removed")
@@ -993,6 +1011,8 @@ class RestReset(Resource):
 
 
 class RestCommit(Resource):
+    MODULES_TO_TAG = []
+    PLUGINS_TO_TAG = []
     module_test = ariane_delivery.Module("testrepos", "testversion")
     commit_comment = ""
 
@@ -1109,11 +1129,11 @@ class RestCommit(Resource):
                 mod_plugs = ariane.module_service.get_all(dist)
             for m in mod_plugs:
                 if isplugin:
-                    if m.name not in PLUGINS_TO_TAG:
+                    if m.name not in RestCommit.PLUGINS_TO_TAG:
                         LOGGER.warn(m.name+"("+m.version+") not in plugins to tag")
                         continue
                 else:
-                    if m.name not in MODULES_TO_TAG:
+                    if m.name not in RestCommit.MODULES_TO_TAG:
                         LOGGER.warn(m.name+"("+m.version+") not in modules to tag")
                         continue
                     mpath = os.path.join(project_path, m.get_directory_name())
@@ -1290,10 +1310,10 @@ class RestCheckout(Resource):
 
             for m in mod_plugs:
                 if isplugin:
-                    if m.name not in PLUGINS_TO_TAG:
+                    if m.name not in RestCommit.PLUGINS_TO_TAG:
                         continue
                 else:
-                    if m.name not in MODULES_TO_TAG:
+                    if m.name not in RestCommit.MODULES_TO_TAG:
                         continue
                     mpath = os.path.join(project_path, m.get_directory_name())
                     if os.path.exists(mpath):
@@ -1464,8 +1484,8 @@ class RestBuildZip(Resource):
         if os.path.isfile(ftmp_fname):
             os.remove(ftmp_fname)
         os.system("touch "+ftmp_fname)
-        subprocess.Popen("./distribManager.py distpkgr " + version_cmd
-                         + " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname,
+        subprocess.Popen("./distribManager.py distpkgr " + version_cmd,
+                         # + " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname,
                          shell=True,
                          cwd=project_path + "/ariane.community.distrib")
         #print("Build Info in "+ftmp_fname)
@@ -1509,6 +1529,8 @@ class RestBuildZip(Resource):
             abort_error("INTERNAL_ERROR", "Error while building")
 
 class RestGeneration(Resource):
+    MODULES_EXCEPTIONS = []
+
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('command', type=str, help='Command of File Generation')
@@ -1523,7 +1545,13 @@ class RestGeneration(Resource):
         """
         args = self.reqparse.parse_args()
         if args["command"] is not None:
+            RestGeneration.MODULES_EXCEPTIONS = []
+            RestCommit.MODULES_TO_TAG = []
+            if ReleaseTools.make_modules_to_tag_list() == -1:
+                abort_error("INTERNAL_ERROR", "There is no copy of the master SNAPSHOT Distribution")
+
             cmd = command.Command()
+            cmd.g.set_release_module_exceptions(RestGeneration.MODULES_EXCEPTIONS)
             params = args["command"].split(' ')
             if params[0] == "testOK":
                 return make_response(json.dumps({"message": args["command"]}), 200, headers_json)
@@ -1539,8 +1567,7 @@ class RestGeneration(Resource):
             else:
                 abort_error("BAD_REQUEST", "Too few arguments in the given command {}".format(args))
             # Working solution: subprocess.call('python3 ../../bootstrap/command.py ' + args["command"], shell=True)
-            if ReleaseTools.make_modules_to_tag_list() == -1:
-                abort_error("INTERNAL_ERROR", "There is no copy of the master SNAPSHOT Distribution")
+
             return make_response(json.dumps({"message": args["command"]}), 200, headers_json)
 
 
