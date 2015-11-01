@@ -600,7 +600,7 @@ class Generator(object):
         if Degenerator.is_git_tagged(version_tag, path=self.dir_output+module.get_directory_name()):
             return
 
-        template = self.env.get_template(fplantpl.path+"relmgr_environment_"+module.name+"_template.tpl")
+        template = self.env.get_template(fplantpl.path+"relmgr_environment_"+module.name+"_template.yml")
         m_version = module.version
         version_point = str(m_version).replace("-", ".")
         args = {"version": m_version, "version_point": version_point}
