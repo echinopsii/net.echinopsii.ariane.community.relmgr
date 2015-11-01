@@ -97,6 +97,7 @@ class Generator(object):
         self.exception_sub_plan = []
         self.exception_sub_lib = []
         self.exception_mod_file_gen = []
+        self.exception_pom_file_gen = []
         self.extension_sub_lib = []
         self.exception_vsh = []
         self.exception_mod_on_dev_only = []
@@ -139,6 +140,12 @@ class Generator(object):
             with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/submodule_plan_exceptions.json', 'r') as data_file:
                 self.exception_sub_plan = json.load(data_file)
         return self.exception_sub_plan
+
+    def get_module_pom_gen_exceptions(self):
+        if self.exception_pom_file_gen.__len__() == 0:
+            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/pom_file_gen_exceptions.json', 'r') as data_file:
+                self.exception_pom_file_gen = json.load(data_file)
+        return self.exception_pom_file_gen
 
     def get_module_file_gen_exceptions(self):
         if self.exception_mod_file_gen.__len__() == 0:
@@ -273,9 +280,9 @@ class Generator(object):
         :param mod_plug: ariane_delivery.Module or ariane_delivery.Plugin object stored in database
         :return: Nothing
         """
-        file_gen_exception = self.get_module_file_gen_exceptions()
+        pom_gen_exception = self.get_module_pom_gen_exceptions()
 
-        if mod_plug.name not in file_gen_exception:
+        if mod_plug.name not in pom_gen_exception:
             if Degenerator.is_git_tagged(mod_plug.version, path=self.dir_output+mod_plug.get_directory_name()):
                 return
             if type(mod_plug) is ariane_delivery.Module:
@@ -338,7 +345,7 @@ class Generator(object):
         if Degenerator.is_git_tagged(version, path=self.dir_output+fpom.path):
             return
         modules = self.get_modules_list(version)
-        mod_exception = self.get_module_file_gen_exceptions()
+        mod_exception = self.get_module_pom_gen_exceptions()
         for m in modules.copy():
             if m.name in mod_exception:
                 modules.remove(m)
