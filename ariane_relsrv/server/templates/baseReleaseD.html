@@ -35,7 +35,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <button class="btnValidate" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relD')">VALIDATE</button>
     <button class="btnValidate" type="submit" ng-click="clickValidRoll('ROLLBACK', 'relD')">ROLLBACK</button>
     <div>
-        <span ng-if="confirmValRoll.active">Are you sure to {{ confirmValRoll.validRoll}} ? <button ng-click="clickConfirmValidRoll('YES')">YES</button> <button ng-click="clickConfirmValidRoll('NO')">NO</button></span>
+        <span ng-show="confirmValRoll.active && confirmValRoll.validRoll == 'VALIDATE'">Choose your action:
+            <button ng-click="setCmdD('ReleaseOnly');clickConfirmValidRoll('YES')">Release</button>
+            <button ng-click="setCmdD('ReleaseDev');clickConfirmValidRoll('YES')">Release and add new Dev</button>
+        </span>
+        <span ng-show="confirmValRoll.active  && confirmValRoll.validRoll == 'ROLLBACK'">Are you sure to {{ confirmValRoll.validRoll}} ?
+            <button ng-click="clickConfirmValidRoll('YES')">YES</button>
+            <button ng-click="clickConfirmValidRoll('NO')">NO</button>
+        </span>
     </div>
 </div>
 {% endraw %}

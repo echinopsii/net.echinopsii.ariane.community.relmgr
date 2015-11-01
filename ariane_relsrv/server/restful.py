@@ -100,9 +100,6 @@ class TempBaseRelD(Resource):
 class TempBaseRelE(Resource):
     def get(self):
         return make_response(render_template('baseReleaseE.html'), 200, headers_html)
-class TempBaseRelDEV(Resource):
-    def get(self):
-        return make_response(render_template('baseReleaseDEV.html'), 200, headers_html)
 class TempEditViewEdit(Resource):
     def get(self):
         return make_response(render_template('editionViewEdit.html'), 200, headers_html)
@@ -720,7 +717,7 @@ class RestDistributionList(Resource):
             dev = ariane.distribution_service.get_dev_distrib()
             if dev == d:
                 if copy:
-                    LOGGER.info("Creating a copy this distribution in order to work on it")
+                    LOGGER.info("Creating a copy of this distribution in order to work on it")
                     cd = ReleaseTools.create_distrib_copy(d)
                     if cd is None:
                         abort_error("FORBIDDEN", "Distribution copy already exists in database")
@@ -961,6 +958,16 @@ class RestDistributionManager(Resource):
             abort_error("BAD_REQUEST", "You must provide the 'mode' parameter")
         mode = args["mode"]
         if mode == "DEV":
+            dev = ariane.distribution_service.get_dev_distrib()
+            if "-SNAPSHOT" in dev.version:
+                cpy_dev = ariane.distribution_service.get_all()
+                cpy_dev = [cd for cd in cpy_dev if "copyTemp" in cd.version]
+                if len(cpy_dev) == 1:
+                    cpy_dev = cpy_dev[0]
+                else:
+                    abort_error("BAD_REQUEST", "No copy was found in database, can not continue")
+                return make_response(json.dumps({"distrib": dev.get_properties(gettype=True)}), 200, headers_json)
+
             LOGGER.info("Creating the new DEV Distribution...")
             newdev = ReleaseTools.create_dev_distrib()
             if not isinstance(newdev, ariane_delivery.Distribution):
@@ -1596,7 +1603,6 @@ api.add_resource(TempBaseRelB, '/baseRelB.html')
 api.add_resource(TempBaseRelC, '/baseRelC.html')
 api.add_resource(TempBaseRelD, '/baseRelD.html')
 api.add_resource(TempBaseRelE, '/baseRelE.html')
-api.add_resource(TempBaseRelDEV, '/baseRelDEV.html')
 api.add_resource(TempEditViewEdit, '/editionViewEdit.html')
 api.add_resource(TempEditDiff, '/editionDiff.html')
 api.add_resource(TempErr, '/err.html')

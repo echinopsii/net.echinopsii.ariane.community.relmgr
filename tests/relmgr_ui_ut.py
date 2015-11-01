@@ -141,9 +141,17 @@ class TestREST(unittest.TestCase):
         d2.add_plugin(p)
         d2.save()
 
-    def test_update_file(self):
-        pass
-
+    def test_update_modules(self):
+        dist = ariane.distribution_service.get_dev_distrib()
+        modules = ariane.module_service.get_all(dist)
+        version1 = "0.7.1"
+        version2 = "0.4.3"
+        version3 = "0.1.0"
+        mod_dict = {"directory": version1, "mapping": version1, "portal": version1, "injector": version1,
+                    "installer": version1, "environment": version1, "idm": version2, "messaging": version3}
+        for m in modules:
+            m.version = mod_dict[m.name]
+            m.save()
 
     # def test_add_environment_files(self):
     #     dist = ariane.distribution_service.get_unique({"version": "0.7.1-SNAPSHOT"})

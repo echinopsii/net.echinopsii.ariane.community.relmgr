@@ -52,6 +52,7 @@ angular.module('ArianeUI')
         $scope.commandsRelA = {Core: "core_only", Plugins_Only: "plugin_only", TestOK:"testOK", TestNOK: "testNOK"};
         $scope.commandsRelE = {Plugins_Only: "plugin_only"};
         $scope.cmdRelC = {task: null, comment: null, warning: "You must fill everything", warn: false};
+        $scope.cmdRelD = {choice: "ReleaseDev"};
         $scope.cmdRelDEV = {version: null, warning: "You must fill the version field", warn: false};
         $scope.cmdGen = {cmd: $scope.commandsRelA.Core};
         $scope.download = {zip: [], selected: null, click: false};
@@ -75,12 +76,14 @@ angular.module('ArianeUI')
                 if(len_dist != $scope.dists.length) {
                     serviceUI.setMode("DEV");
                     serviceUI.actionBroadcast("changeMode");
+                    serviceUI.setNotifyLog("info","View","You are now in DEV mode");
                     $scope.btnActive.release = false;
                     $scope.btnActive.dev = true;
                 }
                 else{
                     serviceUI.setMode("Release");
                     serviceUI.actionBroadcast("changeMode");
+                    serviceUI.setNotifyLog("info","View","You are now in Release mode");
                     $scope.btnActive.release = true;
                     $scope.btnActive.dev = false;
                 }
@@ -237,7 +240,7 @@ angular.module('ArianeUI')
                 var distrib = serviceUI.getBaseObj();
                 distrib = distrib.node;
                 serviceUI.setNotifyLog("info", "View", "Entering into DEV Edition mode...");
-                serviceAjax.distribManager("", "getDEV")
+                serviceAjax.distribManager("DEV")
                     .success(function(data){
                         $scope.mode = "DEV";
                         $scope.dists = [];
@@ -249,7 +252,7 @@ angular.module('ArianeUI')
                     })
                     .error(function(data){
                         $scope.btnActive.dev = false;
-                        serviceUI.setNotifyLog("error", "View", "Unable to enter into DEV Edition mode. Copying Distribution failed.\nCause: "+data.message);
+                        serviceUI.setNotifyLog("error", "View", "Unable to enter into DEV Edition mode.\nCause: "+data.message);
                     });
             }
                 $scope.btnActive.dev = false;
@@ -331,23 +334,30 @@ angular.module('ArianeUI')
                     else if(pageStates.relD == "tovalid"){
                         if(serviceUI.setState({obj: "release", state:"zip"})){
                             serviceUI.setNotifyLog("info", "ReleaseD", "Entering in DEV mode. Waiting...");
-                            serviceAjax.distribManager("DEV")
-                                .success(function(data){
-                                    $scope.dists = [];
-                                    $scope.dists.push(data.distrib);
-                                    serviceUI.setBaseObj({obj: "default", node: $scope.dists[0]});
-                                    if ($scope.mode == "Release")
-                                        serviceUI.setMode('DEV');
-                                    serviceUI.actionBroadcast('changeMode');
-
-                                    serviceUI.setNotifyLog("info", "ReleaseD", "New DEV Distribution was created");
-                                    if(serviceUI.changePage('release'))
-                                        serviceUI.actionBroadcast('changePage');
-                                    serviceUI.setState({obj: "default", state: "done"});
-                                })
-                                .error(function(data){
-                                    serviceUI.setNotifyLog("error", "ReleaseDEV", "New DEV Distribution creation failed. " + data.message);
-                                });
+                            if($scope.cmdRelD.choice == "ReleaseDev") {
+                                serviceAjax.distribManager("DEV")
+                                    .success(function(data){
+                                        $scope.dists = [];
+                                        $scope.dists.push(data.distrib);
+                                        serviceUI.setBaseObj({obj: "default", node: $scope.dists[0]});
+                                        if ($scope.mode == "Release")
+                                            serviceUI.setMode('DEV');
+                                        serviceUI.actionBroadcast('changeMode');
+                                        serviceUI.setNotifyLog("info", "ReleaseD", "New DEV Distribution was created");
+                                        serviceUI.setPage("view");
+                                        serviceUI.actionBroadcast("changePage");
+                                        serviceUI.setState({obj: "default", state: "done"});
+                                    })
+                                    .error(function(data){
+                                        serviceUI.setNotifyLog("error", "ReleaseDEV", "New DEV Distribution creation failed. " + data.message);
+                                    });
+                            }
+                            else{ // choice == "ReleaseOnly"
+                                serviceUI.setPage("view");
+                                serviceUI.actionBroadcast("changePage");
+                                serviceUI.setNotifyLog("info", "ReleaseD", "Release process is over. Returns to main page");
+                                serviceUI.setState({obj: "default", state: "done"});
+                            }
                         }
                     }
                     // *** The following commented code is used to commit the 'distrib' module,
@@ -454,7 +464,6 @@ angular.module('ArianeUI')
                                 serviceUI.setNotifyLog("error", mode,  "An error occured: " + data.message);
                             });
                     }
-
                 }
             }
         }
@@ -494,12 +503,29 @@ angular.module('ArianeUI')
 
         $scope.TestValidRelC = function(){
             if(serviceUI.setState({obj: "release", state:"zip"})){
-                serviceUI.setNotifyLog("info", "ReleaseC", "FOR TEST: Git tag push validated");
-                $scope.download.zip.push("New_testReleaseC.zip");
-                serviceUI.setState({obj: "default", state: "done"});
-                pageStates.relD = "tovalid";
-                if(serviceUI.changePage('release'))
-                    serviceUI.actionBroadcast('changePage');
+                if($scope.mode == "Release"){
+                    serviceUI.setNotifyLog("info", "ReleaseC", "FOR TEST: Git tag push validated");
+                    $scope.download.zip.push("New_testReleaseC.zip");
+                    serviceUI.setState({obj: "default", state: "done"});
+                    pageStates.relD = "tovalid";
+                    if(serviceUI.changePage('release'))
+                        serviceUI.actionBroadcast('changePage');
+                }
+                else{
+                    serviceUI.setNotifyLog("info", "ReleaseC", "Now removing the copy before entering in Release mode");
+                    serviceAjax.distribManager("other", "removeDEVcopy")
+                        .success(function(data){
+                            $scope.mode = "Release";
+                            serviceUI.setNotifyLog("info", "ReleaseC_DEV", "New DEV Distribution was successfully done");
+                            serviceUI.setPage('view');
+                            serviceUI.actionBroadcast('changePage');
+                        })
+                        .error(function(data){
+                            serviceUI.setNotifyLog("error", "ReleaseC_DEV", "An unexpected error occured");
+                            serviceUI.setPage('view');
+                            serviceUI.actionBroadcast('changePage');
+                        });
+                }
             }
         };
 
@@ -523,6 +549,10 @@ angular.module('ArianeUI')
                     Rollback($scope.confirmValRoll.release);
             }
             $scope.confirmValRoll.active = false;
+        };
+
+        $scope.setCmdD = function (cmd) {
+            $scope.cmdRelD.choice = cmd;
         };
 
         $scope.toggleResetDB = function(){
