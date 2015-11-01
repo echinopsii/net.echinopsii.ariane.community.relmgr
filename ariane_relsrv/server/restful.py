@@ -20,6 +20,7 @@
 
 import os
 import re
+import time
 
 project_path = os.getcwd()
 project_path = project_path[:project_path.index('/ariane.community.relmgr')]
@@ -1463,77 +1464,41 @@ class RestBuildZip(Resource):
             else:
                 version_cmd = version + ".SNAPSHOT"
 
-        path_zip = self.path_zip
-        ReleaseTools.path_zip = path_zip
-        # Rename existing zip
-        filenames = []
-        for (dp, dn, fn) in os.walk(path_zip):
-            filenames = fn
-            break
-        number_files = len(filenames)
-        tmp_copyname = "tmp_renamed_zip.zip"
-        if os.path.isfile(path_zip + tmp_copyname):
-            os.remove(path_zip + tmp_copyname)
-        backup_name = ""
-        if number_files > 0:
-            search_name = "ariane.community.distrib-" + version
-            for fn in filenames:
-                if search_name in fn:
-                    backup_name = fn
-                    shutil.move(path_zip+fn, path_zip+tmp_copyname)
-                    break
-            if backup_name != "":
-                filenames[filenames.index(backup_name)] = tmp_copyname
-
-        # Build new zip with distribManager and print build info into 'infobuild.txt' file
-        ftmp_fname = "infobuildDistpkgr.txt"
-        # remove infobuild.txt if already exists
-        if os.path.isfile(ftmp_fname):
-            os.remove(ftmp_fname)
-        os.system("touch "+ftmp_fname)
-        child = subprocess.Popen("./distribManager.py distpkgr " + version_cmd,
-                         # + " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname,
-                         shell=True,
-                         cwd=project_path + "/ariane.community.distrib")
-        streamdata = child.communicate()[0]
-        rc = child.returncode
-        #print("Build Info in "+ftmp_fname)
-        # Check end of building
         if from_tags:
             timeout = 15 * 60
         else:
             timeout = 2 * 60
-        time = datetime.now().time()
-        stime = time.hour * 3600 + time.minute * 60 + time.second
+
+        # Remove existing zip target directory (recreated by distribmgr)
+        path_zip = self.path_zip
+        ReleaseTools.path_zip = path_zip
+        if os.path.exists(path_zip):
+            shutil.rmtree(path_zip)
+
+        # Build new zip with distribManager and print build info into 'infobuild.txt' file
+        #ftmp_fname = "infobuildDistpkgr.txt"
+        # remove infobuild.txt if already exists
+        #if os.path.isfile(ftmp_fname):
+        #    os.remove(ftmp_fname)
+        #os.system("touch "+ftmp_fname)
+        child = subprocess.Popen("./distribManager.py distpkgr " + version_cmd,
+                         # + " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname,
+                         shell=True,
+                         cwd=project_path + "/ariane.community.distrib")
+        streamdata = child.communicate(timeout=timeout)[0]
         build_done = False
-        new_filenames = []
-        while not build_done:
-            for (dp, dn, fn) in os.walk(path_zip): # TIMEOUT loop
-                # if a new file is created, building is done
-                if len(fn) > number_files:
-                    build_done = True
-                    new_filenames = fn
-            # timeout condition
-            stime2 = datetime.now().time()
-            stime2 = stime2.hour * 3600 + stime2.minute * 60 + stime2.second
-            timediff = stime2 - stime
-            if (rc != 0) or (timediff > timeout):
-                break
-                #if timediff > 3:  # FOR TEST
-                #    shutil.copy(path_zip+filenames[0], path_zip+'aladin.zip')
+        rc = child.returncode
+        if rc == 0:
+            for (dp, dn, fn) in os.walk(path_zip):
+                if len(fn) == 1:
+                     ReleaseTools.zipfile = fn[0]
+                     build_done = True
+                     break
+        #print("Build Info in "+ftmp_fname)
+
         if build_done:
-            # get name of the new file
-            zipfile = [f for f in new_filenames if f not in filenames][0]
-            ReleaseTools.zipfile = zipfile
-            # delete copied file or rename it as before
-            if number_files > 0:
-                if (zipfile == backup_name) and (tmp_copyname in new_filenames):
-                    os.remove(path_zip+tmp_copyname)
-                else:
-                    if (zipfile != backup_name) and (tmp_copyname in new_filenames):
-                        shutil.move(path_zip+tmp_copyname, path_zip+backup_name)
             LOGGER.info("Build success")
-            return make_response(json.dumps({"zip": zipfile, "message": "Build Success"}), 200, headers_json)
+            return make_response(json.dumps({"zip": ReleaseTools.zipfile, "message": "Build Success"}), 200, headers_json)
         else:
             abort_error("INTERNAL_ERROR", "Error while building")
 
