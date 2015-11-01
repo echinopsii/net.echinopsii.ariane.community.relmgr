@@ -1498,7 +1498,7 @@ class RestBuildZip(Resource):
         #print("Build Info in "+ftmp_fname)
         # Check end of building
         if from_tags:
-            timeout = 6 * 60
+            timeout = 15 * 60
         else:
             timeout = 2 * 60
         time = datetime.now().time()
