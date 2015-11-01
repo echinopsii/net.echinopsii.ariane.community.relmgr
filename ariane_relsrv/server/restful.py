@@ -1491,10 +1491,12 @@ class RestBuildZip(Resource):
         if os.path.isfile(ftmp_fname):
             os.remove(ftmp_fname)
         os.system("touch "+ftmp_fname)
-        subprocess.Popen("./distribManager.py distpkgr " + version_cmd,
+        child = subprocess.Popen("./distribManager.py distpkgr " + version_cmd,
                          # + " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname,
                          shell=True,
                          cwd=project_path + "/ariane.community.distrib")
+        streamdata = child.communicate()[0]
+        rc = child.returncode
         #print("Build Info in "+ftmp_fname)
         # Check end of building
         if from_tags:
@@ -1515,7 +1517,7 @@ class RestBuildZip(Resource):
             stime2 = datetime.now().time()
             stime2 = stime2.hour * 3600 + stime2.minute * 60 + stime2.second
             timediff = stime2 - stime
-            if timediff > timeout:
+            if (rc != 0) or (timediff > timeout):
                 break
                 #if timediff > 3:  # FOR TEST
                 #    shutil.copy(path_zip+filenames[0], path_zip+'aladin.zip')
