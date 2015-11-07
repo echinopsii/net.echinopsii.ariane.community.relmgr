@@ -20,7 +20,6 @@
 
 import os
 import re
-import time
 
 project_path = os.getcwd()
 project_path = project_path[:project_path.index('/ariane.community.relmgr')]
@@ -36,7 +35,7 @@ from ariane_reltreelib.generator import generator
 from bootstrap import command
 import json
 import subprocess
-from datetime import datetime
+from datetime import date
 import logging
 from ariane_relsrv.server.log import log_setup as srvlog
 
@@ -852,8 +851,14 @@ class ReleaseTools(object):
         dcopies = ariane.distribution_service.get_all()
         if len(dcopies) > 0:
             dcopies = [d for d in dcopies if "copyTemp" in d.version]
+            if len(dcopies) > 1:
+                LOGGER.warn("MULTIPLE DISTRIB COPIES WERE FOUND IN DATABASE")
+            if len(dcopies) == 0:
+                return -1
             for d in dcopies:
                 d.delete()
+            return 0
+        return -2
 
     @staticmethod
     def remove_distrib_copy(cd):
@@ -929,6 +934,24 @@ class ReleaseTools(object):
 
         return version
 
+    @staticmethod
+    def export_new_distrib():
+        todaydate = date.today().strftime("%d%m%y")
+        path = project_path + db_export_path
+        backp = os.getcwd()
+        LOGGER.info("Trying to copy and create the new 'all.cypher' file into " + path)
+        if os.path.exists(path):
+            print("path ok")
+            os.chdir(path)
+            fname = "all_"+todaydate+".cypher"
+            shutil.copy("all.cypher", fname)
+            os.system(neo4j_path+"/bin/neo4j-shell -c dump > " + path +"all.cypher")
+            os.chdir(backp)
+            LOGGER.info("IN "+path+": file 'all.cypher' was copied to '"+fname+"'. New all.cypher was "
+                        "created from the new Distribution")
+        else:
+            LOGGER.warn("COULD NOT CREATED THE NEW .cypher: path= '"+path+"' DOES NOT EXIST")
+
 class RestDistributionManager(Resource):
     """ REST endpoint for Managing Distributions stored in database.
         mode = DEV: Validation of the newly released distribution and creation of the new DEV distribution based on the
@@ -963,9 +986,7 @@ class RestDistributionManager(Resource):
             if "-SNAPSHOT" in dev.version:
                 cpy_dev = ariane.distribution_service.get_all()
                 cpy_dev = [cd for cd in cpy_dev if "copyTemp" in cd.version]
-                if len(cpy_dev) == 1:
-                    cpy_dev = cpy_dev[0]
-                else:
+                if len(cpy_dev) != 1:
                     abort_error("BAD_REQUEST", "No copy was found in database, can not continue")
                 return make_response(json.dumps({"distrib": dev.get_properties(gettype=True)}), 200, headers_json)
 
@@ -978,7 +999,7 @@ class RestDistributionManager(Resource):
                     abort_error("BAD_REQUEST", "A module of the actual DEV Distribution is already in a '-SNAPSHOT' version")
             LOGGER.info("DEV Distribution created in database. Now removing the copy...")
             ReleaseTools.remove_genuine_distrib()
-            LOGGER.info("Old Distribution copy was removed")
+            LOGGER.info("Old Distribution copy was removed. Start copying the new DEV distribution...")
             newdevcp = ReleaseTools.create_distrib_copy(newdev)
             if not isinstance(newdev, ariane_delivery.Distribution):
                 if newdevcp == -1:
@@ -986,7 +1007,8 @@ class RestDistributionManager(Resource):
                                                   "database: A copy already exists.")
                 abort_error("INTERNAL_ERROR", "Error occured while copying the New DEV Distribution into the database")
 
-            LOGGER.info("New Distribution copy was created. Now working on the DEV Distribution copy")
+            LOGGER.info("New DEV Distribution copy was created. Now working on this copy")
+            ReleaseTools.export_new_distrib()
             return make_response(json.dumps({"distrib": newdevcp.get_properties(gettype=True)}), 200, headers_json)
 
         elif action == "getDEV":
@@ -996,7 +1018,11 @@ class RestDistributionManager(Resource):
             return make_response(json.dumps({"distrib": dev.get_properties(gettype=True)}), 200, headers_json)
 
         elif action == "removeDEVcopy":
-            ReleaseTools.remove_genuine_distrib()
+            err = ReleaseTools.remove_genuine_distrib()
+            if err < 0:
+                abort_error("INTERNAL_ERROR", "UNABLE TO REMOVE THE DATABASE DISTRIBTUTION COPY")
+            LOGGER.info("The current distribution copy in database was removed")
+            ReleaseTools.export_new_distrib()
             return make_response(json.dumps({}), 200, headers_json)
 
         else:

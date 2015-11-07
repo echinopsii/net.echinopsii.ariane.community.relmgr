@@ -22,7 +22,8 @@ __author__ = 'stanrenia'
 import unittest
 import requests
 import subprocess
-import os
+import os, shutil
+from datetime import date
 from ariane_reltreelib.dao import ariane_delivery
 from ariane_relsrv.server.restful import project_path
 from ariane_relsrv.server.restful import ariane, ReleaseTools
@@ -35,8 +36,15 @@ class TestREST(unittest.TestCase):
                   "/home/ikito/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
 
     def test_export_new_distrib(self):
-        os.system("/home/ikito/ECHINOPSII/srenia/neo4j-community-2.2.6/bin/neo4j-shell -c dump > "
+        todaydate = date.today().strftime("%d%m%y")
+        path = os.path.join(project_path, "ariane.community.relmgr", "bootstrap", "dependency_db")
+        backp = os.getcwd()
+        if os.path.exists(path):
+            os.chdir(path)
+            shutil.copy("all.cypher", "all_"+todaydate+".cypher")
+            os.system("/home/ikito/ECHINOPSII/srenia/neo4j-community-2.2.6/bin/neo4j-shell -c dump > "
                   "/home/ikito/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
+            os.chdir(backp)
 
     def test_checkout_files(self):
         version = "0.7.0"
@@ -153,15 +161,10 @@ class TestREST(unittest.TestCase):
             m.version = mod_dict[m.name]
             m.save()
 
-    # def test_add_environment_files(self):
-    #     dist = ariane.distribution_service.get_unique({"version": "0.7.1-SNAPSHOT"})
-    #     modules = ariane.module_service.get_all(dist)
-    #     env_mod = [m for m in modules if m.name == "environment"][0]
-    #     mod_dict = {"directory": "0.6.4.SNAPSHOT", "idm": "0.4.2.SNAPSHOT", "injector": "0.6.4.SNAPSHOT",
-    #                 "portal": "0.6.4.SNAPSHOT", "mapping": "0.6.4.SNAPSHOT", "messaging": "0.1.1.SNAPSHOT"}
-    #     for m in modules:
-    #         if m.name not in mod_dict.keys():
-    #             continue
-    #         env_mod.add_file(ariane_delivery.FileNode("net.echinopsii."+m.get_directory_name()+"_"
-    #                                                   +mod_dict[m.name]+".plan.tpl", "plantpl", m.version,
-    #                                                   "ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/"))
+    def test_add_environment_files(self):
+        dist = ariane.distribution_service.get_unique({"version": "0.7.1-SNAPSHOT"})
+        modules = ariane.module_service.get_all(dist)
+        env_mod = [m for m in modules if m.name == "environment"][0]
+        # ariane.module_service.ariane_updatenode_list(env_mod)
+        for m in modules:
+                ariane_delivery.FileNode.update_environment_filename(m.name, m.version)
