@@ -41,7 +41,22 @@ class TestREST(unittest.TestCase):
         backp = os.getcwd()
         if os.path.exists(path):
             os.chdir(path)
-            shutil.copy("all.cypher", "all_"+todaydate+".cypher")
+            fname = "all_"+todaydate+".cypher"
+            if os.path.isfile(fname):
+                same_files = []
+                for (dp, dn, fn) in os.walk("."):
+                    same_files = [f for f in fn if todaydate in f]
+                    same_files = sorted(same_files, reverse=True)
+                    break
+                if len(same_files) == 1:
+                    fname = same_files[0].split('.')
+                    fname = fname[0] + '_1.cypher'
+                else:
+                    tmp = same_files[0].split('_')
+                    tmp = tmp[-1].split('.')
+                    tmp = str(int(tmp[0])+1)
+                    fname = "all_"+todaydate+"_"+tmp+".cypher"
+            shutil.copy("all.cypher", fname)
             os.system("/home/ikito/ECHINOPSII/srenia/neo4j-community-2.2.6/bin/neo4j-shell -c dump > "
                   "/home/ikito/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
             os.chdir(backp)
@@ -53,6 +68,7 @@ class TestREST(unittest.TestCase):
         print(r.status_code, r.reason, r.text)
 
     def test_tag_clean_cmd(self):
+        tagANDmaster = False
         mcore = ["directory", "mapping", "portal", "injector", "idm"]
         mods = ["installer", "environment"]
         mlist = ["directory", "mapping", "portal", "injector", "idm"]
@@ -72,6 +88,9 @@ class TestREST(unittest.TestCase):
                     if subprocess.call("git push origin :refs/tags/" + mod.version, shell=True, cwd=path) == 0:
                         subprocess.call("git reset --hard HEAD~1", shell=True, cwd=path)
                         subprocess.call("git push --force origin master", shell=True, cwd=path)
+            if tagANDmaster:
+                subprocess.call("git reset --hard HEAD~1", shell=True, cwd=path)
+                subprocess.call("git push --force origin master", shell=True, cwd=path)
 
     def test_maven_build(self):
         # subprocess.Popen("./distribManager.py distpkgr " + "0.7.0.SNAPSHOT" + " "
@@ -99,7 +118,7 @@ class TestREST(unittest.TestCase):
             m.save()
 
     def test_show_tags(self):
-        dist = ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
+        dist = ariane.distribution_service.get_unique({"version": "0.7.1"})
         dpath = ReleaseTools.get_distrib_path(dist)
         tags = subprocess.check_output("git tag", shell=True, cwd=os.path.join(project_path, dpath))
         tags = tags.decode()

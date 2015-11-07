@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 <span>{{modeTitle.selected}}</span>
 <hr class="separateur">
 <div class="centerize">
-    <div> Download Section:
+    <div ng-if="mode == 'Release'"> Download Section:
         <form id="formdownload" action="/rest/getdelzip" method="post">
             <select ng-model="download.selected" ng-options="name for name in download.zip"></select>
             <button type="submit" ng-disabled="download.selected == null" ng-click="clickDownload()">Download!</button>
@@ -38,7 +38,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </span>
         <div class="input_warning" ng-if="cmdRelC.warn">{{ cmdRelC.warning }}</div>
     <hr class="separateur">
-    <button ng-click="TestValidRelC()">TestValidTags</button>
+    <button ng-if="CONFIG.mode == 'test'" ng-click="TestValidRelC()">TestValidTags</button>
     <button class="btnValidate" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relC')">VALIDATE</button>
     <button class="btnValidate" type="submit" ng-click="clickValidRoll('ROLLBACK', 'relC')">ROLLBACK</button>
     <div>

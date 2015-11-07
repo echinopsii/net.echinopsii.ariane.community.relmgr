@@ -937,13 +937,26 @@ class ReleaseTools(object):
     @staticmethod
     def export_new_distrib():
         todaydate = date.today().strftime("%d%m%y")
-        path = project_path + db_export_path
+        path = db_export_path
         backp = os.getcwd()
         LOGGER.info("Trying to copy and create the new 'all.cypher' file into " + path)
         if os.path.exists(path):
-            print("path ok")
             os.chdir(path)
             fname = "all_"+todaydate+".cypher"
+            if os.path.isfile(fname):
+                same_files = []
+                for (dp, dn, fn) in os.walk("."):
+                    same_files = [f for f in fn if todaydate in f]
+                    same_files = sorted(same_files, reverse=True)
+                    break
+                if len(same_files) == 1:
+                    fname = same_files[0].split('.')
+                    fname = fname[0] + '_1.cypher'
+                else:
+                    tmp = same_files[0].split('_')
+                    tmp = tmp[-1].split('.')
+                    tmp = str(int(tmp[0])+1)
+                    fname = "all_"+todaydate+"_"+tmp+".cypher"
             shutil.copy("all.cypher", fname)
             os.system(neo4j_path+"/bin/neo4j-shell -c dump > " + path +"all.cypher")
             os.chdir(backp)

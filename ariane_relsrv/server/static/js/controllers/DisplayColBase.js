@@ -26,6 +26,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 angular.module('ArianeUI')
     .controller('DisplayColBaseCtrl', function ($scope, serviceAjax, serviceUI) {
+        // config
+        $scope.CONFIG = {mode: "release"};
         // data
         $scope.dists = [];
         var plugins = [];
@@ -36,7 +38,7 @@ angular.module('ArianeUI')
         $scope.activeEdit = false;
         $scope.page = 'view';
         $scope.mode = "Release";  // mode = "Release" | "DEV"
-        var pageStates = {relD: "tobuild"};
+        $scope.pageStates = {relD: "tobuild"};
         var pageErrors = {relC: "", relD: ""};
         $scope.modeTitle = {selected: "", releaseA: "Edition - Validate to generate files", releaseB: "Check file differences - Validate to build zip",
                             releaseC: "Download zip - Validate to commit+tag+push files", releaseD: "Validate to build zip from tags",
@@ -65,6 +67,9 @@ angular.module('ArianeUI')
         /* ********************* Main FUNCTIONS ********************* */
         (function init(){
             loadDistribs();
+            if($scope.CONFIG != 'test'){
+                $scope.commandsRelA = {Core: "core_only"};
+            }
         })();
         function loadDistribs(callFunction){
             serviceAjax.distrib('').success(function(data) // Init: loading data (distributions ans plugins)
@@ -327,11 +332,11 @@ angular.module('ArianeUI')
             }
             else if(release == "relD"){
                 if(serviceUI.setState({obj: "release", state:"zip"})) {
-                    if(pageStates.relD == "tobuild"){
+                    if($scope.pageStates.relD == "tobuild"){
                         serviceUI.setNotifyLog("info", "ReleaseD", "Now building the new zip file from tags. Waiting...");
                         callBuildZip(release, true);
                     }
-                    else if(pageStates.relD == "tovalid"){
+                    else if($scope.pageStates.relD == "tovalid"){
                         if(serviceUI.setState({obj: "release", state:"zip"})){
                             serviceUI.setNotifyLog("info", "ReleaseD", "Entering in DEV mode. Waiting...");
                             if($scope.cmdRelD.choice == "ReleaseDev") {
@@ -365,7 +370,7 @@ angular.module('ArianeUI')
                         /*serviceAjax.commit($scope.mode, true, $scope.cmdRelC.task, $scope.cmdRelC.comment)
                             .success(function(data){
                                 serviceUI.setNotifyLog("info", "ReleaseD", data.message);*/
-                                //pageStates.relD = "build";
+                                //$scope.pageStates.relD = "build";
                         //})
                             /*.error(function(data){
                                 pageErrors.relD = "error_tag_distrib";
@@ -412,7 +417,7 @@ angular.module('ArianeUI')
                         serviceUI.setNotifyLog("error", mode,  "An error occured: " + data.message);
                     });
             }
-            if(($scope.mode == "Release") && (release == "relD" && pageStates.relD != "tobuild")){
+            if(($scope.mode == "Release") && (release == "relD" && $scope.pageStates.relD != "tobuild")){
                 serviceAjax.deleteZip($scope.dists[0].version)
                     .success(function(data){  // Handle multiple zip files.
                         var filename = data.zip;
@@ -427,7 +432,7 @@ angular.module('ArianeUI')
                     })
                     .error(function(data){serviceUI.setNotifyLog("error", "releaseC", "Error while deleting zip file" + data.message)});
             }
-            pageStates.relD = "tobuild";
+            $scope.pageStates.relD = "tobuild";
             if(release == "relD" || release == "relC" || release == "relB" || release == "relA"){
                 if(serviceUI.setState({obj: "release", state:"generation"})){
                     if($scope.mode == "Release"){
@@ -482,7 +487,7 @@ angular.module('ArianeUI')
                     }
                     else {
                         serviceUI.setNotifyLog("info", "ReleaseD", "Build of zip (from TAG) done!");
-                        pageStates.relD = "tovalid";
+                        $scope.pageStates.relD = "tovalid";
                     }
                 })
                 .error(function(data){
@@ -507,7 +512,7 @@ angular.module('ArianeUI')
                     serviceUI.setNotifyLog("info", "ReleaseC", "FOR TEST: Git tag push validated");
                     $scope.download.zip.push("New_testReleaseC.zip");
                     serviceUI.setState({obj: "default", state: "done"});
-                    pageStates.relD = "tovalid";
+                    $scope.pageStates.relD = "tovalid";
                     if(serviceUI.changePage('release'))
                         serviceUI.actionBroadcast('changePage');
                 }

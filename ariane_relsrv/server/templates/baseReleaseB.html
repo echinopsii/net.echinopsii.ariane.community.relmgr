@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </div>
     <hr class="separateur">-->
     <!--<button ng-click="clickTestValidate()">TestValidate</button>-->
-    <button ng-click="TestValidRelB()">TestBuildZip</button>
+    <button ng-if="CONFIG.mode == 'test'" ng-click="TestValidRelB()">TestBuildZip</button>
     <button class="btnValidate" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relB')">VALIDATE</button>
     <button class="btnValidate" type="submit" ng-click="clickValidRoll('ROLLBACK', 'relB')">ROLLBACK</button>
     <div>

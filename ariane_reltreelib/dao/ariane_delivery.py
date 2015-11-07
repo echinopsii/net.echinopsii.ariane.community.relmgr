@@ -1770,6 +1770,7 @@ class FileNode(object):
             prefix = tmp[0]
             sufix = tmp[1]
             sufix = sufix[-len(".plan.tpl"):]
+            version = version.replace('-', '.')
             file.name = prefix + '_' + version + sufix
             file.save()
         else:

@@ -215,6 +215,7 @@ class Generator(object):
         file_gen_exception = self.get_module_file_gen_exceptions()
         mod_on_dev_only = self.get_module_on_dev_only()
         isSNAPSHOT = "SNAPSHOT" in version
+        flag_clean_env = True
 
         for mod in modules:
             if mod.name in file_gen_exception:  # Currently no exception since 'environment' files are generated
@@ -236,6 +237,9 @@ class Generator(object):
                 elif f.type == "vsh":
                     self.generate_vsh_installer(version, modules, f)
                 elif f.type == "plantpl":
+                    if flag_clean_env:
+                        self.__clean_environment_files(self.dir_output + f.path)
+                        flag_clean_env = False
                     self.generate_plan_tpl(version, f)
                 elif f.type == "pom":
                     grId, artId = self.__generate_pom_mod_plug(mod, f)
@@ -606,7 +610,7 @@ class Generator(object):
         version_tag = module.version[:-len("-SNAPSHOT")]
         if Degenerator.is_git_tagged(version_tag, path=self.dir_output+module.get_directory_name()):
             return
-
+        # net.echinopsii.ariane.community.core.directory_0.7.2-SNAPSHOT.plan.tpl
         template = self.env.get_template(fplantpl.path+"relmgr_environment_"+module.name+"_template.yml")
         m_version = module.version
         version_point = str(m_version).replace("-", ".")
@@ -614,6 +618,17 @@ class Generator(object):
 
         with open(self.dir_output+fplantpl.path+fplantpl.name, 'w') as target:
             target.write(template.render(args))
+
+    def __clean_environment_files(self, envpath):
+        if os.path.exists(envpath):
+            envfiles = []
+            for (df, dp, fn) in os.walk(envpath):
+                envfiles = [f for f in fn if f.endswith('.plan.tpl')]
+                break
+            for ef in envfiles:
+                fpath = os.path.join(envpath, ef)
+                if os.path.isfile(fpath):
+                    os.remove(fpath)
 
     def compare_files(self, file_type, filename1, filename2):
         with open(filename1, 'r') as file1:
