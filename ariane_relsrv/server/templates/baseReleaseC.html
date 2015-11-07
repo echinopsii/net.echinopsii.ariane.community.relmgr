@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <button type="submit" ng-disabled="download.selected == null" ng-click="clickDownload()">Download!</button>
         </form>
     </div>
-    <hr class="separateur">
+    <hr ng-if="mode == 'Release'" class="separateur">
     <span>
         Commit - <label for="task">Task</label><input type="text" id="task" ng-model="cmdRelC.task"/>
           <label for="comment">Comments</label><input type="text" id="comment" ng-model="cmdRelC.comment"/>
@@ -40,7 +40,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <hr class="separateur">
     <button ng-if="CONFIG.mode == 'test'" ng-click="TestValidRelC()">TestValidTags</button>
     <button class="btnValidate" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relC')">VALIDATE</button>
-    <button class="btnValidate" type="submit" ng-click="clickValidRoll('ROLLBACK', 'relC')">ROLLBACK</button>
+    <button class="btnValidate" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('ROLLBACK', 'relC')">ROLLBACK</button>
     <div>
         <span ng-if="confirmValRoll.active">Are you sure to {{ confirmValRoll.validRoll}} ? <button ng-click="clickConfirmValidRoll('YES')">YES</button> <button ng-click="clickConfirmValidRoll('NO')">NO</button></span>
     </div>

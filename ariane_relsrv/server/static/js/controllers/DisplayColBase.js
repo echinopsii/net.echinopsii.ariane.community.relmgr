@@ -257,6 +257,8 @@ angular.module('ArianeUI')
                     })
                     .error(function(data){
                         $scope.btnActive.dev = false;
+                        serviceUI.setPage("view");
+                        serviceUI.actionBroadcast("changePage");
                         serviceUI.setNotifyLog("error", "View", "Unable to enter into DEV Edition mode.\nCause: "+data.message);
                     });
             }
@@ -283,6 +285,7 @@ angular.module('ArianeUI')
                                 serviceUI.actionBroadcast('changePage');
                         })
                         .error(function(data){
+                            $scope.confirmValRoll.disableVal = false;
                             serviceUI.setState({obj: "default", state: "done"});
                             serviceUI.setNotifyLog("error", "ReleaseA", "An error occured: " + data.message);
                         });
@@ -293,6 +296,7 @@ angular.module('ArianeUI')
                     if($scope.mode == "Release")
                         callBuildZip(release, false);
                     else{
+                        $scope.confirmValRoll.disableVal = false;
                         if(serviceUI.changePage('release'))
                             serviceUI.actionBroadcast('changePage');
                     }
@@ -317,14 +321,14 @@ angular.module('ArianeUI')
                                             serviceUI.actionBroadcast('changePage');
                                         })
                                         .error(function(data){
-                                            serviceUI.setNotifyLog("error", "ReleaseC_DEV", "An unexpected error occured");
-                                            serviceUI.setPage('view');
-                                            serviceUI.actionBroadcast('changePage');
+                                            serviceUI.setNotifyLog("error", "ReleaseC_DEV", "An error occured while pushing the new master\n"
+                                            + ": " + data.message);
                                         });
                                 }
                             })
                             .error(function(data){
                                 pageErrors.relC = "error_tag";
+                                $scope.confirmValRoll.disableVal = false;
                                 serviceUI.setNotifyLog("error", "ReleaseC", "Error while committing distribution: " + data.message);
                                 serviceUI.setState({obj: "default", state: "done"});
                             });
@@ -334,6 +338,7 @@ angular.module('ArianeUI')
                 if(serviceUI.setState({obj: "release", state:"zip"})) {
                     if($scope.pageStates.relD == "tobuild"){
                         serviceUI.setNotifyLog("info", "ReleaseD", "Now building the new zip file from tags. Waiting...");
+                        $scope.confirmValRoll.disableVal = false;
                         callBuildZip(release, true);
                     }
                     else if($scope.pageStates.relD == "tovalid"){
@@ -349,7 +354,7 @@ angular.module('ArianeUI')
                                             serviceUI.setMode('DEV');
                                         serviceUI.actionBroadcast('changeMode');
                                         serviceUI.setNotifyLog("info", "ReleaseD", "New DEV Distribution was created");
-                                        serviceUI.setPage("view");
+                                        serviceUI.setPage("releaseA");
                                         serviceUI.actionBroadcast("changePage");
                                         serviceUI.setState({obj: "default", state: "done"});
                                     })
@@ -412,6 +417,7 @@ angular.module('ArianeUI')
                     .error(function(data){
                         var mode = 'Release' + release[release.indexOf('rel')];
                         serviceUI.setState({obj: "default", state: "done"});
+                        $scope.confirmValRoll.disableVal = false;
                         if(serviceUI.changePage('rollback'))
                             serviceUI.actionBroadcast('changePage');
                         serviceUI.setNotifyLog("error", mode,  "An error occured: " + data.message);
@@ -421,6 +427,7 @@ angular.module('ArianeUI')
                 serviceAjax.deleteZip($scope.dists[0].version)
                     .success(function(data){  // Handle multiple zip files.
                         var filename = data.zip;
+                        $scope.confirmValRoll.disableVal = false;
                         for(var i=0, len=$scope.download.zip.length;i<len;i++){
                             if($scope.download.zip[i] == filename){
                                 $scope.download.zip[i] = "";
@@ -430,7 +437,10 @@ angular.module('ArianeUI')
                         $scope.download.zip = $scope.download.zip.filter(function(e){ return e != "";});
                         serviceUI.setNotifyLog("info", "releaseC", data.message);
                     })
-                    .error(function(data){serviceUI.setNotifyLog("error", "releaseC", "Error while deleting zip file" + data.message)});
+                    .error(function(data){
+                        $scope.confirmValRoll.disableVal = false;
+                        serviceUI.setNotifyLog("error", "releaseC", "Error while deleting zip file" + data.message)
+                    });
             }
             $scope.pageStates.relD = "tobuild";
             if(release == "relD" || release == "relC" || release == "relB" || release == "relA"){
@@ -538,7 +548,7 @@ angular.module('ArianeUI')
             $scope.confirmValRoll.validRoll = validRoll;
             $scope.confirmValRoll.release = release;
             $scope.confirmValRoll.active = true;
-            if(release == "relC" && $scope.mode == "Release"){
+            if(release == "relC" && $scope.mode == "Release" && validRoll == "VALIDATE"){
                 if ($scope.cmdRelC.comment == null || $scope.cmdRelC.task == null || $scope.cmdRelC.comment == "" || $scope.cmdRelC.task == ""){
                     $scope.cmdRelC.warn = true;
                     $scope.confirmValRoll.active = false;
@@ -548,6 +558,7 @@ angular.module('ArianeUI')
         };
         $scope.clickConfirmValidRoll = function(choice){
             if(choice == "YES"){
+                $scope.confirmValRoll.disableVal = true;
                 if($scope.confirmValRoll.validRoll == "VALIDATE")
                     Validate($scope.confirmValRoll.release);
                 else if($scope.confirmValRoll.validRoll == "ROLLBACK")
