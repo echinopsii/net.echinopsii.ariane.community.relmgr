@@ -38,18 +38,18 @@ angular.module('ArianeUI')
         $scope.editionTemplate = editionTemplates[0];
         var templateErr = "err.html";
         var editablesView = {
-            module: ['name', 'version', 'order', 'git_repos', 'type'],
+            module: ['name', 'version', 'type'],
             plugin: ["name", "version"],
             submodule: ['name', 'version', 'groupId', 'artifactId', 'order'],
             filenode: ["name", "type", "path"],
-            distrib: ["name", "version"]
+            distrib: ["name", "version", "url_repos"]
         };
         var editablesForNewNode = {
-            module: ['name', 'version', 'order', 'git_repos', 'type'],
+            module: ['name', 'version', 'order', 'type'],
             plugin: ["name", "version"],
             submodule: ["name", "order"],
             filenode: ["name", "version", "type", "path"],
-            distrib: ["name", "version"]
+            distrib: ["name", "version", "url_repos"]
         };
         $scope.filediff = {diff: [{line: "", color: ""}], message: ""};
         /* ********************* EVENTS ********************* */

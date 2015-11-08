@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 angular.module('ArianeUI')
     .controller('DisplayColBaseCtrl', function ($scope, serviceAjax, serviceUI) {
         // config
-        $scope.CONFIG = {mode: "test"};
+        $scope.CONFIG = {mode: "release"};
         // data
         $scope.dists = [];
         var plugins = [];
@@ -43,7 +43,7 @@ angular.module('ArianeUI')
         $scope.modeTitle = {selected: "", Release:{ releaseA: "Edition - Validate to generate files", releaseB: "Check file differences - Validate to build zip",
                             releaseC: "Download zip - Validate to commit+tag+push files", releaseD: "Validate to build zip from tags",
                             releaseE: "Manage Plugins"},
-                            DEV:{releaseA: "Edition - Validate to generate files", releaseB: "Check file differences",
+                            DEV:{releaseA: "Edition - Validate to generate files", releaseB: "Check file differences - Validate to execute 'mvn clean install'",
                                 releaseC: "Validate to commit+push master files"}};
         // templates
         var baseTemplates = [{name: 'view', url:'baseEdition.html'}, {name:'releaseA', url:'baseRelA.html'}, {name:'releaseB', url:'baseRelB.html'},
@@ -69,9 +69,6 @@ angular.module('ArianeUI')
         /* ********************* Main FUNCTIONS ********************* */
         (function init(){
             loadDistribs();
-            if($scope.CONFIG != 'test'){
-                $scope.commandsRelA = {Core: "core_only"};
-            }
         })();
         function loadDistribs(callFunction){
             serviceAjax.distrib('').success(function(data) // Init: loading data (distributions ans plugins)
@@ -298,9 +295,18 @@ angular.module('ArianeUI')
                     if($scope.mode == "Release")
                         callBuildZip(release, false);
                     else{
-                        $scope.confirmValRoll.disableVal = false;
-                        if(serviceUI.changePage('release'))
-                            serviceUI.actionBroadcast('changePage');
+                        serviceUI.setNotifyLog("info", "ReleaseA", "Running 'mvn clean install' ...");
+                        serviceAjax.buildZip($scope.dists[0].version, false, "mvncleaninstall")
+                            .success(function(data){
+                                $scope.confirmValRoll.disableVal = false;
+                                serviceUI.setNotifyLog("info", "ReleaseA", "'mvn clean install' succeeded");
+                                if(serviceUI.changePage('release'))
+                                    serviceUI.actionBroadcast('changePage');
+                            })
+                            .error(function(data){
+                                $scope.confirmValRoll.disableVal = false;
+                                serviceUI.setNotifyLog("error", "ReleaseA", "An error occured while running 'mvn clean install': " + data.message);
+                            });
                     }
                 }
             }
@@ -485,7 +491,7 @@ angular.module('ArianeUI')
             }
         }
         function callBuildZip(release, flag){
-            serviceAjax.buildZip($scope.dists[0].version, flag)
+            serviceAjax.buildZip($scope.dists[0].version, flag, "buildzip")
                 .success(function(data){
                     $scope.download.zip = [];
                     $scope.download.zip.push(data.zip);

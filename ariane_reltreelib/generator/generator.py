@@ -513,13 +513,13 @@ class Generator(object):
         if Degenerator.is_git_tagged(version, path=self.dir_output+fjson.path):
             return
 
+        dist = self.get_distrib(version)
         modules = self.get_modules_list(version)
         plugins = self.get_plugins_list(version)
         dictio = {}
-
+        url = dist.url_repos
         for m in modules:
             key = m.get_directory_name()
-            url = m.git_repos
             if m.type == "none":
                 typ = "core"
             else:
@@ -528,7 +528,6 @@ class Generator(object):
 
         for p in plugins:
             key = p.get_directory_name()
-            url = p.git_repos
             dictio[key] = {"type": "plugin", "url": url + key + '.git'}
 
         with open(self.dir_output+fjson.path+fjson.name, 'w') as target:

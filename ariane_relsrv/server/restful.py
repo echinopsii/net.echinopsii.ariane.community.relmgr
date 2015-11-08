@@ -721,6 +721,7 @@ class RestDistributionList(Resource):
                     cd = ReleaseTools.create_distrib_copy(d)
                     if cd is None:
                         abort_error("FORBIDDEN", "Distribution copy already exists in database")
+                    ReleaseTools.set_distrib_url_repos(cd)
                     return make_response(json.dumps({"distrib": cd.get_properties(gettype=True)}), 200, headers_json)
                 else:
                     arg_d.pop("nID")
@@ -773,6 +774,27 @@ class ReleaseTools(object):
         dfile = (ariane.get_files(dist))[0]
         dpath = dfile.path.split('/')[0] + '/'
         return dpath
+
+    @staticmethod
+    def set_distrib_url_repos(dist):
+        dpath = ReleaseTools.get_distrib_path(dist)
+        dpath = os.path.join(project_path, dpath)
+        if os.path.exists(dpath):
+            fpath = os.path.join(dpath, "resources/sources/ariane.community.git.repos-master.SNAPSHOT.json")
+            if os.path.isfile(fpath):
+                with open(fpath, 'r') as target:
+                    fdata = json.load(target)
+                    for key, val in fdata.items():
+                        url = fdata[key]["url"]
+                        break
+                    url = url[:url.index("ariane.")]
+                    if dist.url_repos != url:
+                        dist.url_repos = url
+                        dist.save()
+                        LOGGER.info("Repository URL was changed to '{}'for Distribution ({})".format(url, dist))
+            else:
+                LOGGER.warn("Distribution({}) repository URL was set to default: "
+                            "'https://github.com/echinopsii/'".format(dist))
 
     @staticmethod
     def make_modules_to_tag_list():
@@ -1468,6 +1490,7 @@ class RestBuildZip(Resource):
         self.path_zip = project_path + "/artifacts/"
         self.zipfile = ""
         self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('action', type=str, help='Action you want to do')
         self.reqparse.add_argument('version', type=str, help='Version of Distribution to build')
         self.reqparse.add_argument('tags', type=bool, help='True if building .zip from Git tags')
         super(RestBuildZip, self).__init__()
@@ -1488,58 +1511,75 @@ class RestBuildZip(Resource):
 
         if args["tags"] is None:
             abort_error("BAD_REQUEST", "You must provide the parameter 'tags' (boolean)")
+        if args["action"] is None:
+            abort_error("BAD_REQUEST", "You must provide the parameter 'action'")
 
         version = args["version"]
         from_tags = args["tags"]
-
-        # Command is either 'distpkgr master.SNAPSHOT'
-        # or 'distpkgr {version}.SNAPSHOT' where {version} is version's value (i.e version= '0.6.4')
-        if "SNAPSHOT" in version:
-            version = "master.SNAPSHOT"
-            version_cmd = version
-        else:
-            if from_tags:
+        action = args["action"]
+        if str(action).lower() == "buildzip":
+            # Command is either 'distpkgr master.SNAPSHOT'
+            # or 'distpkgr {version}.SNAPSHOT' where {version} is version's value (i.e version= '0.6.4')
+            if "SNAPSHOT" in version:
+                version = "master.SNAPSHOT"
                 version_cmd = version
             else:
-                version_cmd = version + ".SNAPSHOT"
+                if from_tags:
+                    version_cmd = version
+                else:
+                    version_cmd = version + ".SNAPSHOT"
 
-        if from_tags:
+            if from_tags:
+                timeout = 15 * 60
+            else:
+                timeout = 2 * 60
+
+            # Remove existing zip target directory (recreated by distribmgr)
+            path_zip = self.path_zip
+            ReleaseTools.path_zip = path_zip
+            if os.path.exists(path_zip):
+                shutil.rmtree(path_zip)
+
+            # Build new zip with distribManager and print build info into 'infobuild.txt' file
+            #ftmp_fname = "infobuildDistpkgr.txt"
+            # remove infobuild.txt if already exists
+            #if os.path.isfile(ftmp_fname):
+            #    os.remove(ftmp_fname)
+            #os.system("touch "+ftmp_fname)
+            child = subprocess.Popen("./distribManager.py distpkgr " + version_cmd,
+                             # + " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname,
+                             shell=True,
+                             cwd=project_path + "/ariane.community.distrib")
+            streamdata = child.communicate(timeout=timeout)[0]
+            build_done = False
+            rc = child.returncode
+            if rc == 0:
+                for (dp, dn, fn) in os.walk(path_zip):
+                    if len(fn) == 1:
+                         ReleaseTools.zipfile = fn[0]
+                         build_done = True
+                         break
+            #print("Build Info in "+ftmp_fname)
+
+            if build_done:
+                LOGGER.info("Build success")
+                return make_response(json.dumps({"zip": ReleaseTools.zipfile, "message": "Build Success"}), 200, headers_json)
+            else:
+                abort_error("INTERNAL_ERROR", "Error while building")
+
+        elif str(action).lower() == "mvncleaninstall":
             timeout = 15 * 60
-        else:
-            timeout = 2 * 60
-
-        # Remove existing zip target directory (recreated by distribmgr)
-        path_zip = self.path_zip
-        ReleaseTools.path_zip = path_zip
-        if os.path.exists(path_zip):
-            shutil.rmtree(path_zip)
-
-        # Build new zip with distribManager and print build info into 'infobuild.txt' file
-        #ftmp_fname = "infobuildDistpkgr.txt"
-        # remove infobuild.txt if already exists
-        #if os.path.isfile(ftmp_fname):
-        #    os.remove(ftmp_fname)
-        #os.system("touch "+ftmp_fname)
-        child = subprocess.Popen("./distribManager.py distpkgr " + version_cmd,
-                         # + " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname,
-                         shell=True,
-                         cwd=project_path + "/ariane.community.distrib")
-        streamdata = child.communicate(timeout=timeout)[0]
-        build_done = False
-        rc = child.returncode
-        if rc == 0:
-            for (dp, dn, fn) in os.walk(path_zip):
-                if len(fn) == 1:
-                     ReleaseTools.zipfile = fn[0]
-                     build_done = True
-                     break
-        #print("Build Info in "+ftmp_fname)
-
-        if build_done:
-            LOGGER.info("Build success")
-            return make_response(json.dumps({"zip": ReleaseTools.zipfile, "message": "Build Success"}), 200, headers_json)
-        else:
-            abort_error("INTERNAL_ERROR", "Error while building")
+            child = subprocess.Popen("mvn clean install", shell=True, cwd=project_path)
+            streamdata = child.communicate(timeout=timeout)[0]
+            mvn_done = False
+            rc = child.returncode
+            if rc == 0:
+                mvn_done = True
+            if mvn_done:
+                LOGGER.info("mvn clean install succeeded")
+                return make_response(json.dumps({"message": "mvn clean install succeeded"}), 200, headers_json)
+            else:
+                abort_error("INTERNAL_ERROR", "Error while running 'mvn clean install'")
 
 class RestGeneration(Resource):
     MODULES_EXCEPTIONS = []

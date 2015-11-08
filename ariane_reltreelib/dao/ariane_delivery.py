@@ -332,7 +332,7 @@ class DistributionService(DeliveryTree):
                     csub.add_submodule(ss)
             return csub
 
-        cd = Distribution(dist.name, dist.version, editable=dist.editable)
+        cd = Distribution(dist.name, dist.version, editable=dist.editable, url_repos=dist.url_repos)
         DeliveryTree.distribution_service.update_arianenode_lists(dist)
         for df in dist.list_files:
             cd.add_file(FileNode(df.name, df.type, df.version, df.path))
@@ -393,7 +393,7 @@ class DistributionService(DeliveryTree):
         args = DeliveryTree.graph_dao.get_node_properties(node)
         if "editable" not in args.keys():
             args["editable"] = "false"
-        return Distribution(args["name"], args["version"], args["nID"], editable=args["editable"])
+        return Distribution(args["name"], args["version"], args["nID"], editable=args["editable"], url_repos=args["url_repos"])
 
     def __get_name_version_master(self, version):
         if "SNAPSHOT" in version:
@@ -899,9 +899,9 @@ class ArianeNode(object):
             args = {"name": "", "version": "", "type": "", "groupId": "", "artifactId": ""}
 
         if node_type == "Distribution":
-            node = Distribution(args["name"], args["version"], args["nID"], editable=args["editable"])
+            node = Distribution(args["name"], args["version"], args["nID"], editable=args["editable"], url_repos=args["url_repos"])
         elif node_type == "Module":
-            node = Module(args["name"], args["version"], args["type"], args["nID"], order=args["order"], git_repos=args["git_repos"])
+            node = Module(args["name"], args["version"], args["type"], args["nID"], order=args["order"])
         elif node_type == "Plugin":
             node = Plugin(args["name"], args["version"], args["nID"], git_repos=args["git_repos"])
         elif node_type == "SubModule":
@@ -934,20 +934,21 @@ class ArianeNode(object):
 
 class Distribution(ArianeNode):
 
-    def __init__(self, name, version, id=0, editable="false"):
+    def __init__(self, name, version, id=0, editable="false", url_repos=""):
         super().__init__(name, version)
         self.id = id
         self.node_type = self.__class__.__name__
         self.directory_name = ""
         self.editable = editable
+        self.url_repos = url_repos
         self.list_module = []
         self.list_plugin = []
         self._old_version = version
-        self.dir = {"name": self.name, "version": self.version, "editable": self.editable, "nID": self.id}
+        self.dir = {"name": self.name, "version": self.version, "editable": self.editable, "url_repos": self.url_repos, "nID": self.id}
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
     def _get_dir(self):
-        self.dir = {"name": self.name, "version": self.version, "editable": self.editable, "nID": self.id}
+        self.dir = {"name": self.name, "version": self.version, "editable": self.editable, "url_repos": self.url_repos, "nID": self.id}
         return self.dir
 
     def update(self, args):
@@ -958,6 +959,8 @@ class Distribution(ArianeNode):
                     self.name = args[key]
                 elif key == "version" and self.version != args[key]:
                     self.version = args[key]
+                elif key == "url_repos" and self.version != args[key]:
+                    self.url_repos = args[key]
                 else:
                     continue
                 flag = True
@@ -1043,17 +1046,16 @@ class Distribution(ArianeNode):
 
 class Module(ArianeNode):
 
-    def __init__(self, name, version, type="none", id=0, order=0, git_repos=""):
+    def __init__(self, name, version, type="none", id=0, order=0):
         super().__init__(name, version)
         self.id = id
         self.node_type = self.__class__.__name__
         self.type = type
-        self.git_repos = self.__set_git_repos(git_repos)
         self.order = order
         self.directory_name = ""
         self.list_submod = []
         self.list_module_dependency = []
-        self.dir = {"name": self.name, "version": self.version, "type": self.type, "git_repos": self.git_repos,
+        self.dir = {"name": self.name, "version": self.version, "type": self.type,
                     "order": self.order, "nID": self.id}
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
         self._len_list_mod_dep = 0
@@ -1062,7 +1064,7 @@ class Module(ArianeNode):
         self._old_version = version
 
     def _get_dir(self):
-        self.dir = {"name": self.name, "version": self.version, "type": self.type, "git_repos": self.git_repos,
+        self.dir = {"name": self.name, "version": self.version, "type": self.type,
                     "order": self.order, "nID": self.id}
         return self.dir
 
@@ -1076,8 +1078,6 @@ class Module(ArianeNode):
                     self.version = args[key]
                 elif key == "type" and self.type != args[key]:
                     self.type = args[key]
-                elif key == "git_repos" and self.git_repos != args[key]:
-                    self.git_repos = args[key]
                 elif key == "order" and self.order != args[key]:
                     self.order = args[key]
                 else:
@@ -1230,13 +1230,6 @@ class Module(ArianeNode):
                 rel.properties["version_min"] = vmin
                 rel.properties["version_max"] = vmax
                 rel.save()
-
-    def __set_git_repos(self, newrepos=""):
-        if newrepos == "":
-            repos = "https://github.com/echinopsii/net.echinopsii."
-        else:
-            repos = newrepos
-        return repos.lower()
 
     def get_directory_name(self):
         if self.directory_name == "":

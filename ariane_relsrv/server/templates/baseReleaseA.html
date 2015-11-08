@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 <span>{{modeTitle.selected}}</span>
 <hr class="separateur">
 <div class="centerize">
-    <select ng-model="cmdGen.cmd" ng-options="key for (key, value) in commandsRelA"></select>
+    <select ng-if="CONFIG.mode == 'test'" ng-model="cmdGen.cmd" ng-options="key for (key, value) in commandsRelA"></select>
     <button class="btnValidate" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relA')">VALIDATE</button>
     <button class="btnValidate" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('ROLLBACK', 'relA')">ROLLBACK</button>
     <div>

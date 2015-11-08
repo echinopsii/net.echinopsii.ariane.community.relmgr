@@ -182,8 +182,5 @@ class TestREST(unittest.TestCase):
 
     def test_add_environment_files(self):
         dist = ariane.distribution_service.get_unique({"version": "0.7.1-SNAPSHOT"})
-        modules = ariane.module_service.get_all(dist)
-        env_mod = [m for m in modules if m.name == "environment"][0]
-        # ariane.module_service.ariane_updatenode_list(env_mod)
-        for m in modules:
-                ariane_delivery.FileNode.update_environment_filename(m.name, m.version)
+        dist.url_repos = "https://github.com/echinopsii/"
+        dist.save()
