@@ -78,7 +78,7 @@ class TestREST(unittest.TestCase):
             if m in mcore:
                 typ = "core"
             mod = ariane_delivery.Module(m, "0.7.1", typ)
-            versions = ["0.7.1"] #, "0.7.1", "0.7.2", "0.7.3"]
+            versions = ["0.7.1", "0.4.3"] #, "0.7.1", "0.7.2", "0.7.3"]
             path = os.path.join(project_path, mod.get_directory_name())
             if not os.path.exists(path):
                 return

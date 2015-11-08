@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <form id="formdownload" action="/rest/getdelzip" method="post">
             <select ng-model="download.selected" ng-options="name for name in download.zip"></select>
             <button type="submit" ng-disabled="download.selected == null" ng-click="clickDownload()">Download!</button>
-        </form>npageStates.relD == 'tovalid'
+        </form>
     </div>
     <hr class="separateur">
     <button class="btnValidate" type="submit" ng-show="pageStates.relD != 'tovalid'" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relD')">VALIDATE</button>

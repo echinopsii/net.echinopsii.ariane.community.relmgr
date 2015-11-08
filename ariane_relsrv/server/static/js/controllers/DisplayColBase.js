@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 angular.module('ArianeUI')
     .controller('DisplayColBaseCtrl', function ($scope, serviceAjax, serviceUI) {
         // config
-        $scope.CONFIG = {mode: "release"};
+        $scope.CONFIG = {mode: "test"};
         // data
         $scope.dists = [];
         var plugins = [];
@@ -40,9 +40,11 @@ angular.module('ArianeUI')
         $scope.mode = "Release";  // mode = "Release" | "DEV"
         $scope.pageStates = {relD: "tobuild"};
         var pageErrors = {relC: "", relD: ""};
-        $scope.modeTitle = {selected: "", releaseA: "Edition - Validate to generate files", releaseB: "Check file differences - Validate to build zip",
+        $scope.modeTitle = {selected: "", Release:{ releaseA: "Edition - Validate to generate files", releaseB: "Check file differences - Validate to build zip",
                             releaseC: "Download zip - Validate to commit+tag+push files", releaseD: "Validate to build zip from tags",
-                            releaseE: "Manage Plugins",releaseDEV: "Choose the new DEV SNAPSHOT version - Validate to create"};
+                            releaseE: "Manage Plugins"},
+                            DEV:{releaseA: "Edition - Validate to generate files", releaseB: "Check file differences",
+                                releaseC: "Validate to commit+push master files"}};
         // templates
         var baseTemplates = [{name: 'view', url:'baseEdition.html'}, {name:'releaseA', url:'baseRelA.html'}, {name:'releaseB', url:'baseRelB.html'},
                              {name:'releaseC', url:'baseRelC.html'}, {name:'releaseD', url:'baseRelD.html'}, {name:'releaseE', url:'baseRelE.html'},
@@ -627,7 +629,7 @@ angular.module('ArianeUI')
                         $scope.activeEdit = false;
                         loadDistribs('setBaseAfterLoad');
                     }
-                    else $scope.modeTitle.selected = $scope.modeTitle[$scope.page];
+                    else $scope.modeTitle.selected = $scope.modeTitle[$scope.mode][$scope.page];
                     flagErr = false;
                     break;
                 }

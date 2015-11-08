@@ -237,10 +237,11 @@ class Generator(object):
                 elif f.type == "vsh":
                     self.generate_vsh_installer(version, modules, f)
                 elif f.type == "plantpl":
-                    if flag_clean_env:
-                        self.__clean_environment_files(self.dir_output + f.path)
-                        flag_clean_env = False
-                    self.generate_plan_tpl(version, f)
+                    if isSNAPSHOT:
+                        if flag_clean_env:
+                            self.__clean_environment_files(self.dir_output + f.path)
+                            flag_clean_env = False
+                        self.generate_plan_tpl(version, f)
                 elif f.type == "pom":
                     grId, artId = self.__generate_pom_mod_plug(mod, f)
 
@@ -611,7 +612,9 @@ class Generator(object):
         if Degenerator.is_git_tagged(version_tag, path=self.dir_output+module.get_directory_name()):
             return
         # net.echinopsii.ariane.community.core.directory_0.7.2-SNAPSHOT.plan.tpl
-        template = self.env.get_template(fplantpl.path+"relmgr_environment_"+module.name+"_template.yml")
+        tplname = fplantpl.name.split("_")
+        tplname = tplname[0] + ".plan.tpl.yml"
+        template = self.env.get_template(fplantpl.path+tplname)
         m_version = module.version
         version_point = str(m_version).replace("-", ".")
         args = {"version": m_version, "version_point": version_point}
