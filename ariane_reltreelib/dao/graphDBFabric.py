@@ -59,10 +59,17 @@ class DaoFabric(object):
             password = str(args["password"])
         else:
             password = "neo4j"
-        if "hostport" in args.keys():
-            host_port = str(args["hostport"])
+        if "host" in args.keys():
+            host = str(args["host"])
         else:
-            host_port = "localhost:7474"
+            host = "localhost"
+
+        if "port" in args.keys():
+            port = str(args["port"])
+        else:
+            port = "7474"
+
+        host_port = host + ":" + port
 
         def connect(login, password, host_port):
             # global graph allows to get the same graph every time init_db() is called

@@ -44,9 +44,10 @@ api = Api(app)
 with open(project_path + "/ariane.community.relmgr/bootstrap/confsrv.json", "r") as configfile:
     conf = json.load(configfile)
 
-ariane = ariane_delivery.DeliveryTree({"login": conf["NEO4J_LOGIN"], "password": conf["NEO4J_PASSWORD"], "type": "neo4j"})
+ariane = ariane_delivery.DeliveryTree({"login": conf["NEO4J_LOGIN"], "password": conf["NEO4J_PASSWORD"],
+                                       "host": conf["NEO4J_HOST"], "port": conf["NEO4J_PORT"], "type": "neo4j"})
 neo4j_path = conf["NEO4J_PATH"]
-db_export_path = project_path + conf["EXPORT_DB"]
+db_export_path = conf["EXPORT_DB"]
 
 srvlog.setup_logging("log/relsrv_logging_conf.json")
 LOGGER = logging.getLogger(__name__)
@@ -677,6 +678,8 @@ class RestDistributionList(Resource):
     def get(self):
         dlist = ariane.distribution_service.get_all()
         dev = ariane.distribution_service.get_dev_distrib()
+        if (dlist is None) or (dev is None):
+            abort_error("BAD_REQUEST", "No Distribution was found in the database")
         dprop = [d.get_properties(gettype=True) for d in dlist]
         for d in dprop:
             if d["nID"] == dev.id:

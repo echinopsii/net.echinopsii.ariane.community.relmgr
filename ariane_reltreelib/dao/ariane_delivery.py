@@ -305,6 +305,8 @@ class DistributionService(DeliveryTree):
         else:
             distribs = self.get_all()
             dev = Distribution('dev', '0.0.0')
+            if distribs is None:
+                return None
             for d in distribs:
                 if d.version > dev.version:
                     dev = d

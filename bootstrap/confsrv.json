@@ -1,6 +1,8 @@
 {
-    "EXPORT_DB": "/ariane.community.relmgr/bootstrap/dependency_db/",
+    "EXPORT_DB": "/home/ikito/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/",
     "NEO4J_PATH": "/home/ikito/ECHINOPSII/srenia/neo4j-community-2.2.6",
     "NEO4J_LOGIN": "neo4j",
-    "NEO4J_PASSWORD": "admin"
+    "NEO4J_PASSWORD": "admin",
+    "NEO4J_HOST": "localhost",
+    "NEO4J_PORT": "7474"
 }
