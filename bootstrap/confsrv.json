@@ -4,5 +4,8 @@
     "NEO4J_LOGIN": "neo4j",
     "NEO4J_PASSWORD": "admin",
     "NEO4J_HOST": "localhost",
-    "NEO4J_PORT": "7474"
+    "NEO4J_PORT": "7474",
+    "BUILD_TIMEOUT": {"LOCAL": 120, "REMOTE": 900},
+    "UI_RUNNING_MODE": "test",
+    "URL_SLACK": ""
 }

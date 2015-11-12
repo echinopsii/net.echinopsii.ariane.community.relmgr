@@ -42,16 +42,18 @@ from ariane_relsrv.server.log import log_setup as srvlog
 
 app = Flask(__name__)
 api = Api(app)
+conf = None
+srvlog.setup_logging("log/relsrv_logging_conf.json")
+LOGGER = logging.getLogger(__name__)
 with open(relmgr_path + "/bootstrap/confsrv.json", "r") as configfile:
     conf = json.load(configfile)
-
+if conf is None:
+    LOGGER.error("Configuration file 'confsrv.json' was not found in: " + relmgr_path + "/bootstrap/")
+    exit(-1)
 ariane = ariane_delivery.DeliveryTree({"login": conf["NEO4J_LOGIN"], "password": conf["NEO4J_PASSWORD"],
                                        "host": conf["NEO4J_HOST"], "port": conf["NEO4J_PORT"], "type": "neo4j"})
 neo4j_path = conf["NEO4J_PATH"]
 db_export_path = conf["EXPORT_DB"]
-
-srvlog.setup_logging("log/relsrv_logging_conf.json")
-LOGGER = logging.getLogger(__name__)
 
 
 def abort_error(error, msg):
@@ -726,7 +728,8 @@ class RestDistributionList(Resource):
                     if cd is None:
                         abort_error("FORBIDDEN", "Distribution copy already exists in database")
                     ReleaseTools.set_distrib_url_repos(cd)
-                    return make_response(json.dumps({"distrib": cd.get_properties(gettype=True)}), 200, headers_json)
+                    return make_response(json.dumps({"distrib": cd.get_properties(gettype=True),
+                                                    "run_mode": ReleaseTools.get_ui_running_mode()}), 200, headers_json)
                 else:
                     arg_d.pop("nID")
                     if d.update(arg_d):
@@ -999,6 +1002,15 @@ class ReleaseTools(object):
         else:
             LOGGER.warn("COULD NOT CREATED THE NEW .cypher: path= '"+path+"' DOES NOT EXIST")
 
+    @staticmethod
+    def get_ui_running_mode():
+        with open(relmgr_path + "/bootstrap/confsrv.json", "r") as configfile:
+            run_mode = json.load(configfile)
+            if "UI_RUNNING_MODE" in run_mode.keys():
+                return run_mode["UI_RUNNING_MODE"]
+            else:
+                return 'test'
+
 class RestDistributionManager(Resource):
     """ REST endpoint for Managing Distributions stored in database.
         mode = DEV: Validation of the newly released distribution and creation of the new DEV distribution based on the
@@ -1029,13 +1041,15 @@ class RestDistributionManager(Resource):
             abort_error("BAD_REQUEST", "You must provide the 'mode' parameter")
         mode = args["mode"]
         if mode == "DEV":
+            ui_running_mode = ReleaseTools.get_ui_running_mode()
             dev = ariane.distribution_service.get_dev_distrib()
             if "-SNAPSHOT" in dev.version:
                 cpy_dev = ariane.distribution_service.get_all()
                 cpy_dev = [cd for cd in cpy_dev if "copyTemp" in cd.version]
                 if len(cpy_dev) != 1:
                     abort_error("BAD_REQUEST", "No copy was found in database, can not continue")
-                return make_response(json.dumps({"distrib": dev.get_properties(gettype=True)}), 200, headers_json)
+                return make_response(json.dumps({"distrib": dev.get_properties(gettype=True),
+                                                 "run_mode": ui_running_mode}), 200, headers_json)
 
             LOGGER.info("Creating the new DEV Distribution...")
             newdev = ReleaseTools.create_dev_distrib()
@@ -1056,7 +1070,8 @@ class RestDistributionManager(Resource):
 
             LOGGER.info("New DEV Distribution copy was created. Now working on this copy")
             ReleaseTools.export_new_distrib()
-            return make_response(json.dumps({"distrib": newdevcp.get_properties(gettype=True)}), 200, headers_json)
+            return make_response(json.dumps({"distrib": newdevcp.get_properties(gettype=True),
+                                             "run_mode": ui_running_mode}), 200, headers_json)
 
         elif action == "getDEV":
             dev = ariane.distribution_service.get_dev_distrib()
@@ -1541,9 +1556,9 @@ class RestBuildZip(Resource):
                     version_cmd = version + ".SNAPSHOT"
 
             if from_tags:
-                timeout = 15 * 60
+                timeout = conf["BUILD_TIMEOUT"]["REMOTE"]
             else:
-                timeout = 2 * 60
+                timeout = conf["BUILD_TIMEOUT"]["LOCAL"]
 
             # Remove existing zip target directory (recreated by distribmgr)
             path_zip = self.path_zip
@@ -1579,7 +1594,7 @@ class RestBuildZip(Resource):
                 abort_error("INTERNAL_ERROR", "Error while building")
 
         elif str(action).lower() == "mvncleaninstall":
-            timeout = 15 * 60
+            timeout = conf["BUILD_TIMEOUT"]["REMOTE"]
             child = subprocess.Popen("mvn clean install", shell=True, cwd=project_path)
             streamdata = child.communicate(timeout=timeout)[0]
             mvn_done = False

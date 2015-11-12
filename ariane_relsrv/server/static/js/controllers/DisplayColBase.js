@@ -246,6 +246,7 @@ angular.module('ArianeUI')
                 serviceUI.setNotifyLog("info", "View", "Entering into DEV Edition mode...");
                 serviceAjax.distribManager("DEV")
                     .success(function(data){
+                        $scope.CONFIG.mode = data.run_mode;
                         $scope.mode = "DEV";
                         $scope.dists = [];
                         $scope.dists.push(data.distrib);
