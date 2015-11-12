@@ -179,8 +179,3 @@ class TestREST(unittest.TestCase):
         for m in modules:
             m.version = mod_dict[m.name]
             m.save()
-
-    def test_add_environment_files(self):
-        dist = ariane.distribution_service.get_unique({"version": "0.7.1-SNAPSHOT"})
-        dist.url_repos = "https://github.com/echinopsii/"
-        dist.save()

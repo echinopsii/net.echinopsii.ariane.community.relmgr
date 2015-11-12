@@ -23,6 +23,7 @@ import re
 
 project_path = os.getcwd()
 project_path = project_path[:project_path.index('/ariane.community.relmgr')]
+relmgr_path = os.path.join(project_path, "ariane.community.relmgr")
 import sys
 sys.path.append(project_path)
 sys.path.append(project_path+"/ariane.community.relmgr")
@@ -41,7 +42,7 @@ from ariane_relsrv.server.log import log_setup as srvlog
 
 app = Flask(__name__)
 api = Api(app)
-with open(project_path + "/ariane.community.relmgr/bootstrap/confsrv.json", "r") as configfile:
+with open(relmgr_path + "/bootstrap/confsrv.json", "r") as configfile:
     conf = json.load(configfile)
 
 ariane = ariane_delivery.DeliveryTree({"login": conf["NEO4J_LOGIN"], "password": conf["NEO4J_PASSWORD"],
@@ -960,7 +961,12 @@ class ReleaseTools(object):
         return version
 
     @staticmethod
-    def export_new_distrib():
+    def export_new_distrib(erase_genuine_file=False):
+        """
+        :param erase_genuine_file: if True, erase the 'all.cypher' file located in ariane.community.relmgr/bootstrap/dependency_db/
+            Knowing that this file is used for resetting the Database by calling ResetReset's POST (click on 'Reset' button from the UI)
+        :return:
+        """
         todaydate = date.today().strftime("%d%m%y")
         path = db_export_path
         backp = os.getcwd()
@@ -983,7 +989,10 @@ class ReleaseTools(object):
                     tmp = str(int(tmp[0])+1)
                     fname = "all_"+todaydate+"_"+tmp+".cypher"
             shutil.copy("all.cypher", fname)
-            os.system(neo4j_path+"/bin/neo4j-shell -c dump > " + path +"all.cypher")
+            os.system(neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(path, "all.cypher"))
+            if erase_genuine_file:
+                os.system(neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(relmgr_path, "bootstrap",
+                                                                                  "dependency_db", "all.cypher"))
             os.chdir(backp)
             LOGGER.info("IN "+path+": file 'all.cypher' was copied to '"+fname+"'. New all.cypher was "
                         "created from the new Distribution")
@@ -1070,17 +1079,16 @@ class RestDistributionManager(Resource):
 class RestReset(Resource):
     def post(self):
         alldistrib_file = "all.cypher"
-        if os.path.isfile(db_export_path + alldistrib_file):
+        fpath = os.path.join(relmgr_path, "bootstrap", "dependency_db", alldistrib_file)
+        if os.path.isfile(fpath):
             ariane.delete_all()
-            os.system(neo4j_path+"/bin/neo4j-shell -file " + db_export_path + alldistrib_file)
+            os.system(neo4j_path+"/bin/neo4j-shell -file " + fpath)
             LOGGER.info("Successful database reset")
             return make_response(json.dumps({"message": "All distributions have been imported: Database is reset"}),
                                  200, headers_json)
         else:
-            abort_error("INTERNAL_ERROR", "Error while importing '"+db_export_path+alldistrib_file+"', file was not "
+            abort_error("INTERNAL_ERROR", "Error while importing '"+fpath+"', file was not "
                         "found")
-
-
 
 class RestCommit(Resource):
     MODULES_TO_TAG = []
