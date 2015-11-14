@@ -1,0 +1,53 @@
+__author__ = 'stan renia'
+
+import os
+import json
+import ariane_reltreelib.exceptions as err
+
+class Config(object):
+    # "EXPORT_DB": "/home/ikito/ECHINOPSII/neo4j_cypher_exports",
+    # "NEO4J_PATH": "/home/ikito/ECHINOPSII/srenia/neo4j-community-2.2.6",
+    # "NEO4J_LOGIN": "neo4j",
+    # "NEO4J_PASSWORD": "admin",
+    # "NEO4J_HOST": "localhost",
+    # "NEO4J_PORT": "7474",
+    # "BUILD_TIMEOUT": {"LOCAL": 120, "REMOTE": 900},
+    # "UI_RUNNING_MODE": "test",
+    # "URL_SLACK": ""
+    def __init__(self):
+        self.db_export_path = None
+        self.neo4j_path = None
+        self.neo4j_login = None
+        self.neo4j_password = None
+        self.neo4j_host = None
+        self.neo4j_port = None
+        self.build_timeout = None
+        self.ui_running_mode = None
+        self.url_slack = None
+        self.log_file = None
+
+    def parse(self, config_file_path):
+        if not os.path.isfile(config_file_path):
+            raise err.ServerConfigFileNotFoundError(config_file_path)
+
+        with open(config_file_path, "r") as configfile:
+            conf = json.load(configfile)
+            conf_keys = ["NEO4J_LOGIN", "NEO4J_PASSWORD", "NEO4J_HOST", "NEO4J_PORT", "NEO4J_PATH", "DB_EXPORT_PATH",
+                         "BUILD_TIMEOUT", "LOG_CONFIG_FILE_PATH"]
+            forgotten_keys = []
+            for k in conf_keys:
+                if k not in conf.keys():
+                    forgotten_keys.append(k)
+            if len(forgotten_keys) > 0:
+                raise err.ServerConfigFileError(config_file_path, forgotten_keys)
+
+            self.db_export_path = conf["DB_EXPORT_PATH"]
+            self.neo4j_path = conf["NEO4J_PATH"]
+            self.neo4j_login = conf["NEO4J_LOGIN"]
+            self.neo4j_password = conf["NEO4J_PASSWORD"]
+            self.neo4j_host = conf["NEO4J_HOST"]
+            self.neo4j_port = conf["NEO4J_PORT"]
+            self.build_timeout = conf["BUILD_TIMEOUT"]
+            self.ui_running_mode = conf["UI_RUNNING_MODE"]
+            self.url_slack = conf["URL_SLACK"]
+            self.log_file = conf["LOG_CONFIG_FILE_PATH"]

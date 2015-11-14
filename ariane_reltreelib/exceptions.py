@@ -52,3 +52,11 @@ class CommandError(Exception):
 
     def __repr__(self):
         return "Unspecified Command Error has occured: "
+
+class ServerConfigFileNotFoundError(Exception):
+    def __repr__(self):
+        return self.args[0] + " does not exist"
+
+class ServerConfigFileError(Exception):
+    def __repr__(self):
+        return "The following configuration parameters are missing in " + self.args[0] + " : " + self.args[1]

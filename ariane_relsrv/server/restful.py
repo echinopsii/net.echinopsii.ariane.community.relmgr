@@ -28,33 +28,33 @@ import sys
 sys.path.append(project_path)
 sys.path.append(project_path+"/ariane.community.relmgr")
 import shutil
+import json
+import subprocess
+from datetime import date
+import logging
 from flask import Flask, make_response, render_template, send_from_directory
 from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import ariane_delivery
 from ariane_reltreelib import exceptions as err
 from ariane_reltreelib.generator import generator
 from bootstrap import command
-import json
-import subprocess
-from datetime import date
-import logging
 from ariane_relsrv.server.log import log_setup as srvlog
+from ariane_relsrv.server.config import Config
 
 app = Flask(__name__)
 api = Api(app)
-conf = None
-srvlog.setup_logging("log/relsrv_logging_conf.json")
-LOGGER = logging.getLogger(__name__)
-with open(relmgr_path + "/bootstrap/confsrv.json", "r") as configfile:
-    conf = json.load(configfile)
-if conf is None:
-    LOGGER.error("Configuration file 'confsrv.json' was not found in: " + relmgr_path + "/bootstrap/")
-    exit(-1)
-ariane = ariane_delivery.DeliveryTree({"login": conf["NEO4J_LOGIN"], "password": conf["NEO4J_PASSWORD"],
-                                       "host": conf["NEO4J_HOST"], "port": conf["NEO4J_PORT"], "type": "neo4j"})
-neo4j_path = conf["NEO4J_PATH"]
-db_export_path = conf["EXPORT_DB"]
+RELMGR_CONFIG = None
+try:
+    RELMGR_CONFIG = Config()
+    RELMGR_CONFIG.parse(relmgr_path + "/bootstrap/confsrv.json")
+except Exception as e:
+    print('Release Manager configuration issue: ' + e.__str__())
+    exit(1)
 
+srvlog.setup_logging(RELMGR_CONFIG.log_file)
+LOGGER = logging.getLogger(__name__)
+ariane = ariane_delivery.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login, "password": RELMGR_CONFIG.neo4j_password,
+                                       "host": RELMGR_CONFIG.neo4j_host, "port": RELMGR_CONFIG.neo4j_port, "type": "neo4j"})
 
 def abort_error(error, msg):
     LOGGER.error("(HTTP RESPONSE CODE: '"+error+"') " + msg)
@@ -971,7 +971,7 @@ class ReleaseTools(object):
         :return:
         """
         todaydate = date.today().strftime("%d%m%y")
-        path = db_export_path
+        path = RELMGR_CONFIG.db_export_path
         backp = os.getcwd()
         LOGGER.info("Trying to copy and create the new 'all.cypher' file into " + path)
         if os.path.exists(path):
@@ -992,9 +992,9 @@ class ReleaseTools(object):
                     tmp = str(int(tmp[0])+1)
                     fname = "all_"+todaydate+"_"+tmp+".cypher"
             shutil.copy("all.cypher", fname)
-            os.system(neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(path, "all.cypher"))
+            os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(path, "all.cypher"))
             if erase_genuine_file:
-                os.system(neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(relmgr_path, "bootstrap",
+                os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(relmgr_path, "bootstrap",
                                                                                   "dependency_db", "all.cypher"))
             os.chdir(backp)
             LOGGER.info("IN "+path+": file 'all.cypher' was copied to '"+fname+"'. New all.cypher was "
@@ -1097,7 +1097,7 @@ class RestReset(Resource):
         fpath = os.path.join(relmgr_path, "bootstrap", "dependency_db", alldistrib_file)
         if os.path.isfile(fpath):
             ariane.delete_all()
-            os.system(neo4j_path+"/bin/neo4j-shell -file " + fpath)
+            os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -file " + fpath)
             LOGGER.info("Successful database reset")
             return make_response(json.dumps({"message": "All distributions have been imported: Database is reset"}),
                                  200, headers_json)
@@ -1556,9 +1556,9 @@ class RestBuildZip(Resource):
                     version_cmd = version + ".SNAPSHOT"
 
             if from_tags:
-                timeout = conf["BUILD_TIMEOUT"]["REMOTE"]
+                timeout = RELMGR_CONFIG.build_timeout["REMOTE"]
             else:
-                timeout = conf["BUILD_TIMEOUT"]["LOCAL"]
+                timeout = RELMGR_CONFIG.build_timeout["LOCAL"]
 
             # Remove existing zip target directory (recreated by distribmgr)
             path_zip = self.path_zip
@@ -1594,7 +1594,7 @@ class RestBuildZip(Resource):
                 abort_error("INTERNAL_ERROR", "Error while building")
 
         elif str(action).lower() == "mvncleaninstall":
-            timeout = conf["BUILD_TIMEOUT"]["REMOTE"]
+            timeout = RELMGR_CONFIG.build_timeout["REMOTE"]
             child = subprocess.Popen("mvn clean install", shell=True, cwd=project_path)
             streamdata = child.communicate(timeout=timeout)[0]
             mvn_done = False

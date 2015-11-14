@@ -219,6 +219,7 @@ angular.module('ArianeUI')
                     .success(function(data){
                         serviceAjax.distribCopy(distrib)
                             .success(function(data){
+                                $scope.CONFIG.mode = data.run_mode;
                                 $scope.mode = "Release";
                                 $scope.dists = [];
                                 $scope.dists.push(data.distrib);
