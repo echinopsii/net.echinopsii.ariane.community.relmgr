@@ -21,36 +21,54 @@
 import os
 import re
 
-project_path = os.getcwd()
-project_path = project_path[:project_path.index('/ariane.community.relmgr')]
-import sys
-sys.path.append(project_path)
-sys.path.append(project_path+"/ariane.community.relmgr")
+# project_path = os.getcwd()
+# project_path = project_path[:project_path.index('/ariane.community.relmgr')]
+# relmgr_path = os.path.join(project_path, "ariane.community.relmgr")
+# import sys
+# sys.path.append(project_path)
+# sys.path.append(project_path+"/ariane.community.relmgr")
 import shutil
+import json
+import subprocess
+from datetime import date
+# import logging
 from flask import Flask, make_response, render_template, send_from_directory
 from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import ariane_delivery
 from ariane_reltreelib import exceptions as err
 from ariane_reltreelib.generator import generator
 from bootstrap import command
-import json
-import subprocess
-from datetime import date
-import logging
-from ariane_relsrv.server.log import log_setup as srvlog
+# from ariane_relsrv.server.log import log_setup as srvlog
+# from ariane_relsrv.server.config import Config
 
 app = Flask(__name__)
 api = Api(app)
-with open(project_path + "/ariane.community.relmgr/bootstrap/confsrv.json", "r") as configfile:
-    conf = json.load(configfile)
 
-ariane = ariane_delivery.DeliveryTree({"login": conf["NEO4J_LOGIN"], "password": conf["NEO4J_PASSWORD"], "type": "neo4j"})
-neo4j_path = conf["NEO4J_PATH"]
-db_export_path = project_path + conf["EXPORT_DB"]
+RELMGR_CONFIG = None
+ariane = None
+LOGGER = None
+project_path = None
+relmgr_path = None
 
-srvlog.setup_logging("log/relsrv_logging_conf.json")
-LOGGER = logging.getLogger(__name__)
-
+def start_relmgr(myglobals):
+    global RELMGR_CONFIG, ariane, LOGGER, project_path, relmgr_path
+    RELMGR_CONFIG = myglobals["conf"]
+    ariane = myglobals["delivery_tree"]
+    LOGGER = myglobals["logger"]
+    project_path = myglobals["project_path"]
+    relmgr_path = myglobals["relmgr_path"]
+    app.run(debug=True)
+# try:
+#     RELMGR_CONFIG = Config()
+#     RELMGR_CONFIG.parse(relmgr_path + "/bootstrap/confsrv.json")
+# except Exception as e:
+#     print('Release Manager configuration issue: ' + e.__str__())
+#     exit(1)
+#
+# srvlog.setup_logging(RELMGR_CONFIG.log_file)
+# LOGGER = logging.getLogger(__name__)
+# ariane = ariane_delivery.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login, "password": RELMGR_CONFIG.neo4j_password,
+#                                        "host": RELMGR_CONFIG.neo4j_host, "port": RELMGR_CONFIG.neo4j_port, "type": "neo4j"})
 
 def abort_error(error, msg):
     LOGGER.error("(HTTP RESPONSE CODE: '"+error+"') " + msg)
@@ -269,8 +287,9 @@ class RestPlugin(Resource):
 class RestPluginList(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
-        self.reqparse.add_argument('name', type=str, help='Distribution name')
-        self.reqparse.add_argument('version', type=str, help='Distribution version')
+        self.reqparse.add_argument('name', type=str, help='Plugin name')
+        self.reqparse.add_argument('version', type=str, help='Plugin version')
+        self.reqparse.add_argument('git_repos', type=str, help='Plugin git repository url')
         self.reqparse.add_argument('nID', type=int, help='Distribution database ID named "nID"')
         self.reqparse.add_argument('dist_version')
         self.reqparse.add_argument('plugin')
@@ -668,6 +687,8 @@ class RestDistributionList(Resource):
         # self.reqparse.add_argument('name', type=str)
         self.reqparse.add_argument('name', type=str, help='Distribution name')
         self.reqparse.add_argument('version', type=str, help='Distribution version')
+        self.reqparse.add_argument('editable', type=bool, help='Distribution editable flag')
+        self.reqparse.add_argument('url_repos', type=str, help='Distribution repository URL')
         self.reqparse.add_argument('nID', type=int, help='Distribution database ID named "nID"')
         self.reqparse.add_argument('distrib', location='json')
         self.reqparse.add_argument('copy', type=bool)
@@ -677,6 +698,8 @@ class RestDistributionList(Resource):
     def get(self):
         dlist = ariane.distribution_service.get_all()
         dev = ariane.distribution_service.get_dev_distrib()
+        if (dlist is None) or (dev is None):
+            abort_error("BAD_REQUEST", "No Distribution was found in the database")
         dprop = [d.get_properties(gettype=True) for d in dlist]
         for d in dprop:
             if d["nID"] == dev.id:
@@ -722,7 +745,8 @@ class RestDistributionList(Resource):
                     if cd is None:
                         abort_error("FORBIDDEN", "Distribution copy already exists in database")
                     ReleaseTools.set_distrib_url_repos(cd)
-                    return make_response(json.dumps({"distrib": cd.get_properties(gettype=True)}), 200, headers_json)
+                    return make_response(json.dumps({"distrib": cd.get_properties(gettype=True),
+                                                    "run_mode": ReleaseTools.get_ui_running_mode()}), 200, headers_json)
                 else:
                     arg_d.pop("nID")
                     if d.update(arg_d):
@@ -957,9 +981,14 @@ class ReleaseTools(object):
         return version
 
     @staticmethod
-    def export_new_distrib():
+    def export_new_distrib(erase_genuine_file=False):
+        """
+        :param erase_genuine_file: if True, erase the 'all.cypher' file located in ariane.community.relmgr/bootstrap/dependency_db/
+            Knowing that this file is used for resetting the Database by calling ResetReset's POST (click on 'Reset' button from the UI)
+        :return:
+        """
         todaydate = date.today().strftime("%d%m%y")
-        path = db_export_path
+        path = RELMGR_CONFIG.db_export_path
         backp = os.getcwd()
         LOGGER.info("Trying to copy and create the new 'all.cypher' file into " + path)
         if os.path.exists(path):
@@ -980,12 +1009,24 @@ class ReleaseTools(object):
                     tmp = str(int(tmp[0])+1)
                     fname = "all_"+todaydate+"_"+tmp+".cypher"
             shutil.copy("all.cypher", fname)
-            os.system(neo4j_path+"/bin/neo4j-shell -c dump > " + path +"all.cypher")
+            os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(path, "all.cypher"))
+            if erase_genuine_file:
+                os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(relmgr_path, "bootstrap",
+                                                                                  "dependency_db", "all.cypher"))
             os.chdir(backp)
             LOGGER.info("IN "+path+": file 'all.cypher' was copied to '"+fname+"'. New all.cypher was "
                         "created from the new Distribution")
         else:
             LOGGER.warn("COULD NOT CREATED THE NEW .cypher: path= '"+path+"' DOES NOT EXIST")
+
+    @staticmethod
+    def get_ui_running_mode():
+        with open(relmgr_path + "/bootstrap/confsrv.json", "r") as configfile:
+            run_mode = json.load(configfile)
+            if "UI_RUNNING_MODE" in run_mode.keys():
+                return run_mode["UI_RUNNING_MODE"]
+            else:
+                return 'test'
 
 class RestDistributionManager(Resource):
     """ REST endpoint for Managing Distributions stored in database.
@@ -1017,13 +1058,15 @@ class RestDistributionManager(Resource):
             abort_error("BAD_REQUEST", "You must provide the 'mode' parameter")
         mode = args["mode"]
         if mode == "DEV":
+            ui_running_mode = ReleaseTools.get_ui_running_mode()
             dev = ariane.distribution_service.get_dev_distrib()
             if "-SNAPSHOT" in dev.version:
                 cpy_dev = ariane.distribution_service.get_all()
                 cpy_dev = [cd for cd in cpy_dev if "copyTemp" in cd.version]
                 if len(cpy_dev) != 1:
                     abort_error("BAD_REQUEST", "No copy was found in database, can not continue")
-                return make_response(json.dumps({"distrib": dev.get_properties(gettype=True)}), 200, headers_json)
+                return make_response(json.dumps({"distrib": dev.get_properties(gettype=True),
+                                                 "run_mode": ui_running_mode}), 200, headers_json)
 
             LOGGER.info("Creating the new DEV Distribution...")
             newdev = ReleaseTools.create_dev_distrib()
@@ -1044,7 +1087,8 @@ class RestDistributionManager(Resource):
 
             LOGGER.info("New DEV Distribution copy was created. Now working on this copy")
             ReleaseTools.export_new_distrib()
-            return make_response(json.dumps({"distrib": newdevcp.get_properties(gettype=True)}), 200, headers_json)
+            return make_response(json.dumps({"distrib": newdevcp.get_properties(gettype=True),
+                                             "run_mode": ui_running_mode}), 200, headers_json)
 
         elif action == "getDEV":
             dev = ariane.distribution_service.get_dev_distrib()
@@ -1067,22 +1111,20 @@ class RestDistributionManager(Resource):
 class RestReset(Resource):
     def post(self):
         alldistrib_file = "all.cypher"
-        if os.path.isfile(db_export_path + alldistrib_file):
+        fpath = os.path.join(relmgr_path, "bootstrap", "dependency_db", alldistrib_file)
+        if os.path.isfile(fpath):
             ariane.delete_all()
-            os.system(neo4j_path+"/bin/neo4j-shell -file " + db_export_path + alldistrib_file)
+            os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -file " + fpath)
             LOGGER.info("Successful database reset")
             return make_response(json.dumps({"message": "All distributions have been imported: Database is reset"}),
                                  200, headers_json)
         else:
-            abort_error("INTERNAL_ERROR", "Error while importing '"+db_export_path+alldistrib_file+"', file was not "
+            abort_error("INTERNAL_ERROR", "Error while importing '"+fpath+"', file was not "
                         "found")
-
-
 
 class RestCommit(Resource):
     MODULES_TO_TAG = []
     PLUGINS_TO_TAG = []
-    module_test = ariane_delivery.Module("testrepos", "testversion")
     commit_comment = ""
 
     def __init__(self):
@@ -1345,9 +1387,6 @@ class RestCheckout(Resource):
             if not isinstance(dist, ariane_delivery.Distribution):
                 abort_error("INTERNAL_ERROR", "Server can not find the current Distribution to commit")
 
-            # FOR TEST :
-            # modules = [RestCommit.module_test]
-            # FOR RELEASE:
             if isplugin:
                 mod_plugs = ariane.plugin_service.get_all(dist)
             else:
@@ -1530,9 +1569,9 @@ class RestBuildZip(Resource):
                     version_cmd = version + ".SNAPSHOT"
 
             if from_tags:
-                timeout = 15 * 60
+                timeout = RELMGR_CONFIG.build_timeout["REMOTE"]
             else:
-                timeout = 2 * 60
+                timeout = RELMGR_CONFIG.build_timeout["LOCAL"]
 
             # Remove existing zip target directory (recreated by distribmgr)
             path_zip = self.path_zip
@@ -1568,7 +1607,7 @@ class RestBuildZip(Resource):
                 abort_error("INTERNAL_ERROR", "Error while building")
 
         elif str(action).lower() == "mvncleaninstall":
-            timeout = 15 * 60
+            timeout = RELMGR_CONFIG.build_timeout["REMOTE"]
             child = subprocess.Popen("mvn clean install", shell=True, cwd=project_path)
             streamdata = child.communicate(timeout=timeout)[0]
             mvn_done = False
@@ -1655,5 +1694,5 @@ api.add_resource(TempErr, '/err.html')
 # Tests
 api.add_resource(UI, '/', "/index", "/index.html")
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     app.run(debug=True)

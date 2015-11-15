@@ -219,6 +219,7 @@ angular.module('ArianeUI')
                     .success(function(data){
                         serviceAjax.distribCopy(distrib)
                             .success(function(data){
+                                $scope.CONFIG.mode = data.run_mode;
                                 $scope.mode = "Release";
                                 $scope.dists = [];
                                 $scope.dists.push(data.distrib);
@@ -246,6 +247,7 @@ angular.module('ArianeUI')
                 serviceUI.setNotifyLog("info", "View", "Entering into DEV Edition mode...");
                 serviceAjax.distribManager("DEV")
                     .success(function(data){
+                        $scope.CONFIG.mode = data.run_mode;
                         $scope.mode = "DEV";
                         $scope.dists = [];
                         $scope.dists.push(data.distrib);
@@ -268,10 +270,12 @@ angular.module('ArianeUI')
                 if($scope.mode == "Release" && $scope.dists[0].version.indexOf("SNAPSHOT") > -1)
                 {
                     $scope.warnRelA.warning = $scope.warnRelA.warningRel;
+                    $scope.confirmValRoll.disableVal = false;
                     return;
                 }
                 else if($scope.mode == "DEV" && $scope.dists[0].version.indexOf("SNAPSHOT") == -1){
                     $scope.warnRelA.warning = $scope.warnRelA.warningDEV;
+                    $scope.confirmValRoll.disableVal = false;
                     return;
                 }
                 if(serviceUI.setState({obj: "release", state:"generation"})){
@@ -633,7 +637,7 @@ angular.module('ArianeUI')
                     $scope.baseTemplate = baseTemplates[i];
                     if($scope.page == "view"){ // Reload everything
                         $scope.activeEdit = false;
-                        loadDistribs('setBaseAfterLoad');
+                        loadDistribs(setBaseAfterLoad);
                     }
                     else $scope.modeTitle.selected = $scope.modeTitle[$scope.mode][$scope.page];
                     flagErr = false;

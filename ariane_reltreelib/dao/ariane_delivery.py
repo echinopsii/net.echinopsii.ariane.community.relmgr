@@ -305,6 +305,8 @@ class DistributionService(DeliveryTree):
         else:
             distribs = self.get_all()
             dev = Distribution('dev', '0.0.0')
+            if distribs is None:
+                return None
             for d in distribs:
                 if d.version > dev.version:
                     dev = d
@@ -1493,7 +1495,7 @@ class Plugin(ArianeNode):
             repos = "https://github.com/echinopsii/net.echinopsii."
         else:
             repos = newrepos
-        return repos.lower()
+        return str(repos).lower()
 
     def get_directory_name(self):
         if self.directory_name == "":
