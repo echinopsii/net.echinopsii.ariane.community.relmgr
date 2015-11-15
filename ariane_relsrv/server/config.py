@@ -25,15 +25,6 @@ import json
 import ariane_reltreelib.exceptions as err
 
 class Config(object):
-    # "EXPORT_DB": "/home/ikito/ECHINOPSII/neo4j_cypher_exports",
-    # "NEO4J_PATH": "/home/ikito/ECHINOPSII/srenia/neo4j-community-2.2.6",
-    # "NEO4J_LOGIN": "neo4j",
-    # "NEO4J_PASSWORD": "admin",
-    # "NEO4J_HOST": "localhost",
-    # "NEO4J_PORT": "7474",
-    # "BUILD_TIMEOUT": {"LOCAL": 120, "REMOTE": 900},
-    # "UI_RUNNING_MODE": "test",
-    # "URL_SLACK": ""
     def __init__(self):
         self.db_export_path = None
         self.neo4j_path = None

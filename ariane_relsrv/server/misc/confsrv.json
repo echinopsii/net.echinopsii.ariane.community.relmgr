@@ -8,5 +8,5 @@
     "BUILD_TIMEOUT": {"LOCAL": 120, "REMOTE": 900},
     "UI_RUNNING_MODE": "test",
     "URL_SLACK": "",
-    "LOG_CONFIG_FILE_PATH": "/home/ikito/ECHINOPSII/srenia/ariane.community.relmgr/ariane_relsrv/server/log/relsrv_logging_conf.json"
+    "LOG_CONFIG_FILE_PATH": "/home/ikito/ECHINOPSII/srenia/ariane.community.relmgr/ariane_relsrv/server/misc/relsrv_logging_conf.json"
 }

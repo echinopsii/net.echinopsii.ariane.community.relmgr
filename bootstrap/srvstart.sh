@@ -49,4 +49,5 @@ if [ $? -ne 0 ]; then
        fi
 fi
 
-python3 ariane_relsrv/server/restful.py
+# python3 ariane_relsrv/server/restful.py
+python3 ariane_relsrv/server/__main__.py

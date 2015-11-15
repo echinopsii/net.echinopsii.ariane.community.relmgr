@@ -25,8 +25,8 @@ import subprocess
 import os, shutil
 from datetime import date
 from ariane_reltreelib.dao import ariane_delivery
-from ariane_relsrv.server.restful import project_path
-from ariane_relsrv.server.restful import ariane, ReleaseTools
+from ariane_relsrv.server.__main__ import ariane, project_path
+from ariane_relsrv.server.restful import ReleaseTools
 
 class TestREST(unittest.TestCase):
 
@@ -68,7 +68,7 @@ class TestREST(unittest.TestCase):
         print(r.status_code, r.reason, r.text)
 
     def test_tag_clean_cmd(self):
-        tagANDmaster = False
+        tagANDmaster = True
         mcore = ["directory", "mapping", "portal", "injector", "idm"]
         mods = ["installer", "environment"]
         mlist = ["directory", "mapping", "portal", "injector", "idm"]

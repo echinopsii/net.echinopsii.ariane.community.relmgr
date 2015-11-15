@@ -21,40 +21,54 @@
 import os
 import re
 
-project_path = os.getcwd()
-project_path = project_path[:project_path.index('/ariane.community.relmgr')]
-relmgr_path = os.path.join(project_path, "ariane.community.relmgr")
-import sys
-sys.path.append(project_path)
-sys.path.append(project_path+"/ariane.community.relmgr")
+# project_path = os.getcwd()
+# project_path = project_path[:project_path.index('/ariane.community.relmgr')]
+# relmgr_path = os.path.join(project_path, "ariane.community.relmgr")
+# import sys
+# sys.path.append(project_path)
+# sys.path.append(project_path+"/ariane.community.relmgr")
 import shutil
 import json
 import subprocess
 from datetime import date
-import logging
+# import logging
 from flask import Flask, make_response, render_template, send_from_directory
 from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import ariane_delivery
 from ariane_reltreelib import exceptions as err
 from ariane_reltreelib.generator import generator
 from bootstrap import command
-from ariane_relsrv.server.log import log_setup as srvlog
-from ariane_relsrv.server.config import Config
+# from ariane_relsrv.server.log import log_setup as srvlog
+# from ariane_relsrv.server.config import Config
 
 app = Flask(__name__)
 api = Api(app)
-RELMGR_CONFIG = None
-try:
-    RELMGR_CONFIG = Config()
-    RELMGR_CONFIG.parse(relmgr_path + "/bootstrap/confsrv.json")
-except Exception as e:
-    print('Release Manager configuration issue: ' + e.__str__())
-    exit(1)
 
-srvlog.setup_logging(RELMGR_CONFIG.log_file)
-LOGGER = logging.getLogger(__name__)
-ariane = ariane_delivery.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login, "password": RELMGR_CONFIG.neo4j_password,
-                                       "host": RELMGR_CONFIG.neo4j_host, "port": RELMGR_CONFIG.neo4j_port, "type": "neo4j"})
+RELMGR_CONFIG = None
+ariane = None
+LOGGER = None
+project_path = None
+relmgr_path = None
+
+def start_relmgr(myglobals):
+    global RELMGR_CONFIG, ariane, LOGGER, project_path, relmgr_path
+    RELMGR_CONFIG = myglobals["conf"]
+    ariane = myglobals["delivery_tree"]
+    LOGGER = myglobals["logger"]
+    project_path = myglobals["project_path"]
+    relmgr_path = myglobals["relmgr_path"]
+    app.run(debug=True)
+# try:
+#     RELMGR_CONFIG = Config()
+#     RELMGR_CONFIG.parse(relmgr_path + "/bootstrap/confsrv.json")
+# except Exception as e:
+#     print('Release Manager configuration issue: ' + e.__str__())
+#     exit(1)
+#
+# srvlog.setup_logging(RELMGR_CONFIG.log_file)
+# LOGGER = logging.getLogger(__name__)
+# ariane = ariane_delivery.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login, "password": RELMGR_CONFIG.neo4j_password,
+#                                        "host": RELMGR_CONFIG.neo4j_host, "port": RELMGR_CONFIG.neo4j_port, "type": "neo4j"})
 
 def abort_error(error, msg):
     LOGGER.error("(HTTP RESPONSE CODE: '"+error+"') " + msg)
@@ -1108,7 +1122,6 @@ class RestReset(Resource):
 class RestCommit(Resource):
     MODULES_TO_TAG = []
     PLUGINS_TO_TAG = []
-    module_test = ariane_delivery.Module("testrepos", "testversion")
     commit_comment = ""
 
     def __init__(self):
@@ -1371,9 +1384,6 @@ class RestCheckout(Resource):
             if not isinstance(dist, ariane_delivery.Distribution):
                 abort_error("INTERNAL_ERROR", "Server can not find the current Distribution to commit")
 
-            # FOR TEST :
-            # modules = [RestCommit.module_test]
-            # FOR RELEASE:
             if isplugin:
                 mod_plugs = ariane.plugin_service.get_all(dist)
             else:
@@ -1681,5 +1691,5 @@ api.add_resource(TempErr, '/err.html')
 # Tests
 api.add_resource(UI, '/', "/index", "/index.html")
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     app.run(debug=True)
