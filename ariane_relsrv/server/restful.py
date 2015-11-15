@@ -1021,7 +1021,7 @@ class ReleaseTools(object):
 
     @staticmethod
     def get_ui_running_mode():
-        with open(relmgr_path + "/bootstrap/confsrv.json", "r") as configfile:
+        with open(RELMGR_CONFIG.config_file_path, "r") as configfile:
             run_mode = json.load(configfile)
             if "UI_RUNNING_MODE" in run_mode.keys():
                 return run_mode["UI_RUNNING_MODE"]

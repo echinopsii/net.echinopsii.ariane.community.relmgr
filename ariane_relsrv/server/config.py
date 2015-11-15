@@ -26,6 +26,7 @@ import ariane_reltreelib.exceptions as err
 
 class Config(object):
     def __init__(self):
+        self.config_file_path = None
         self.db_export_path = None
         self.neo4j_path = None
         self.neo4j_login = None
@@ -62,3 +63,4 @@ class Config(object):
             self.ui_running_mode = conf["UI_RUNNING_MODE"]
             self.url_slack = conf["URL_SLACK"]
             self.log_file = conf["LOG_CONFIG_FILE_PATH"]
+            self.config_file_path = config_file_path

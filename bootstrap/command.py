@@ -50,14 +50,17 @@ class Command(object):
     commands_mod = ["pom", "plan", "lib_json", "vsh"]
     conf = None
 
-    def __init__(self):
-        with open(project_path+module_name+'/bootstrap/confsrv.json', 'r') as target:
-            Command.conf = json.load(target)
-        if Command.conf is None:
-            raise err.CommandError("GraphDB login file can not be read. It should be '(GraphDB_name)_login.json")
-
-        Command.ariane = ariane_delivery.DeliveryTree({"login": Command.conf["NEO4J_LOGIN"], "password": Command.conf["NEO4J_PASSWORD"], "type": "neo4j"})
-        Command.g = generator.Generator(Command.ariane, {"outputs": project_path, "templates": project_path})
+    def __init__(self, ariane=None):
+        if ariane is None:
+            with open(project_path+module_name+'/ariane_relsrv/server/misc/confsrv.json', 'r') as target:
+                Command.conf = json.load(target)
+            if Command.conf is None:
+                raise err.CommandError("GraphDB login file can not be read. It should be '(GraphDB_name)_login.json")
+            Command.ariane = ariane_delivery.DeliveryTree({"login": Command.conf["NEO4J_LOGIN"], "password": Command.conf["NEO4J_PASSWORD"], "type": "neo4j"})
+            Command.g = generator.Generator(Command.ariane, {"outputs": project_path, "templates": project_path})
+        else:
+            Command.ariane = ariane
+            Command.g = generator.Generator(Command.ariane, {"outputs": project_path, "templates": project_path})
 
     def import_all_distribs(self):
         os.system(Command.conf["NEO4J_PATH"]+"/bin/neo4j-shell -file " + project_path + Command.conf["EXPORT_DB"] + "all.cypher")
