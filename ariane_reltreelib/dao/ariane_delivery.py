@@ -1495,7 +1495,7 @@ class Plugin(ArianeNode):
             repos = "https://github.com/echinopsii/net.echinopsii."
         else:
             repos = newrepos
-        return repos.lower()
+        return str(repos).lower()
 
     def get_directory_name(self):
         if self.directory_name == "":

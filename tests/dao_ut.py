@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from ariane_reltreelib.dao import ariane_delivery
+from ariane_relsrv.server.__main__ import ariane_delivery, RELMGR_CONFIG
 import unittest, os
 from create_db_from_file import create_db_file
 
@@ -73,8 +73,8 @@ class AppTest(unittest.TestCase):
 
     def test_relation_update(self):
         self.ariane.delete_all()
-        os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "
-                  "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/distrib_0.6.4-SNAPSHOT.cypher")
+        os.system(RELMGR_CONFIG.neo4j_path + "/bin/neo4j-shell -file "
+                  + RELMGR_CONFIG.db_export_path + "/distrib_0.6.4-SNAPSHOT.cypher")
 
         dist = self.ariane.distribution_service.get_all()[0]
         mods = self.ariane.module_service.get_all(dist)
@@ -475,7 +475,7 @@ class AppTest(unittest.TestCase):
         self.assertIsNone(self.ariane.submodule_service.find({"nID": 1}))
         self.assertIsNone(self.ariane.submodule_parent_service.find({"nID": 1}))
 
-    def test_add_error(self):
+    def notest_add_error(self):
         A = ariane_delivery.Module("A", "myversion")
         A.save()
         B = ariane_delivery.SubModule("B", "B_version")
@@ -512,7 +512,7 @@ class AppTest(unittest.TestCase):
     def long_test_export_eachfile(self):
         self.export_eachfile()
 
-    def test_import_for_UI(self):
+    def notest_import_for_UI(self):
         self.ariane.delete_all()
         create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
         create_db_file('inputs/create_0.6.3.txt')
@@ -548,7 +548,7 @@ class AppTest(unittest.TestCase):
         os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -c dump > "
                   "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
 
-    def test_export_new_distrib(self):
+    def notest_export_new_distrib(self):
         os.system("/home/ikito/ECHINOPSII/srenia/neo4j-community-2.2.6/bin/neo4j-shell -c dump > "
                   "/home/ikito/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
 
@@ -570,7 +570,7 @@ class AppTest(unittest.TestCase):
         count2 = self.ariane.graph_dao.count("Node")
         self.assertEqual(2*count, count2)
 
-    def test_credibility(self):
+    def notest_credibility(self):
         args = {"login": "neo4j", "password":"admin", "type": "neo4j"}
         ariane = ariane_delivery.DeliveryTree(args)
         dist_srv = ariane_delivery.DistributionService()
@@ -581,7 +581,7 @@ class AppTest(unittest.TestCase):
         distribs = ariane_delivery.DeliveryTree.distribution_service.get_all()
         print(distribs)
 
-    def test_image(self):
+    def notest_image(self):
         self.ariane.delete_all()
         dist = ariane_delivery.Distribution("community", "0.5.2")
         mod = ariane_delivery.Module("idm", "0.1.0")
@@ -605,7 +605,7 @@ class AppTest(unittest.TestCase):
         # mod.add_submodule(sub)
         # mod.save()
 
-    def test_correct(self):
+    def notest_correct(self):
         self.ariane.delete_all()
         os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "
                   "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")

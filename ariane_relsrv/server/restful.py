@@ -287,8 +287,9 @@ class RestPlugin(Resource):
 class RestPluginList(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
-        self.reqparse.add_argument('name', type=str, help='Distribution name')
-        self.reqparse.add_argument('version', type=str, help='Distribution version')
+        self.reqparse.add_argument('name', type=str, help='Plugin name')
+        self.reqparse.add_argument('version', type=str, help='Plugin version')
+        self.reqparse.add_argument('git_repos', type=str, help='Plugin git repository url')
         self.reqparse.add_argument('nID', type=int, help='Distribution database ID named "nID"')
         self.reqparse.add_argument('dist_version')
         self.reqparse.add_argument('plugin')
@@ -686,6 +687,8 @@ class RestDistributionList(Resource):
         # self.reqparse.add_argument('name', type=str)
         self.reqparse.add_argument('name', type=str, help='Distribution name')
         self.reqparse.add_argument('version', type=str, help='Distribution version')
+        self.reqparse.add_argument('editable', type=bool, help='Distribution editable flag')
+        self.reqparse.add_argument('url_repos', type=str, help='Distribution repository URL')
         self.reqparse.add_argument('nID', type=int, help='Distribution database ID named "nID"')
         self.reqparse.add_argument('distrib', location='json')
         self.reqparse.add_argument('copy', type=bool)

@@ -19,11 +19,12 @@
 
 import unittest
 import json
-
+import os
 import requests
 
-from ariane_relsrv.server.restful import ariane_delivery
+from ariane_relsrv.server.__main__ import ariane_delivery, relmgr_path
 from tests.create_db_from_file import create_db_file
+
 
 __author__ = 'stanrenia'
 
@@ -32,7 +33,7 @@ class TestREST(unittest.TestCase):
     def setUp(self):
         ariane_delivery.DeliveryTree.graph_dao.delete_all()
         # create_db_file('/Users/stanrenia/py_neo4j_db/tests/inputs/create_0.6.4-SNAPSHOT.txt')
-        create_db_file('/Users/stanrenia/py_neo4j_db/tests/inputs/create_0.6.3.txt')
+        create_db_file(os.path.join(relmgr_path, "tests/inputs/create_0.6.3.txt"))
 
     def test_post_distrib(self):
         count = ariane_delivery.DeliveryTree.graph_dao.count("nID")
@@ -52,7 +53,7 @@ class TestREST(unittest.TestCase):
         self.assertEqual(r.status_code, 400)
         r = requests.post("http://localhost:5000/rest/distrib", params={"name": "community", "version": "0.6.5", "nID": dist["nID"]})
         print(r.status_code, r.reason, r.text)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 200)
         r = requests.post("http://localhost:5000/rest/distrib", params={"name": "com", "version": "0.6.8", "nID": dist["nID"]})
         print(r.status_code, r.reason, r.json())
         self.assertEqual(r.status_code, 200)
@@ -302,7 +303,7 @@ class TestREST(unittest.TestCase):
         print(r.status_code, r.reason, r.json())
 
     def test_update_dev_version(self):
-        create_db_file('/Users/stanrenia/py_neo4j_db/tests/inputs/create_0.6.4-SNAPSHOT.txt')
+        create_db_file(os.path.join(relmgr_path, 'tests/inputs/create_0.6.4-SNAPSHOT.txt'))
         m = ariane_delivery.DeliveryTree.module_service.get_unique({"name": "portal", "version": "0.6.4-SNAPSHOT"})
         m2 = ariane_delivery.DeliveryTree.module_service.get_unique({"name": "portal", "version": "0.6.3"})
         m.name = "ogal"
