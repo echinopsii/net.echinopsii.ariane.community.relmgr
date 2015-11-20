@@ -35,6 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <span>Distribution
                 <button class="btnRelease" ng-if="page=='view'" ng-disabled="!btnActive.release" ng-click="clickReleaseMod()">Release</button>
                 <button class="btnRelease" ng-if="page=='view'" ng-disabled="!btnActive.dev" ng-click="clickDevEdit()">DEV</button>
+                <button class="btnRelease" ng-if="page=='view'" ng-show="btnActive.export" ng-disabled="!btnActive.export" ng-click="clickExport()">EXPORT</button>
             </span>
         </div>
         <div class="colBody">

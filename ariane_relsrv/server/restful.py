@@ -44,6 +44,22 @@ from bootstrap import command
 app = Flask(__name__)
 api = Api(app)
 
+# AUTHENTICATION
+from flask_httpauth import HTTPBasicAuth
+auth = HTTPBasicAuth()
+
+class User(object):
+    id = 0
+    username = ""
+    password_hash = ""
+    myUsrList = []
+
+    def __init__(self, id, username, pwd):
+        self.id = id
+        self.username = username
+        self.password_hash = pwd
+
+
 RELMGR_CONFIG = None
 ariane = None
 LOGGER = None
@@ -1016,8 +1032,10 @@ class ReleaseTools(object):
             os.chdir(backp)
             LOGGER.info("IN "+path+": file 'all.cypher' was copied to '"+fname+"'. New all.cypher was "
                         "created from the new Distribution")
+            return 0
         else:
             LOGGER.warn("COULD NOT CREATED THE NEW .cypher: path= '"+path+"' DOES NOT EXIST")
+            return 1
 
     @staticmethod
     def get_ui_running_mode():
@@ -1102,6 +1120,16 @@ class RestDistributionManager(Resource):
                 abort_error("INTERNAL_ERROR", "UNABLE TO REMOVE THE DATABASE DISTRIBTUTION COPY")
             LOGGER.info("The current distribution copy in database was removed")
             ReleaseTools.export_new_distrib()
+            return make_response(json.dumps({}), 200, headers_json)
+
+        elif action == "getConfig":
+            run_mode = ReleaseTools.get_ui_running_mode()
+            return make_response(json.dumps({"run_mode": run_mode}), 200, headers_json)
+
+        elif action == "exportDB":
+            err = ReleaseTools.export_new_distrib(True)
+            if err:
+                abort_error("BAD_REQUEST", "Could not have exported the new database")
             return make_response(json.dumps({}), 200, headers_json)
 
         else:
@@ -1573,19 +1601,20 @@ class RestBuildZip(Resource):
             else:
                 timeout = RELMGR_CONFIG.build_timeout["LOCAL"]
 
+                LOGGER.info("Timeout set to " + str(timeout) + "s")
+
             # Remove existing zip target directory (recreated by distribmgr)
             path_zip = self.path_zip
             ReleaseTools.path_zip = path_zip
             if os.path.exists(path_zip):
                 shutil.rmtree(path_zip)
 
-            # Build new zip with distribManager and print build info into 'infobuild.txt' file
-            #ftmp_fname = "infobuildDistpkgr.txt"
-            # remove infobuild.txt if already exists
-            #if os.path.isfile(ftmp_fname):
-            #    os.remove(ftmp_fname)
-            #os.system("touch "+ftmp_fname)
-            child = subprocess.Popen("./distribManager.py distpkgr " + version_cmd,
+            cmd_slack = ""
+            if RELMGR_CONFIG.url_slack != "":
+                cmd_slack = "-s " + RELMGR_CONFIG.url_slack
+                LOGGER.info("Building info will be transmitted to Slack on: " + RELMGR_CONFIG.url_slack)
+
+            child = subprocess.Popen("./distribManager.py "+cmd_slack+" distpkgr " + version_cmd,
                              # + " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname,
                              shell=True,
                              cwd=project_path + "/ariane.community.distrib")

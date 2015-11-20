@@ -101,7 +101,9 @@ ul {
     background-color: #4e7878;
     float: left;
     width: 30%;
+    height: 80vh;
     padding-right: 2%;
+    overflow-y: scroll;
 }
 .logSection{
     color: #00f400;

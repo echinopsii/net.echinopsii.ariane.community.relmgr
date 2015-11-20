@@ -171,8 +171,8 @@ class TestREST(unittest.TestCase):
     def test_update_modules(self):
         dist = ariane.distribution_service.get_dev_distrib()
         modules = ariane.module_service.get_all(dist)
-        version1 = "0.7.1"
-        version2 = "0.4.3"
+        version1 = "0.7.2"
+        version2 = "0.4.2"
         version3 = "0.1.0"
         mod_dict = {"directory": version1, "mapping": version1, "portal": version1, "injector": version1,
                     "installer": version1, "environment": version1, "idm": version2, "messaging": version3}

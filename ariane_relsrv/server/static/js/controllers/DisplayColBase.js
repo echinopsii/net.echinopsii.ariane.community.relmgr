@@ -60,7 +60,7 @@ angular.module('ArianeUI')
         $scope.cmdRelDEV = {version: null, warning: "You must fill the version field", warn: false};
         $scope.cmdGen = {cmd: $scope.commandsRelA.Core};
         $scope.download = {zip: [], selected: null, click: false};
-        $scope.btnActive = {release: false, dev: false, refresh: true, reset: {active: true, showConfirm: false}};
+        $scope.btnActive = {release: false, dev: false, refresh: true, reset: {active: true, showConfirm: false}, export: false};
         // view variables
         $scope.warnRelA = {warning: "", warningRel: "Distribution Version MUST NOT contain '-SNAPSHOT' when releasing the new Release Distribution",
                            warningDEV: "Distribution Version MUST contain '-SNAPSHOT' when releasing the new DEV Distribution"};
@@ -68,6 +68,13 @@ angular.module('ArianeUI')
         $scope.togPlug = true;
         /* ********************* Main FUNCTIONS ********************* */
         (function init(){
+            serviceAjax.distribManager("other", "getConfig")
+                .success(function(data){
+                    if(data.run_mode)
+                        $scope.CONFIG.mode = data.run_mode;
+                    if($scope.CONFIG.mode == "test")
+                        $scope.btnActive.export = true;
+                });
             loadDistribs();
         })();
         function loadDistribs(callFunction){
@@ -328,6 +335,7 @@ angular.module('ArianeUI')
                                     serviceAjax.distribManager("other", "removeDEVcopy")
                                         .success(function(data){
                                             $scope.mode = "Release";
+                                            $scope.btnActive.export = true;
                                             serviceUI.setNotifyLog("info", "ReleaseC_DEV", "New DEV Distribution was successfully done");
                                             serviceUI.setPage('view');
                                             serviceUI.actionBroadcast('changePage');
@@ -375,6 +383,7 @@ angular.module('ArianeUI')
                                     });
                             }
                             else{ // choice == "ReleaseOnly"
+                                $scope.btnActive.export = true;
                                 serviceUI.setPage("view");
                                 serviceUI.actionBroadcast("changePage");
                                 serviceUI.setNotifyLog("info", "ReleaseD", "Release process is over. Returns to main page");
@@ -606,6 +615,18 @@ angular.module('ArianeUI')
             }
             $scope.btnActive.reset.showConfirm = false;
         };
+        $scope.clickExport = function(){
+            $scope.btnActive.export = false;
+            serviceAjax.distribManager("other", "exportDB").
+                success(function(data){
+                   serviceUI.setNotifyLog("info", "View", "New database file was correctly exported to the server")
+                })
+                .error(function(data){
+                    $scope.btnActive.export = true;
+                    serviceUI.setNotifyLog("error", "View", "An error occured while exporting the new database file to the server");
+                });
+        }
+
         $scope.clickRefresh = function(){
             $scope.btnActive.refresh = false;
             loadDistribs();
