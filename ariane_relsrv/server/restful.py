@@ -21,44 +21,20 @@
 import os
 import re
 
-# project_path = os.getcwd()
-# project_path = project_path[:project_path.index('/ariane.community.relmgr')]
-# relmgr_path = os.path.join(project_path, "ariane.community.relmgr")
-# import sys
-# sys.path.append(project_path)
-# sys.path.append(project_path+"/ariane.community.relmgr")
 import shutil
 import json
 import subprocess
 from datetime import date
-# import logging
 from flask import Flask, make_response, render_template, send_from_directory
 from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import ariane_delivery
 from ariane_reltreelib import exceptions as err
 from ariane_reltreelib.generator import generator
+from ariane_relsrv.server import auth as relmgrAuth
 from bootstrap import command
-# from ariane_relsrv.server.log import log_setup as srvlog
-# from ariane_relsrv.server.config import Config
 
 app = Flask(__name__)
 api = Api(app)
-
-# AUTHENTICATION
-from flask_httpauth import HTTPBasicAuth
-auth = HTTPBasicAuth()
-
-class User(object):
-    id = 0
-    username = ""
-    password_hash = ""
-    myUsrList = []
-
-    def __init__(self, id, username, pwd):
-        self.id = id
-        self.username = username
-        self.password_hash = pwd
-
 
 RELMGR_CONFIG = None
 ariane = None
@@ -74,17 +50,6 @@ def start_relmgr(myglobals):
     project_path = myglobals["project_path"]
     relmgr_path = myglobals["relmgr_path"]
     app.run(debug=True)
-# try:
-#     RELMGR_CONFIG = Config()
-#     RELMGR_CONFIG.parse(relmgr_path + "/bootstrap/confsrv.json")
-# except Exception as e:
-#     print('Release Manager configuration issue: ' + e.__str__())
-#     exit(1)
-#
-# srvlog.setup_logging(RELMGR_CONFIG.log_file)
-# LOGGER = logging.getLogger(__name__)
-# ariane = ariane_delivery.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login, "password": RELMGR_CONFIG.neo4j_password,
-#                                        "host": RELMGR_CONFIG.neo4j_host, "port": RELMGR_CONFIG.neo4j_port, "type": "neo4j"})
 
 def abort_error(error, msg):
     LOGGER.error("(HTTP RESPONSE CODE: '"+error+"') " + msg)
@@ -114,6 +79,7 @@ headers_json = {'Content-Type': 'application/json'}
 headers_html = {'Content-Type': 'text/html'}
 
 class UI(Resource):
+    @relmgrAuth.requires_auth
     def get(self):
         return make_response(render_template('index.html'), 200, headers_html)
 class TempBaseEdit(Resource):
