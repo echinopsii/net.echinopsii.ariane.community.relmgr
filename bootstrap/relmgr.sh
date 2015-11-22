@@ -52,17 +52,23 @@ fi
 case "$1" in
     start)
         echo "Starting Ariane Release Manager"
-        python3 ariane_relsrv/server/__main__.py &
+        python3 ariane_relsrv/server/__main__.py relmgr $2 $3 &
         echo $! > /tmp/ariane_relmgr.pid
         ;;
     stop)
         if [ -f /tmp/ariane_relmgr.pid ]; then
             echo "Stopping Ariane Release Manager"
-            cat /tmp/ariane_relmgr.pid | xargs kill
+            PID=`cat /tmp/ariane_relmgr.pid`
+            pkill -TERM -P $PID
+            kill $PID
             rm /tmp/ariane_relmgr.pid
         else
             echo "Ariane Release Manager is not started."
         fi
+        ;;
+    new_password)
+        echo "Starting updating password"
+        python3 ariane_relsrv/server/__main__.py new_password $2 $3 $4 $5
         ;;
     *)
         echo "Usage: $0 {start|stop}"

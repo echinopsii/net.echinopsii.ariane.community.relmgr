@@ -49,7 +49,13 @@ def setup_logging(default_path='misc/relsrv_logging_conf.json', default_level=lo
     logging.getLogger("httpstream").setLevel(logging.WARNING)
 
 parser = argparse.ArgumentParser()
+parser.add_argument("command",
+                    help="Command choice [relmgr, new_password]")
 parser.add_argument("-c", "--configuration",
+                    help="define your Ariane ProcOS configuration file path")
+parser.add_argument("-p", "--password",
+                    help="define your Ariane ProcOS configuration file path")
+parser.add_argument("-u", "--username",
                     help="define your Ariane ProcOS configuration file path")
 args = parser.parse_args()
 
@@ -84,4 +90,18 @@ myglobals = {"conf": RELMGR_CONFIG, "delivery_tree": ariane, "logger": LOGGER, "
              "relmgr_path": relmgr_path}
 
 if __name__ == '__main__':
-    restful.start_relmgr(myglobals)
+    if args.command == "relmgr":
+        restful.start_relmgr(myglobals)
+    elif args.command == "new_password":
+        if args.username and args.password:
+            from ariane_relsrv.server.users_mgr import User
+            User.users_file = RELMGR_CONFIG.users_file
+            LOGGER.info("changing "+ args.username + " password to " + args.password)
+            ret = User.changePassword(args.username, args.password)
+            if ret == 0:
+                LOGGER.info("Password of '"+args.username+"' has been changed")
+            else:
+                LOGGER.warn("The password has not been changed")
+        else:
+            LOGGER.warn("You must provide username (-u) and password (-p) to update the user password")
+            LOGGER.warn("Example: 'relmgr.sh new_password -u myusername -p mynewpwd'")

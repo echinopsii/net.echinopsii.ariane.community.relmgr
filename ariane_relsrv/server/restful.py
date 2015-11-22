@@ -31,6 +31,8 @@ from ariane_reltreelib.dao import ariane_delivery
 from ariane_reltreelib import exceptions as err
 from ariane_reltreelib.generator import generator
 from bootstrap import command
+from ariane_relsrv.server.users_mgr import User
+
 
 app = Flask(__name__)
 api = Api(app)
@@ -48,7 +50,7 @@ def start_relmgr(myglobals):
     LOGGER = myglobals["logger"]
     project_path = myglobals["project_path"]
     relmgr_path = myglobals["relmgr_path"]
-    relmgrAuth.start_auth_module(RELMGR_CONFIG, LOGGER)
+    User.users_file = RELMGR_CONFIG.users_file
     app.run(debug=True)
 
 # import this after config declarations

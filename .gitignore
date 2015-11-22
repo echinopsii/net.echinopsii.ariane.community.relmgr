@@ -8,3 +8,7 @@ neoDAO/.DS_Store
 *.iml
 pdf/
 ariane_relsrv/server/var/infobuild.txt
+errors.log
+info.log
+tests/errors.log
+tests/info.log
