@@ -49,5 +49,23 @@ if [ $? -ne 0 ]; then
        fi
 fi
 
-# python3 ariane_relsrv/server/restful.py
-python3 ariane_relsrv/server/__main__.py
+case "$1" in
+    start)
+        echo "Starting Ariane Release Manager"
+        python3 ariane_relsrv/server/__main__.py &
+        echo $! > /tmp/ariane_relmgr.pid
+        ;;
+    stop)
+        if [ -f /tmp/ariane_relmgr.pid ]; then
+            echo "Stopping Ariane Release Manager"
+            cat /tmp/ariane_relmgr.pid | xargs kill
+            rm /tmp/ariane_relmgr.pid
+        else
+            echo "Ariane Release Manager is not started."
+        fi
+        ;;
+    *)
+        echo "Usage: $0 {start|stop}"
+        exit 1
+        ;;
+esac

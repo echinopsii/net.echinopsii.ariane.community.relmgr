@@ -30,7 +30,6 @@ from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import ariane_delivery
 from ariane_reltreelib import exceptions as err
 from ariane_reltreelib.generator import generator
-from ariane_relsrv.server import auth as relmgrAuth
 from bootstrap import command
 
 app = Flask(__name__)
@@ -49,7 +48,11 @@ def start_relmgr(myglobals):
     LOGGER = myglobals["logger"]
     project_path = myglobals["project_path"]
     relmgr_path = myglobals["relmgr_path"]
+    relmgrAuth.start_auth_module(RELMGR_CONFIG, LOGGER)
     app.run(debug=True)
+
+# import this after config declarations
+from ariane_relsrv.server import auth as relmgrAuth
 
 def abort_error(error, msg):
     LOGGER.error("(HTTP RESPONSE CODE: '"+error+"') " + msg)
@@ -346,7 +349,6 @@ class RestPluginList(Resource):
             else:
                 abort_error("BAD_REQUEST", "Plugin {} already exists".format(args))
 
-
 class RestSubModule(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
@@ -632,7 +634,6 @@ class RestModuleList(Resource):
             else:
                 abort_error("BAD_REQUEST", "Module {} already exists".format(args))
 
-
 class RestDistribution(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
@@ -767,6 +768,7 @@ class RestDistributionList(Resource):
     #         return {}, 200
     #     else:
     #         abort_error("BAD_REQUEST", "Distribution {} does not exist".format(args))
+
 class ReleaseTools(object):
     zipfile = ""
     path_zip = ""
@@ -1101,7 +1103,6 @@ class RestDistributionManager(Resource):
         else:
             abort_error("BAD_REQUEST", "Given parameter 'mode' is invalid")
 
-
 class RestReset(Resource):
     def post(self):
         alldistrib_file = "all.cypher"
@@ -1263,7 +1264,6 @@ class RestCommit(Resource):
                 message = "Modules from  " + mode + " Distribution ("+dist.version+") Commit-Tag-Push done"
         LOGGER.info(message)
         return make_response(json.dumps({"message": message + warns}), 200, headers_json)
-
 
 class RestCheckout(Resource):
     """

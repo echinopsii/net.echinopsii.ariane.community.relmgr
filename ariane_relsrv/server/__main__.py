@@ -31,6 +31,7 @@ import sys
 sys.path.append(project_path)
 sys.path.append(relmgr_path)
 import logging
+import argparse
 from ariane_reltreelib.dao import ariane_delivery
 from ariane_relsrv.server.config import Config
 
@@ -47,11 +48,23 @@ def setup_logging(default_path='misc/relsrv_logging_conf.json', default_level=lo
     logging.getLogger("py2neo").setLevel(logging.WARNING)
     logging.getLogger("httpstream").setLevel(logging.WARNING)
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-c", "--configuration",
+                    help="define your Ariane ProcOS configuration file path")
+args = parser.parse_args()
+
+config_path = "/etc/ariane_relmgr/confsrv.json"
+if args.configuration:
+    if os.path.isfile(args.configuration):
+        config_path = args.configuration
+else:
+    config_path = "/etc/ariane_relmgr/confsrv.json"
+
 RELMGR_CONFIG = None
 
 try:
     RELMGR_CONFIG = Config()
-    RELMGR_CONFIG.parse(os.path.join(relmgr_path, "ariane_relsrv", "server", "misc", "confsrv.json"))
+    RELMGR_CONFIG.parse(config_path)
 except Exception as e:
     print('Release Manager configuration issue: ' + e.__str__())
     exit(1)

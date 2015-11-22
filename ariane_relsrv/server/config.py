@@ -37,6 +37,7 @@ class Config(object):
         self.ui_running_mode = None
         self.url_slack = None
         self.log_file = None
+        self.users_file = None
 
     def parse(self, config_file_path):
         if not os.path.isfile(config_file_path):
@@ -63,4 +64,5 @@ class Config(object):
             self.ui_running_mode = conf["UI_RUNNING_MODE"]
             self.url_slack = conf["URL_SLACK"]
             self.log_file = conf["LOG_CONFIG_FILE_PATH"]
+            self.users_file = conf["RELMGR_PASSWD_FILE_PATH"]
             self.config_file_path = config_file_path
