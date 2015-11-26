@@ -1458,7 +1458,6 @@ class RestFileDiff(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('filenode', help="Filenode from which you get diff")
-        self.diffrec_filename = "gitdiff.txt"
         super(RestFileDiff, self).__init__()
 
     def get(self):
@@ -1495,12 +1494,15 @@ class RestGetDelZip(Resource):
         zipfile = ReleaseTools.zipfile
         checked = False
         if os.path.exists(path_zip):
-            for (dp, dn, fn) in os.walk(path_zip):
-                if zipfile in fn:
-                    checked = True
-                break
-        if checked:
-            return send_from_directory(path_zip, zipfile, as_attachment=True, mimetype="application/zip")
+            if os.path.isfile(os.path.join(path_zip, zipfile)):
+                checked = True
+            else:
+                for (dp, dn, fn) in os.walk(path_zip):
+                    if zipfile in fn:
+                        checked = True
+                    break
+            if checked:
+                return send_from_directory(path_zip, zipfile, as_attachment=True, mimetype="application/zip")
         else:
             abort_error('BAD_REQUEST', "Zip file Path and Name does not match any existing zip file")
             
@@ -1639,7 +1641,7 @@ class RestGeneration(Resource):
             if ReleaseTools.make_modules_to_tag_list() == -1:
                 abort_error("INTERNAL_ERROR", "There is no copy of the master SNAPSHOT Distribution")
 
-            cmd = command.Command()
+            cmd = command.Command(ariane=ariane)
             cmd.g.set_release_module_exceptions(RestGeneration.MODULES_EXCEPTIONS)
             params = args["command"].split(' ')
             if params[0] == "testOK":

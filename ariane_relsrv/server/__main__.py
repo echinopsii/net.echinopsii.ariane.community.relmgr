@@ -35,6 +35,9 @@ import argparse
 from ariane_reltreelib.dao import ariane_delivery
 from ariane_relsrv.server.config import Config
 
+RELEASE = 0
+DEBUG = 1
+state = DEBUG
 
 def setup_logging(default_path='misc/relsrv_logging_conf.json', default_level=logging.INFO):
     path = default_path
@@ -48,23 +51,23 @@ def setup_logging(default_path='misc/relsrv_logging_conf.json', default_level=lo
     logging.getLogger("py2neo").setLevel(logging.WARNING)
     logging.getLogger("httpstream").setLevel(logging.WARNING)
 
-parser = argparse.ArgumentParser()
-parser.add_argument("command",
-                    help="Command choice [relmgr, new_password]")
-parser.add_argument("-c", "--configuration",
-                    help="define your Ariane ProcOS configuration file path")
-parser.add_argument("-p", "--password",
-                    help="define your Ariane ProcOS configuration file path")
-parser.add_argument("-u", "--username",
-                    help="define your Ariane ProcOS configuration file path")
-args = parser.parse_args()
-
 config_path = "/etc/ariane_relmgr/confsrv.json"
-if args.configuration:
-    if os.path.isfile(args.configuration):
-        config_path = args.configuration
-else:
-    config_path = "/etc/ariane_relmgr/confsrv.json"
+
+parser = argparse.ArgumentParser()
+if state != DEBUG:
+    parser.add_argument("command",
+                        help="Command choice [relmgr, new_password]")
+    parser.add_argument("-c", "--configuration",
+                        help="define your Ariane ProcOS configuration file path")
+    parser.add_argument("-p", "--password",
+                        help="define your Ariane ProcOS configuration file path")
+    parser.add_argument("-u", "--username",
+                    help="define your Ariane ProcOS configuration file path")
+
+    args = parser.parse_args()
+    if args.configuration:
+        if os.path.isfile(args.configuration):
+            config_path = args.configuration
 
 RELMGR_CONFIG = None
 
@@ -90,7 +93,9 @@ myglobals = {"conf": RELMGR_CONFIG, "delivery_tree": ariane, "logger": LOGGER, "
              "relmgr_path": relmgr_path}
 
 if __name__ == '__main__':
-    if args.command == "relmgr":
+    if state == DEBUG:
+        restful.start_relmgr(myglobals)
+    elif args.command == "relmgr":
         restful.start_relmgr(myglobals)
     elif args.command == "new_password":
         if args.username and args.password:
