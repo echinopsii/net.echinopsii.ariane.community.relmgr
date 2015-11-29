@@ -40,7 +40,7 @@ class MyLoader(BaseLoader):
             source = f.read()
         return source, path, lambda: mtime == getmtime(path)
 
-class Degenerator(object):
+class GitTagHandler(object):
 
     @staticmethod
     def is_git_tagged(version, path=None):
@@ -60,7 +60,6 @@ class Degenerator(object):
                 if tag == version:
                     tag_flag = True
                     break
-
         return tag_flag
 
     @staticmethod
@@ -223,7 +222,7 @@ class Generator(object):
             if mod.name in self.exception_release_mod:
                 continue
             if not isSNAPSHOT:
-                if Degenerator.is_git_tagged(mod.version, path=self.dir_output+mod.get_directory_name()):
+                if GitTagHandler.is_git_tagged(mod.version, path=self.dir_output+mod.get_directory_name()):
                     continue
                 if mod.name in mod_on_dev_only:
                     continue
@@ -260,7 +259,7 @@ class Generator(object):
 
         for plug in plugins:
             if not isSNAPSHOT:
-                if Degenerator.is_git_tagged(plug.version, path=self.dir_output+plug.get_directory_name()):
+                if GitTagHandler.is_git_tagged(plug.version, path=self.dir_output+plug.get_directory_name()):
                     continue
             if plug.name in self.exception_release_plug:
                 continue
@@ -288,7 +287,7 @@ class Generator(object):
         pom_gen_exception = self.get_module_pom_gen_exceptions()
 
         if mod_plug.name not in pom_gen_exception:
-            if Degenerator.is_git_tagged(mod_plug.version, path=self.dir_output+mod_plug.get_directory_name()):
+            if GitTagHandler.is_git_tagged(mod_plug.version, path=self.dir_output+mod_plug.get_directory_name()):
                 return
             if type(mod_plug) is ariane_delivery.Module:
                 self.ariane.module_service.get_relations(mod_plug)
@@ -347,7 +346,7 @@ class Generator(object):
         return groupId, artifactId
 
     def generate_pom_dist(self, version, fpom):
-        if Degenerator.is_git_tagged(version, path=self.dir_output+fpom.path):
+        if GitTagHandler.is_git_tagged(version, path=self.dir_output+fpom.path):
             return
         modules = self.get_modules_list(version)
         mod_exception = self.get_module_pom_gen_exceptions()
@@ -362,7 +361,7 @@ class Generator(object):
             target.write(template.render(args))
 
     def generate_plan(self, mod_plug, fplan):
-        if Degenerator.is_git_tagged(mod_plug.version, path=self.dir_output+fplan.path):
+        if GitTagHandler.is_git_tagged(mod_plug.version, path=self.dir_output+fplan.path):
             return
         sub_exceptions = self.get_submodule_plan_exceptions()
         snapshot = False
@@ -393,7 +392,7 @@ class Generator(object):
             target.write(template.render(args))
 
     def generate_json_plugin_dist(self, version, fjson):
-        if Degenerator.is_git_tagged(version, path=self.dir_output+fjson.path):
+        if GitTagHandler.is_git_tagged(version, path=self.dir_output+fjson.path):
             return
         elements = self.get_plugins_list(version)
         dictio = {}
@@ -412,7 +411,7 @@ class Generator(object):
         return self.dir_output+fjson.path+fjson.name
 
     def generate_json_dist(self, version, fjson):
-        if Degenerator.is_git_tagged(version, path=self.dir_output+fjson.path):
+        if GitTagHandler.is_git_tagged(version, path=self.dir_output+fjson.path):
             return
         elements = self.get_modules_list(version)
         print(elements)
@@ -435,7 +434,7 @@ class Generator(object):
             return self.dir_output+fjson.path+fjson.name
 
     def generate_json_plugins(self, version,  fjson):
-        if Degenerator.is_git_tagged(version, path=self.dir_output+fjson.path):
+        if GitTagHandler.is_git_tagged(version, path=self.dir_output+fjson.path):
             return
         distribs = self.ariane.distribution_service.get_all()
         plugin_dict = {}
@@ -510,7 +509,7 @@ class Generator(object):
         return self.dir_output+fjson.path+fjson.name
 
     def generate_json_git_repos(self, version, fjson):
-        if Degenerator.is_git_tagged(version, path=self.dir_output+fjson.path):
+        if GitTagHandler.is_git_tagged(version, path=self.dir_output+fjson.path):
             return
 
         dist = self.get_distrib(version)
@@ -534,7 +533,7 @@ class Generator(object):
             json.dump(dictio, target, indent=4)
 
     def generate_lib_json(self, mod_plug, fjson):
-        if Degenerator.is_git_tagged(mod_plug.version, path=self.dir_output+fjson.path):
+        if GitTagHandler.is_git_tagged(mod_plug.version, path=self.dir_output+fjson.path):
             return
         extension_dict = self.get_submodule_lib_extensions()
         exception_list = self.get_submodule_lib_exceptions()
@@ -560,7 +559,7 @@ class Generator(object):
                 json.dump(list_lib, target, indent=4)
 
     def generate_vsh_installer(self, version, modules, fvsh):
-        if Degenerator.is_git_tagged(version, path=self.dir_output+fvsh.path):
+        if GitTagHandler.is_git_tagged(version, path=self.dir_output+fvsh.path):
             return
         vsh_exceptions = self.get_vsh_exceptions()
         modules = sorted(modules, key=lambda mod: mod.order)
@@ -582,7 +581,7 @@ class Generator(object):
             target.write(template.render(args))
 
     def generate_vsh_plugin(self, p, fvsh):
-        if Degenerator.is_git_tagged(p.version, path=self.dir_output+fvsh.path):
+        if GitTagHandler.is_git_tagged(p.version, path=self.dir_output+fvsh.path):
             return
         v = p.version
         if "-SNAPSHOT" in p.version:
@@ -608,7 +607,7 @@ class Generator(object):
         if "-SNAPSHOT" not in module.version:
             return
         version_tag = module.version[:-len("-SNAPSHOT")]
-        if Degenerator.is_git_tagged(version_tag, path=self.dir_output+module.get_directory_name()):
+        if GitTagHandler.is_git_tagged(version_tag, path=self.dir_output+module.get_directory_name()):
             return
         # net.echinopsii.ariane.community.core.directory_0.7.2-SNAPSHOT.plan.tpl
         tplname = fplantpl.name.split("_")

@@ -224,7 +224,7 @@ angular.module('ArianeUI')
                 serviceUI.setNotifyLog("info", "View", "Entering into Release mode. Waiting for repositories pull and for Distribution copying process ...");
                 serviceAjax.checkout(distrib.version, "directories", false, false)
                     .success(function(data){
-                        serviceAjax.distribCopy(distrib)
+                        serviceAjax.distribManager("RELEASE", "", distrib)
                             .success(function(data){
                                 $scope.CONFIG.mode = data.run_mode;
                                 $scope.mode = "Release";
@@ -341,6 +341,7 @@ angular.module('ArianeUI')
                                             serviceUI.actionBroadcast('changePage');
                                         })
                                         .error(function(data){
+                                            $scope.confirmValRoll.disableVal = false;
                                             serviceUI.setNotifyLog("error", "ReleaseC_DEV", "An error occured while pushing the new master\n"
                                             + ": " + data.message);
                                         });
@@ -379,6 +380,7 @@ angular.module('ArianeUI')
                                         serviceUI.setState({obj: "default", state: "done"});
                                     })
                                     .error(function(data){
+                                        $scope.confirmValRoll.disableVal = false;
                                         serviceUI.setNotifyLog("error", "ReleaseDEV", "New DEV Distribution creation failed. " + data.message);
                                     });
                             }

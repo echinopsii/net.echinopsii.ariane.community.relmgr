@@ -55,10 +55,6 @@ angular.module('ArianeUI')
                 else
                     return $http.get("http://localhost:5000/rest/distrib/" + version);
             },
-            distribCopy: function(dist){
-                var cdist = cleanElementAttr(dist);
-                return $http.post("http://localhost:5000/rest/distrib", {distrib: JSON.stringify(cdist), copy: true});
-            },
             distribManager: function(mode, action, distrib){
                 action = (typeof action === "undefined" ? "" : action);
                 distrib = (typeof distrib === "undefined" ? "" : JSON.stringify(cleanElementAttr(distrib)));

@@ -18,21 +18,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import re
 
-import shutil
 import json
-import subprocess
-from datetime import date
 from flask import Flask, make_response, render_template, send_from_directory
 from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import ariane_delivery
-from ariane_reltreelib import exceptions as err
-from ariane_reltreelib.generator import generator
-from bootstrap import command
 from ariane_relsrv.server.users_mgr import User
-
+from ariane_relsrv.server.release_tools import DatabaseManager, GitManager, InitReleaseTools, BuildManager, \
+                                                FileGenManager, ReleaseTools
 
 app = Flask(__name__)
 api = Api(app)
@@ -51,6 +44,7 @@ def start_relmgr(myglobals):
     project_path = myglobals["project_path"]
     relmgr_path = myglobals["relmgr_path"]
     User.users_file = RELMGR_CONFIG.users_file
+    InitReleaseTools.set_globals(myglobals)
     app.run(debug=True)
 
 # import this after config declarations
@@ -676,7 +670,7 @@ class RestDistributionList(Resource):
         self.reqparse.add_argument('url_repos', type=str, help='Distribution repository URL')
         self.reqparse.add_argument('nID', type=int, help='Distribution database ID named "nID"')
         self.reqparse.add_argument('distrib', location='json')
-        self.reqparse.add_argument('copy', type=bool)
+        # self.reqparse.add_argument('copy', type=bool)
         # self.reqparse.add_argument('version', type=str)
         super(RestDistributionList, self).__init__()
 
@@ -712,33 +706,18 @@ class RestDistributionList(Resource):
             else:
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         elif args["distrib"] is not None:
-            if args["copy"] is not None:
-                copy = args["copy"]
-                if not isinstance(copy, bool):
-                    abort_error("BAD_REQUEST", "Argument 'copy' must be a boolean")
-            else:
-                copy = False
             arg_d = json.loads(args["distrib"])
             d = ariane.distribution_service.get_unique(arg_d)
             if not isinstance(d, ariane_delivery.Distribution):
                 abort_error("BAD_REQUEST", "Given parameter {} must be a Distribution".format(d))
             dev = ariane.distribution_service.get_dev_distrib()
             if dev == d:
-                if copy:
-                    LOGGER.info("Creating a copy of this distribution in order to work on it")
-                    cd = ReleaseTools.create_distrib_copy(d)
-                    if cd is None:
-                        abort_error("FORBIDDEN", "Distribution copy already exists in database")
-                    ReleaseTools.set_distrib_url_repos(cd)
-                    return make_response(json.dumps({"distrib": cd.get_properties(gettype=True),
-                                                    "run_mode": ReleaseTools.get_ui_running_mode()}), 200, headers_json)
-                else:
-                    arg_d.pop("nID")
-                    if d.update(arg_d):
-                        if (d.version == dev.version):
-                            abort_error("BAD_REQUEST", "Can not save this Distribution. The version: {} already exists".format(d.version))
-                        d.save()
-                        return make_response(json.dumps({"distrib": d.get_properties(gettype=True)}), 200, headers_json)
+                arg_d.pop("nID")
+                if d.update(arg_d):
+                    if (d.version == dev.version):
+                        abort_error("BAD_REQUEST", "Can not save this Distribution. The version: {} already exists".format(d.version))
+                    d.save()
+                    return make_response(json.dumps({"distrib": d.get_properties(gettype=True)}), 200, headers_json)
             else:
                 abort_error("BAD_REQUEST", "Can not modifiy Distribution which is not in SNAPSHOT Version")
         else:
@@ -771,250 +750,6 @@ class RestDistributionList(Resource):
     #     else:
     #         abort_error("BAD_REQUEST", "Distribution {} does not exist".format(args))
 
-class ReleaseTools(object):
-    zipfile = ""
-    path_zip = ""
-    distrib_copy_id = 0
-
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def get_distrib_path(dist):
-        dfile = (ariane.get_files(dist))[0]
-        dpath = dfile.path.split('/')[0] + '/'
-        return dpath
-
-    @staticmethod
-    def set_distrib_url_repos(dist):
-        dpath = ReleaseTools.get_distrib_path(dist)
-        dpath = os.path.join(project_path, dpath)
-        if os.path.exists(dpath):
-            fpath = os.path.join(dpath, "resources/sources/ariane.community.git.repos-master.SNAPSHOT.json")
-            if os.path.isfile(fpath):
-                with open(fpath, 'r') as target:
-                    fdata = json.load(target)
-                    for key, val in fdata.items():
-                        url = fdata[key]["url"]
-                        break
-                    url = url[:url.index("ariane.")]
-                    if dist.url_repos != url:
-                        dist.url_repos = url
-                        dist.save()
-                        LOGGER.info("Repository URL was changed to '{}'for Distribution ({})".format(url, dist))
-            else:
-                LOGGER.warn("Distribution({}) repository URL was set to default: "
-                            "'https://github.com/echinopsii/'".format(dist))
-
-    @staticmethod
-    def make_modules_to_tag_list():
-        dist = ariane.distribution_service.get_dev_distrib()
-        if dist.editable == "true":
-            ariane.distribution_service.update_arianenode_lists(dist)
-            for m in dist.list_module:
-                mpath = os.path.join(project_path, m.get_directory_name())
-                last_tag = generator.Degenerator.get_last_tag(path=mpath)
-                mversion = m.version
-                if "-SNAPSHOT" in mversion:
-                    mversion = mversion[:-len("-SNAPSHOT")]
-                if mversion > last_tag:
-                    RestCommit.MODULES_TO_TAG.append(m.name)
-                else:
-                    RestGeneration.MODULES_EXCEPTIONS.append(m.name)
-
-    @staticmethod
-    def create_distrib_copy(d):
-        dev = ariane.distribution_service.get_dev_distrib()
-        if dev.editable == "true":
-            distribs = ariane.distribution_service.get_all()
-            exist_cpy = [d for d in distribs if "copyTemp" in d.version]
-            if len(exist_cpy) > 0:
-                return -1
-            cd = ariane_delivery.DistributionService.copy_distrib(d)
-            # Modify current Distrib name but save this name by adding 'copyTemp' before
-            ReleaseTools.distrib_copy_id = d.id
-            d.name = "copyTemp" + d.name
-            d.version = "copyTemp" + d.version
-            d.editable = "false"
-            d.save()
-            return cd
-        return None
-
-    @staticmethod
-    def create_dev_distrib():
-        """
-        :return 0: success, 1: interal error, can not find the actual DEV Distribution, 2 | 3: The actual DEV Distribution is already in a '-SNAPSHOT' version
-        """
-        snapshot = "-SNAPSHOT"
-        dev = ariane.distribution_service.get_dev_distrib()
-        if not isinstance(dev, ariane_delivery.Distribution):
-            return 1  # abort_error("INTERNAL_ERROR", "Server can not find the actual DEV Distribution")
-
-        if dev.editable != "true":
-            return 2  # The actual DEV Distribution is already in a '-SNAPSHOT' version
-
-        if snapshot in dev.version:
-            return 3  # Same as 2
-
-        newdev = ariane_delivery.DistributionService.copy_distrib(dev)
-        dev.editable = "false"
-        dev.save()
-        newdev.editable = "true"
-        newdev.version = ReleaseTools.update_version(newdev.version)
-        newdev.version += snapshot
-        newdev.save()
-        modules = ariane.module_service.get_all(newdev)
-        for m in modules:
-            if snapshot in m.version:
-                newdev.delete()
-                return 3
-            m.version = ReleaseTools.update_version(m.version)
-            m.version += snapshot
-            m.save()
-
-        # plugins = ariane.plugin_service.get_all(newdev)
-        # for p in plugins:
-        #     p.version += snapshot
-        #     p.save()
-        return newdev
-
-    @staticmethod
-    def remove_genuine_distrib():
-        dcopies = ariane.distribution_service.get_all()
-        if len(dcopies) > 0:
-            dcopies = [d for d in dcopies if "copyTemp" in d.version]
-            if len(dcopies) > 1:
-                LOGGER.warn("MULTIPLE DISTRIB COPIES WERE FOUND IN DATABASE")
-            if len(dcopies) == 0:
-                return -1
-            for d in dcopies:
-                d.delete()
-            return 0
-        return -2
-
-    @staticmethod
-    def remove_distrib_copy(cd):
-        if (isinstance(cd, ariane_delivery.Distribution)) and (cd.editable == "true"):
-            cd.delete()
-        else:
-            cd = ariane.distribution_service.find({"editable": "true"})
-            if isinstance(cd, ariane_delivery.Distribution):
-                cd.delete()
-            elif isinstance(cd, list):
-                for c in cd:
-                    c.delete()
-            else:
-                return -1
-        dist = ariane.distribution_service.get_unique({"nID": ReleaseTools.distrib_copy_id})
-        if isinstance(dist, ariane_delivery.Distribution):
-            dist.name = dist.name[len("copyTemp"):]
-            dist.version = dist.version[len("copyTemp"):]
-            dist.editable = "true"
-            dist.save()
-            return 0
-        distribs = ariane.distribution_service.get_all()
-        for d in distribs:
-            if "copyTemp" in d.version:
-                d.version = d.version[len("copyTemp"):]
-                if "copyTemp" in d.name:
-                    d.name = d.name[len("copyTemp"):]
-                d.editable = "true"
-                d.save()
-                return 0
-        return 1
-
-    @staticmethod
-    def reset_dev_distrib():
-        dev = ariane.distribution_service.get_dev_distrib()
-        if not isinstance(dev, ariane_delivery.Distribution):
-            return 1
-        if dev.editable != "true":
-            return 2
-        cpy_dev = ariane.distribution_service.get_all()
-        cpy_dev = [cd for cd in cpy_dev if "copyTemp" in cd.version]
-        if len(cpy_dev) == 0:
-            return 3
-        if len(cpy_dev) > 1:
-            return 4
-
-        cpy_dev = cpy_dev[0]
-        cpy_mod = ariane.module_service.get_all(cpy_dev)
-        dev_mod = ariane.module_service.get_all(dev)
-        cpy_plug = ariane.plugin_service.get_all(cpy_dev)
-        dev_plug = ariane.plugin_service.get_all(dev)
-        for m in cpy_mod:
-            for dm in dev_mod:
-                if m.name == dm.name:
-                    dm.version = m.version
-                    dm.save()
-        for p in cpy_plug:
-            for dp in dev_plug:
-                if p.name == dp.name:
-                    dp.version = p.version
-                    dp.save()
-
-        dev.version = cpy_dev.version[len("copyTemp"):]
-        dev.save()
-
-    @staticmethod
-    def update_version(version, position="minor", operation="inc"):
-        if position == "minor":
-            v = version.split('.')
-            if operation == "inc":
-                v[-1] = str(int(v[-1]) + 1)  # Increments minor number of the version
-            version = '.'.join(v)
-
-        return version
-
-    @staticmethod
-    def export_new_distrib(erase_genuine_file=False):
-        """
-        :param erase_genuine_file: if True, erase the 'all.cypher' file located in ariane.community.relmgr/bootstrap/dependency_db/
-            Knowing that this file is used for resetting the Database by calling ResetReset's POST (click on 'Reset' button from the UI)
-        :return:
-        """
-        todaydate = date.today().strftime("%d%m%y")
-        path = RELMGR_CONFIG.db_export_path
-        backp = os.getcwd()
-        LOGGER.info("Trying to copy and create the new 'all.cypher' file into " + path)
-        if os.path.exists(path):
-            os.chdir(path)
-            fname = "all_"+todaydate+".cypher"
-            if os.path.isfile(fname):
-                same_files = []
-                for (dp, dn, fn) in os.walk("."):
-                    same_files = [f for f in fn if todaydate in f]
-                    same_files = sorted(same_files, reverse=True)
-                    break
-                if len(same_files) == 1:
-                    fname = same_files[0].split('.')
-                    fname = fname[0] + '_1.cypher'
-                else:
-                    tmp = same_files[0].split('_')
-                    tmp = tmp[-1].split('.')
-                    tmp = str(int(tmp[0])+1)
-                    fname = "all_"+todaydate+"_"+tmp+".cypher"
-            shutil.copy("all.cypher", fname)
-            os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(path, "all.cypher"))
-            if erase_genuine_file:
-                os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(relmgr_path, "bootstrap",
-                                                                                  "dependency_db", "all.cypher"))
-            os.chdir(backp)
-            LOGGER.info("IN "+path+": file 'all.cypher' was copied to '"+fname+"'. New all.cypher was "
-                        "created from the new Distribution")
-            return 0
-        else:
-            LOGGER.warn("COULD NOT CREATED THE NEW .cypher: path= '"+path+"' DOES NOT EXIST")
-            return 1
-
-    @staticmethod
-    def get_ui_running_mode():
-        with open(RELMGR_CONFIG.config_file_path, "r") as configfile:
-            run_mode = json.load(configfile)
-            if "UI_RUNNING_MODE" in run_mode.keys():
-                return run_mode["UI_RUNNING_MODE"]
-            else:
-                return 'test'
 
 class RestDistributionManager(Resource):
     """ REST endpoint for Managing Distributions stored in database.
@@ -1049,34 +784,39 @@ class RestDistributionManager(Resource):
             ui_running_mode = ReleaseTools.get_ui_running_mode()
             dev = ariane.distribution_service.get_dev_distrib()
             if "-SNAPSHOT" in dev.version:
-                cpy_dev = ariane.distribution_service.get_all()
-                cpy_dev = [cd for cd in cpy_dev if "copyTemp" in cd.version]
+                cpy_dev = DatabaseManager.get_distrib_copies()
                 if len(cpy_dev) != 1:
                     abort_error("BAD_REQUEST", "No copy was found in database, can not continue")
                 return make_response(json.dumps({"distrib": dev.get_properties(gettype=True),
                                                  "run_mode": ui_running_mode}), 200, headers_json)
 
-            LOGGER.info("Creating the new DEV Distribution...")
-            newdev = ReleaseTools.create_dev_distrib()
-            if not isinstance(newdev, ariane_delivery.Distribution):
-                if newdev == 1:
-                    abort_error("INTERNAL_ERROR", "Server can not find the actual DEV Distribution")
-                elif newdev in [2, 3]:
-                    abort_error("BAD_REQUEST", "A module of the actual DEV Distribution is already in a '-SNAPSHOT' version")
-            LOGGER.info("DEV Distribution created in database. Now removing the copy...")
-            ReleaseTools.remove_genuine_distrib()
-            LOGGER.info("Old Distribution copy was removed. Start copying the new DEV distribution...")
-            newdevcp = ReleaseTools.create_distrib_copy(newdev)
-            if not isinstance(newdev, ariane_delivery.Distribution):
-                if newdevcp == -1:
-                    abort_error("INTERNAL_ERROR", "Error occured while copying the New DEV Distribution into the "
-                                                  "database: A copy already exists.")
+            newdevcp = DatabaseManager.make_dev_distrib()
+            if newdevcp == 1:
+                abort_error("INTERNAL_ERROR", "Server can not find the actual DEV Distribution")
+            elif newdevcp == 2:
+                abort_error("BAD_REQUEST", "A module of the actual DEV Distribution is already in a '-SNAPSHOT' version")
+            elif newdevcp == 3:
+                abort_error("INTERNAL_ERROR", "Error occured while copying the New DEV Distribution into the "
+                                              "database: A copy already exists.")
+            elif newdevcp == 4:
                 abort_error("INTERNAL_ERROR", "Error occured while copying the New DEV Distribution into the database")
 
-            LOGGER.info("New DEV Distribution copy was created. Now working on this copy")
-            ReleaseTools.export_new_distrib()
             return make_response(json.dumps({"distrib": newdevcp.get_properties(gettype=True),
                                              "run_mode": ui_running_mode}), 200, headers_json)
+        elif mode == "RELEASE":
+            if args["distrib"] is None:
+                abort_error("BAD_REQUEST", "You must provide the 'distrib' parameter")
+            arg_d = json.loads(args["distrib"])
+            d = ariane.distribution_service.get_unique(arg_d)
+            if not isinstance(d, ariane_delivery.Distribution):
+                abort_error("BAD_REQUEST", "Given parameter {} must be a Distribution".format(d))
+
+            err, cd = DatabaseManager.make_release_distrib(d)
+            if err == 1:
+                abort_error("FORBIDDEN", "Distribution copy already exists in database")
+            else:
+                return make_response(json.dumps({"distrib": cd.get_properties(gettype=True),
+                                                 "run_mode": ReleaseTools.get_ui_running_mode()}), 200, headers_json)
 
         elif action == "getDEV":
             dev = ariane.distribution_service.get_dev_distrib()
@@ -1107,22 +847,14 @@ class RestDistributionManager(Resource):
 
 class RestReset(Resource):
     def post(self):
-        alldistrib_file = "all.cypher"
-        fpath = os.path.join(relmgr_path, "bootstrap", "dependency_db", alldistrib_file)
-        if os.path.isfile(fpath):
-            ariane.delete_all()
-            os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -file " + fpath)
-            LOGGER.info("Successful database reset")
+        err, fpath = DatabaseManager.reset_database()
+        if err == 0:
             return make_response(json.dumps({"message": "All distributions have been imported: Database is reset"}),
                                  200, headers_json)
         else:
-            abort_error("INTERNAL_ERROR", "Error while importing '"+fpath+"', file was not "
-                        "found")
+            abort_error("INTERNAL_ERROR", "Error while importing '"+fpath+"', file was not found")
 
 class RestCommit(Resource):
-    MODULES_TO_TAG = []
-    PLUGINS_TO_TAG = []
-    commit_comment = ""
 
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
@@ -1132,58 +864,6 @@ class RestCommit(Resource):
         self.reqparse.add_argument('task', type=str)
         self.reqparse.add_argument('comment', type=str)
         super(RestCommit, self).__init__()
-
-    @staticmethod
-    def commit_element(m, mpath, commit, task, comment, mode):
-        rets = {"path_errs": ""}
-        errs = ""
-        warns = ""
-        if os.path.exists(mpath):
-            os.chdir(mpath)
-            if subprocess.call("git add ./", shell=True) != 0:
-                LOGGER.error("error_on_add("+m.name+");")
-                errs += "error_on_add("+m.name+"); "
-            else:
-                LOGGER.info(m.name+"("+m.version+") added")
-                pipe = subprocess.Popen(commit, shell=True, stdout=subprocess.PIPE)
-                git_cmd_out = pipe.communicate()[0]
-                # Handle 'git tag' errors or warnings. (Warning if 'nothing to tag' is returned by the command)
-                if (isinstance(git_cmd_out, bytes)) and (len(git_cmd_out) > 0):
-                    git_cmd_out = (git_cmd_out.decode()).split('\n')
-                else:
-                    git_cmd_out = ""
-                for line in git_cmd_out:
-                    if "nothing" in line:
-                        warns += "warning_on_tag("+m.name+" "+m.version+"): "+line+"; "
-                        LOGGER.warn("warning_on_tag("+m.name+" "+m.version+"): "+line+"; ")
-                        break
-                    if "error" in line:
-                        LOGGER.error("error_on_commit("+m.name+"): "+task + " "+ comment + ""+line+"; ")
-                        errs += "error_on_commit("+m.name+"): "+task + " "+ comment + ""+line+"; "
-                        break
-                if errs == "":
-                    if subprocess.call("git push ", shell=True) != 0:
-                        LOGGER.error("error_on_push("+m.name+"): " + m.version + ";")
-                        errs += "error_on_push("+m.name+"): " + m.version + "; "
-                    else:
-                        LOGGER.info(m.name+"("+m.version+") pushed")
-                        if mode == "Release":
-                            LOGGER.info(m.name+"("+m.version+") commited")
-                            if subprocess.call("git tag " + m.version, shell=True) != 0:
-                                LOGGER.error("error_on_tag("+m.name+" "+m.version+"); ")
-                                errs += "error_on_tag("+m.name+" "+m.version+"); "
-                            else:
-                                LOGGER.info(m.name+"("+m.version+") tagged")
-                                if subprocess.call("git push origin " + m.version, shell=True) != 0:
-                                    LOGGER.error("error_on_push_origin("+m.name+"): " + m.version + ";")
-                                    errs += "error_on_push_origin("+m.name+"): " + m.version + "; "
-                                else:
-                                    LOGGER.info(m.name+"("+m.version+") origin pushed")
-        else:
-            rets["path_errs"] = mpath
-        rets["errs"] = errs
-        rets["warns"] = warns
-        return rets
 
     def post(self):
         args = self.reqparse.parse_args()
@@ -1203,69 +883,14 @@ class RestCommit(Resource):
             LOGGER.warn("You must provide 'comment' parameter")
             abort_error("BAD_REQUEST", "You must provide 'comment' parameter")
 
-        isdistrib = args["isdistrib"]
-        isplugin = args["isplugin"]
-        mode = args["mode"]
-        task = args["task"]
-        comment = args["comment"]
+        err, message, warns = GitManager.commit_distrib(args)
 
-        # git commit -m "task comment" ./
-        # git tag version_module
-        # git push origin  version_module
-
-        dist = ariane.distribution_service.get_dev_distrib()
-        if not isinstance(dist, ariane_delivery.Distribution):
+        if err == 1:
             abort_error("INTERNAL_ERROR", "Server can not find the current Distribution to commit")
-
-        LOGGER.info("Start " + mode + " Distribution("+dist.version+") commit-tag-push ...")
-        errs = ""
-        warns = ""
-        path_errs = []
-        RestCommit.commit_comment = task+" "+comment
-        commit = "git commit -m \""+RestCommit.commit_comment+"\" ./"
-
-        if isdistrib:
-            rets = RestCommit.commit_element(dist, os.path.join(project_path, ReleaseTools.get_distrib_path(dist)), commit, task, comment, mode)
-            errs += rets["errs"]
-            warns += rets["warns"]
-            if rets["path_errs"] != "":
-                path_errs.append(rets["path_errs"])
-        else:
-            if isplugin:
-                mod_plugs = ariane.plugin_service.get_all(dist)
-            else:
-                mod_plugs = ariane.module_service.get_all(dist)
-            for m in mod_plugs:
-                if isplugin:
-                    if m.name not in RestCommit.PLUGINS_TO_TAG:
-                        LOGGER.warn(m.name+"("+m.version+") not in plugins to tag")
-                        continue
-                else:
-                    if m.name not in RestCommit.MODULES_TO_TAG:
-                        LOGGER.warn(m.name+"("+m.version+") not in modules to tag")
-                        continue
-                    mpath = os.path.join(project_path, m.get_directory_name())
-                    rets = RestCommit.commit_element(m, mpath, commit, task, comment, mode)
-                    errs += rets["errs"]
-                    warns += rets["warns"]
-                    if rets["path_errs"] != "":
-                        path_errs.append(rets["path_errs"])
-
-        if len(path_errs) > 0:
-            errs += " Error: Following paths does not exist {} ; ".format(path_errs)
-        if len(errs) > 0:
-            message = "Errors occured while commiting the Distribution. Please correct them manually " \
-                      "(Check Warning logs for more information).\n" + errs
+        elif err == 2:
             abort_error("INTERNAL_ERROR", message)
         else:
-            if isdistrib:
-                message = "'distrib' module from" + mode + "Distribution ("+dist.version+") Commit-Tag-Push done"
-            elif isplugin:
-                message = "Plugins from  " + mode + " Distribution ("+dist.version+") Commit-Tag-Push done"
-            else:
-                message = "Modules from  " + mode + " Distribution ("+dist.version+") Commit-Tag-Push done"
-        LOGGER.info(message)
-        return make_response(json.dumps({"message": message + warns}), 200, headers_json)
+            return make_response(json.dumps({"message": message + warns}), 200, headers_json)
 
 class RestCheckout(Resource):
     """
@@ -1300,44 +925,26 @@ class RestCheckout(Resource):
 
         if args["mode"] is None:
             abort_error("BAD_REQUEST", "You must specify a mode for the Checkout WebService")
+
         mode = args["mode"]
         if mode in ["files", "files_DEV"]:
-            LOGGER.info("Start files checkout ...")
-            # First Checkout 'ariane.community.distrib' files: most of these files are versioned so we need to
-            # remove them.
-            dirpath = os.path.join(project_path, ReleaseTools.get_distrib_path(dist))
-            subprocess.call("git clean -f", shell=True, cwd=dirpath)
-            subprocess.call("git checkout .", shell=True, cwd=dirpath)
-            LOGGER.info("distrib clean and checkout")
-            # Second, Checkout all other Modules/Plugins files. There are 2 verisoned files (.plan et .json build)
-            # so we remove them. For the not versioned files we use 'git checkout'. Plugin checkout is optionnal
-            modules = ariane.module_service.get_all(dist)
-            if isplugin:
-                plugins = ariane.plugin_service.get_all(dist)
-                modules.extend(plugins)
-
-            for m in modules:
-                dirpath = os.path.join(project_path, m.get_directory_name() + '/')
-                subprocess.call("git clean -f", shell=True, cwd=dirpath)
-                subprocess.call("git checkout .", shell=True, cwd=dirpath)
-                LOGGER.info(m.name + " clean and checkout")
-
+            err = GitManager.checkout_distrib(dist, isplugin)
+            if err == 1:
+                abort_error("BAD_REQUEST", "Given Distribution version ({})does not exists".format(version))
             # Delete copy distrib and rename Initial distrib
             if mode == "files":
                 LOGGER.info("Removing the working copy...")
-                cd = ariane.distribution_service.get_unique({"version": version})
-                if not isinstance(cd, ariane_delivery.Distribution):
-                    abort_error("BAD_REQUEST", "Temporary Distribution version {} was not found. Can not remove it".format(version))
-                ret_rmcompy = ReleaseTools.remove_distrib_copy(cd)
+                ret_rmcompy = DatabaseManager.remove_distrib_copy(dist)
                 if ret_rmcompy == 1:
                     abort_error("BAD_REQUEST", "Distribution copy model was not found. Can not reinitialize the Database")
                 elif ret_rmcompy == -1:
-                    abort_error("BAD_REQUEST", "Given distribution {} is not the copy, Can not reinitialize the Database".format(cd))
+                    abort_error("BAD_REQUEST", "Given distribution {} is not the copy, "
+                                               "Can not reinitialize the Database".format(dist))
                 LOGGER.info("Working copy was removed")
 
             elif mode == "files_DEV":
                 LOGGER.info("Reseting the working copy...")
-                ret = ReleaseTools.reset_dev_distrib()
+                ret = DatabaseManager.reset_dev_distrib()
                 if ret == 1:
                     abort_error("BAD_REQUEST", "DEV Distribution was not found")
                 elif ret == 2:
@@ -1351,108 +958,17 @@ class RestCheckout(Resource):
             return make_response(json.dumps({"message": "git checkout done. Database reinitialized."}), 200, headers_json)
 
         elif mode == "directories":
-            LOGGER.info("Start repositories git checkout and git pull")
-            paths = [ReleaseTools.get_distrib_path(dist)]
-            modules = ariane.module_service.get_all(dist)
-            plugins = ariane.plugin_service.get_all(dist)
-            paths.extend([os.path.join(project_path, m.get_directory_name()) for m in modules])
-            if isplugin:
-                paths.extend([os.path.join(project_path, p.get_directory_name()) for p in plugins])
-            errs = ""
-            for p in paths:
-                if os.path.exists(p):
-                    if subprocess.call('git checkout ./', shell=True, cwd=p) != 0:
-                        errs += "error while git checkout {}-".format(p)
-                    if subprocess.call('git pull', shell=True, cwd=p) != 0:
-                        errs += "error while git pull {}-".format(p)
-            if errs != "":
-                LOGGER.warn("Git Checkout done but errors occured for some repositories: "+errs)
-            else:
-                LOGGER.info("Git Checkout done")
-
-            return make_response(json.dumps({"message": "git checkout and pull done. " + errs}), 200, headers_json)
+            err, errmsg = GitManager.pull_checkout_distrib(dist, isplugin)
+            return make_response(json.dumps({"message": "git checkout and pull done. " + errmsg}), 200, headers_json)
 
         elif mode == "tags":
-            # git tag -d version_module
-            # git push origin :refs/tags/version_module
-            # if git log -1 --pretty=%B | grep "last commit ticket + last commit comment" == 0
-            #    git reset --hard HEAD~1
-            backpath = os.getcwd()
-            LOGGER.info("Start Tags reset")
-            dist = ariane.distribution_service.get_dev_distrib()
-            if not isinstance(dist, ariane_delivery.Distribution):
+            err, message = GitManager.checkout_tags(isdistrib, isplugin)
+            if err == 1:
                 abort_error("INTERNAL_ERROR", "Server can not find the current Distribution to commit")
-
-            if isplugin:
-                mod_plugs = ariane.plugin_service.get_all(dist)
-            else:
-                mod_plugs = ariane.module_service.get_all(dist)
-            errs = ""
-            path_errs = []
-            # Handle 'distrib' module
-            if isdistrib:
-                dpath = os.path.join(project_path, ReleaseTools.get_distrib_path(dist))
-                if os.path.exists(dpath):
-                    os.chdir(dpath)
-                    if subprocess.call("git tag -d " + dist.version, shell=True) != 0:
-                        errs += "error_on_tag: distrib(" + dist.version + "); "
-                    else:
-                        if subprocess.call("git push origin :refs/tags/" + dist.version, shell=True) != 0:
-                            errs += "error_on_push_origin: distrib( " + dist.version + "); "
-                        else:
-                            if subprocess.call("git log -1 --pretty=%B | grep '" +
-                                                re.escape(RestCommit.commit_comment) + "'", shell=True) != 0:
-                                LOGGER.info("No need to reset last commit in distrib repository")
-                            else:
-                                if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
-                                    errs += "error_on_reset:distrib( " + dist.version + "); "
-                                else:
-                                    if subprocess.call("git push --force origin master", shell=True) != 0:
-                                        errs += "error_on_reset_commit: distrib(" + dist.version + "); "
-                                    else:
-                                        LOGGER.info("Last commit was reset in distrib repository")
-
-            for m in mod_plugs:
-                if isplugin:
-                    if m.name not in RestCommit.PLUGINS_TO_TAG:
-                        continue
-                else:
-                    if m.name not in RestCommit.MODULES_TO_TAG:
-                        continue
-                    mpath = os.path.join(project_path, m.get_directory_name())
-                    if os.path.exists(mpath):
-                        os.chdir(mpath)
-                        if subprocess.call("git tag -d " + m.version, shell=True) != 0:
-                            errs += "error_on_tag: "+m.name+"(" + m.version + "); "
-                        else:
-                            if subprocess.call("git push origin :refs/tags/" + m.version, shell=True) != 0:
-                                errs += "error_on_push_origin: "+m.name+"(" + m.version + "); "
-                            else:
-                                if subprocess.call("git log -1 --pretty=%B | grep '" +
-                                                   re.escape(RestCommit.commit_comment) + "'",
-                                                   shell=True) != 0:
-                                    LOGGER.info("No need to reset last commit in "+m.name+" repository")
-                                else:
-                                    if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
-                                        errs += "error_on_reset: "+m.name+"(" + m.version + "); "
-                                    else:
-                                        if subprocess.call("git push --force origin master", shell=True) != 0:
-                                            errs += "error_on_reset_commit: "+m.name+"(" + m.version + "); "
-                                        else:
-                                            LOGGER.info("Last commit was reset in "+m.name+" repository")
-                    else:
-                        path_errs.append(mpath)
-
-            os.chdir(backpath)
-            if len(path_errs) > 0:
-                errs += " Error: Following paths does not exist {} ; ".format(path_errs)
-            if len(errs) > 0:
-                message = "Errors occured. Please correct them manually.\n" + errs
+            elif err == 2:
                 abort_error("INTERNAL_ERROR", message)
             else:
-                message = "Tags reset done."
-            LOGGER.info(message)
-            return make_response(json.dumps({"message": message}), 200, headers_json)
+                return make_response(json.dumps({"message": message}), 200, headers_json)
 
 class RestFileDiff(Resource):
     def __init__(self):
@@ -1464,24 +980,14 @@ class RestFileDiff(Resource):
         args = self.reqparse.parse_args()
         if args["filenode"] is not None:
             fnode = json.loads(args["filenode"])
-            f = ariane.find_without_label({"nID": fnode["nID"]})
-            if f is not None:
-                full_path = os.path.join(project_path, f.path)
-                if os.path.exists(full_path):
-                    flag_diff = True
-                    out = subprocess.check_output("git diff " + f.name, shell=True, cwd=full_path)
-                    out = (out.decode()).split('\n')
-                    if out[-1] == '':
-                        out = out[:-1]
-                    if len(out) == 0:
-                        flag_diff = False
-                        out = subprocess.check_output("cat " + f.name, shell=True, cwd=full_path)
-                        out = (out.decode()).split('\n')
-                        if out[-1] == '':
-                            out = out[:-1]
-                    return make_response(json.dumps({"diff": out, "isDiff": flag_diff}), 200, headers_json)
+            err, out, flag_diff = FileGenManager.get_file_diff(fnode["nID"])
+            if err == 1:
+                abort_error("BAD_REQUEST", "Given parameter {} does not match an existing file"
+                                           " in database".format(fnode))
             else:
-                abort_error("BAD_REQUEST", "Given parameter {} does not match an existing file in database".format(fnode))
+                return make_response(json.dumps({"diff": out, "isDiff": flag_diff}), 200, headers_json)
+        else:
+            abort_error("BAD_REQUEST", "You must provide the 'filenode' parameter")
 
 class RestGetDelZip(Resource):
     def __init__(self):
@@ -1490,25 +996,16 @@ class RestGetDelZip(Resource):
         super(RestGetDelZip, self).__init__()
 
     def post(self):
-        path_zip = ReleaseTools.path_zip
-        zipfile = ReleaseTools.zipfile
-        checked = False
-        if os.path.exists(path_zip):
-            if os.path.isfile(os.path.join(path_zip, zipfile)):
-                checked = True
-            else:
-                for (dp, dn, fn) in os.walk(path_zip):
-                    if zipfile in fn:
-                        checked = True
-                    break
-            if checked:
-                return send_from_directory(path_zip, zipfile, as_attachment=True, mimetype="application/zip")
-        else:
+        path_zip = BuildManager.path_zip
+        zipfile = BuildManager.zipfile
+        err = BuildManager.check_for_zip()
+        if err == 1:
             abort_error('BAD_REQUEST', "Zip file Path and Name does not match any existing zip file")
-            
+        else:
+            return send_from_directory(path_zip, zipfile, as_attachment=True, mimetype="application/zip")
+
     def delete(self):
-        zipfile = ReleaseTools.zipfile
-        path_zip = ReleaseTools.path_zip
+        zipfile = BuildManager.zipfile
         args = self.reqparse.parse_args()
         if args["version"] is None:
             abort_error("BAD_REQUEST", "You must provide the 'version' parameter, the zip file version to remove.")
@@ -1517,9 +1014,11 @@ class RestGetDelZip(Resource):
         if version not in zipfile:
             abort_error("BAD_REQUEST", "Given parameter 'version' {} does not match the latest Zip file created".format(version))
         
-        # If file exist, remove. If not, it is already removed so do nothing.
-        if os.path.isfile(path_zip+zipfile):
-            os.remove(path_zip+zipfile)
+        err = BuildManager.delete_zip()
+        if err == 1:
+            msg = "Built Zip file does not exists, can not remove it"
+            LOGGER.warn(msg)
+            return make_response(json.dumps({"message": msg, "zip": zipfile}), 200, headers_json)
         return make_response(json.dumps({"message": "Zip file {} has been removed".format(zipfile), "zip": zipfile}), 200, headers_json)
 
 class RestBuildZip(Resource):
@@ -1532,16 +1031,12 @@ class RestBuildZip(Resource):
         self.reqparse.add_argument('tags', type=bool, help='True if building .zip from Git tags')
         super(RestBuildZip, self).__init__()
 
-    def get(self):
-        pass # return send_from_directory(self.path_zip, self.zipfile, as_attachment=True, mimetype="application/zip")
-
     def post(self):
         """
         Use a subprocess calling "bootstrap/command.py 'command (arguments for command.py)'" to execute the File Generation.
         command.py handles the change of working directory
         :return:
         """
-        LOGGER.info("Start Zip Build")
         args = self.reqparse.parse_args()
         if args["version"] is None:
             abort_error("BAD_REQUEST", "You must provide the parameter 'version'")
@@ -1554,70 +1049,20 @@ class RestBuildZip(Resource):
         version = args["version"]
         from_tags = args["tags"]
         action = args["action"]
+
         if str(action).lower() == "buildzip":
-            # Command is either 'distpkgr master.SNAPSHOT'
-            # or 'distpkgr {version}.SNAPSHOT' where {version} is version's value (i.e version= '0.6.4')
-            if "SNAPSHOT" in version:
-                version = "master.SNAPSHOT"
-                version_cmd = version
-            else:
-                if from_tags:
-                    version_cmd = version
-                else:
-                    version_cmd = version + ".SNAPSHOT"
-
-            if from_tags:
-                timeout = RELMGR_CONFIG.build_timeout["REMOTE"]
-            else:
-                timeout = RELMGR_CONFIG.build_timeout["LOCAL"]
-
-                LOGGER.info("Timeout set to " + str(timeout) + "s")
-
-            # Remove existing zip target directory (recreated by distribmgr)
-            path_zip = self.path_zip
-            ReleaseTools.path_zip = path_zip
-            if os.path.exists(path_zip):
-                shutil.rmtree(path_zip)
-
-            cmd_slack = ""
-            if RELMGR_CONFIG.url_slack != "":
-                cmd_slack = "-s " + RELMGR_CONFIG.url_slack
-                LOGGER.info("Building info will be transmitted to Slack on: " + RELMGR_CONFIG.url_slack)
-
-            child = subprocess.Popen("./distribManager.py "+cmd_slack+" distpkgr " + version_cmd,
-                             # + " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname,
-                             shell=True,
-                             cwd=project_path + "/ariane.community.distrib")
-            streamdata = child.communicate(timeout=timeout)[0]
-            build_done = False
-            rc = child.returncode
-            if rc == 0:
-                for (dp, dn, fn) in os.walk(path_zip):
-                    if len(fn) == 1:
-                         ReleaseTools.zipfile = fn[0]
-                         build_done = True
-                         break
-            #print("Build Info in "+ftmp_fname)
-
-            if build_done:
-                LOGGER.info("Build success")
-                return make_response(json.dumps({"zip": ReleaseTools.zipfile, "message": "Build Success"}), 200, headers_json)
-            else:
+            err = BuildManager.build_distrib(version, from_tags)
+            if err == 1:
                 abort_error("INTERNAL_ERROR", "Error while building")
+            else:
+                return make_response(json.dumps({"zip": BuildManager.zipfile, "message": "Build Success"}), 200, headers_json)
 
         elif str(action).lower() == "mvncleaninstall":
-            timeout = RELMGR_CONFIG.build_timeout["REMOTE"]
-            child = subprocess.Popen("mvn clean install", shell=True, cwd=project_path)
-            streamdata = child.communicate(timeout=timeout)[0]
-            mvn_done = False
-            rc = child.returncode
-            if rc == 0:
-                mvn_done = True
-            if mvn_done:
-                LOGGER.info("mvn clean install succeeded")
-                return make_response(json.dumps({"message": "mvn clean install succeeded"}), 200, headers_json)
-            else:
+            err = BuildManager.do_mvn_clean_install()
+            if err == 1:
                 abort_error("INTERNAL_ERROR", "Error while running 'mvn clean install'")
+            else:
+                return make_response(json.dumps({"message": "mvn clean install succeeded"}), 200, headers_json)
 
 class RestGeneration(Resource):
     MODULES_EXCEPTIONS = []
@@ -1635,31 +1080,26 @@ class RestGeneration(Resource):
         :return:
         """
         args = self.reqparse.parse_args()
-        if args["command"] is not None:
-            RestGeneration.MODULES_EXCEPTIONS = []
-            RestCommit.MODULES_TO_TAG = []
-            if ReleaseTools.make_modules_to_tag_list() == -1:
-                abort_error("INTERNAL_ERROR", "There is no copy of the master SNAPSHOT Distribution")
+        if args["command"] is None:
+            abort_error("BAD_REQUEST", "You must provide the 'command' parameter")
 
-            cmd = command.Command(ariane=ariane)
-            cmd.g.set_release_module_exceptions(RestGeneration.MODULES_EXCEPTIONS)
-            params = args["command"].split(' ')
-            if params[0] == "testOK":
-                return make_response(json.dumps({"message": args["command"]}), 200, headers_json)
-            elif params[0] == "testNOK":
-                abort_error("BAD_REQUEST", "TEST: the Error test has succeded")
-            if len(params) >= 2:
-                if len(params) == 2:
-                    params.append(None)
-                try:
-                    cmd.execute(params[0], params[1], params[2])
-                except err.CommandError as cmderr:
-                    abort_error("BAD_REQUEST", "{} (Given command {} is incorrect)".format(cmderr, args))
-            else:
-                abort_error("BAD_REQUEST", "Too few arguments in the given command {}".format(args))
-            # Working solution: subprocess.call('python3 ../../bootstrap/command.py ' + args["command"], shell=True)
-
+        params = args["command"].split(' ')
+        if params[0] == "testOK":
             return make_response(json.dumps({"message": args["command"]}), 200, headers_json)
+        elif params[0] == "testNOK":
+            abort_error("BAD_REQUEST", "TEST: the Error test has succeded")
+        if len(params) >= 2:
+            if len(params) == 2:
+                params.append(None)
+            err, errobj = FileGenManager.generate_files(params[0], params[1], params[2])
+            if err == 1:
+                abort_error("BAD_REQUEST", "There is no copy of the master SNAPSHOT Distribution")
+            elif err == 2:
+                abort_error("BAD_REQUEST", "{} (Given command {} is incorrect)".format(errobj, args))
+        else:
+            abort_error("BAD_REQUEST", "Too few arguments in the given command {}".format(args))
+
+        return make_response(json.dumps({"message": args["command"]}), 200, headers_json)
 
 
 api.add_resource(RestDistributionList, '/rest/distrib')
