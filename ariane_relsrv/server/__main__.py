@@ -97,16 +97,24 @@ if __name__ == '__main__':
         restful.start_relmgr(myglobals)
     elif args.command == "relmgr":
         restful.start_relmgr(myglobals)
-    elif args.command == "new_password":
+    elif args.command in ["passwd", "add_user"]:
         if args.username and args.password:
             from ariane_relsrv.server.users_mgr import User
             User.users_file = RELMGR_CONFIG.users_file
-            LOGGER.info("changing "+ args.username + " password to " + args.password)
-            ret = User.changePassword(args.username, args.password)
-            if ret == 0:
-                LOGGER.info("Password of '"+args.username+"' has been changed")
-            else:
-                LOGGER.warn("The password has not been changed")
+            if args.command == "passwd":
+                LOGGER.info("changing "+ args.username + " password to " + args.password)
+                ret = User.changePassword(args.username, args.password)
+                if ret == 0:
+                    LOGGER.info("Password of '"+args.username+"' has been changed")
+                else:
+                    LOGGER.warn("The password has not been changed")
+            elif args.command == "add_user":
+                LOGGER.info("Adding user " + args.username)
+                ret = User.create_user(args.username, args.password)
+                if ret == 0:
+                    LOGGER.info("User '"+args.username+"' has been added")
+                else:
+                    LOGGER.warn("User has not been added")
         else:
             LOGGER.warn("You must provide username (-u) and password (-p) to update the user password")
             LOGGER.warn("Example: 'relmgr.sh new_password -u myusername -p mynewpwd'")

@@ -32,30 +32,34 @@ class User(object):
                 if isempty:
                     user_file = str(username) + ":" + str(User.hash_password(pwd))
                 else:
-                    # user_file = json.load(target)
-                    already_exists = False
-                    lines = user_file.split("\n\r")
-                    for l in lines:
-                        str_match = username+":"
-                        if l.startswith(str_match):
-                            user_file = ""
-                            already_exists = True
-                            break
-
-                    if not already_exists:
-                        user_file += "\n\r" + str(username) + ":" + str(User.hash_password(pwd))
-                    else:
-                        pass
-                        # LOGGER.warn("User " + username + " already exists")
+                    print("A user is already registered. Can not add another one")
+                    return 1
+                    # The following code can handle multiple users. However there is an issue while jumping lines
+                    
+                    # already_exists = False
+                    # lines = user_file.split("\n\r")
+                    # for l in lines:
+                    #     str_match = username+":"
+                    #     if l.startswith(str_match):
+                    #         user_file = ""
+                    #         already_exists = True
+                    #         break
+                    #
+                    # if not already_exists:
+                    #     user_file += "\n\r" + str(username) + ":" + str(User.hash_password(pwd))
+                    # else:
+                    #     print("User " + username + " already exists")
 
             if user_file != "":
                 with open(User.users_file, "w") as target:
-                    # json.dump(user_file, target)
                     target.write(user_file)
                     # LOGGER.info("User '"+username+"' was added.")
-            else:
-                pass
-                # LOGGER.warn("Can not add user. Could not read the user_password file from the configuration file")
+                    return 0
+        else:
+            with open(User.users_file, "w") as target:
+                user_file = str(username) + ":" + str(User.hash_password(pwd))
+                target.write(user_file)
+                return 0
 
     @staticmethod
     def changePassword(username, newpwd):

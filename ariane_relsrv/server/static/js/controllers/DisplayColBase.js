@@ -427,7 +427,6 @@ angular.module('ArianeUI')
         function Rollback(release) {
             if(($scope.mode == "Release")&&(release == "relD" || (release == "relC" && pageErrors.relC == "error_tag"))){
                 var isdistrib = false;
-                if(release == "relD") isdistrib = true;
                 serviceAjax.checkout($scope.dists[0].version, "tags", isdistrib, false)
                     .success(function(data){
                         var mode = 'Release' + release[release.indexOf('rel')];

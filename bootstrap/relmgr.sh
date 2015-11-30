@@ -66,9 +66,13 @@ case "$1" in
             echo "Ariane Release Manager is not started."
         fi
         ;;
-    new_password)
+    passwd)
         echo "Starting updating password"
-        python3 ariane_relsrv/server/__main__.py new_password $2 $3 $4 $5
+        python3 ariane_relsrv/server/__main__.py passwd $2 $3 $4 $5
+        ;;
+    add_user)
+        echo "Starting adding user"
+        python3 ariane_relsrv/server/__main__.py add_user $2 $3 $4 $5
         ;;
     *)
         echo "Usage: $0 {start|stop}"
