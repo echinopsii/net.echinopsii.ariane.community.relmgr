@@ -45,7 +45,10 @@ def start_relmgr(myglobals):
     relmgr_path = myglobals["relmgr_path"]
     User.users_file = RELMGR_CONFIG.users_file
     InitReleaseTools.set_globals(myglobals)
-    app.run(debug=True)
+    if RELMGR_CONFIG.testing:
+        app.run(host=RELMGR_CONFIG.relmgr_host, port=RELMGR_CONFIG.relmgr_port, debug=True)
+    else:
+        app.run(host=RELMGR_CONFIG.relmgr_host, port=RELMGR_CONFIG.relmgr_port)
 
 # import this after config declarations
 from ariane_relsrv.server import auth as relmgrAuth

@@ -10,5 +10,7 @@
     "URL_SLACK": "https://hooks.slack.com/services/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",
     "LOG_CONFIG_FILE_PATH": "/etc/ariane_relmgr/relsrv_logging_conf.json",
     "RELMGR_PASSWD_FILE_PATH": "/etc/ariane_relmgr/relmgr_passwd",
-    "TESTING": true
+    "TESTING": true,
+    "RELMGR_HOST": "0.0.0.0",
+    "RELMGR_PORT": 5000
 }

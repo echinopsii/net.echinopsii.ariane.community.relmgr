@@ -39,6 +39,8 @@ class Config(object):
         self.log_file = None
         self.users_file = None
         self.testing = None
+        self.relmgr_host = None
+        self.relmgr_port = None
 
     def parse(self, config_file_path):
         if not os.path.isfile(config_file_path):
@@ -67,4 +69,6 @@ class Config(object):
             self.log_file = conf["LOG_CONFIG_FILE_PATH"]
             self.users_file = conf["RELMGR_PASSWD_FILE_PATH"]
             self.testing = conf["TESTING"]
+            self.relmgr_host = conf["RELMGR_HOST"]
+            self.relmgr_port = conf["RELMGR_PORT"]
             self.config_file_path = config_file_path
