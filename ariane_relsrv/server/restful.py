@@ -837,7 +837,8 @@ class RestDistributionManager(Resource):
 
         elif action == "getConfig":
             run_mode = ReleaseTools.get_ui_running_mode()
-            return make_response(json.dumps({"run_mode": run_mode}), 200, headers_json)
+            relmgr_url = RELMGR_CONFIG.relmgr_url
+            return make_response(json.dumps({"run_mode": run_mode, "relmgr_url": relmgr_url}), 200, headers_json)
 
         elif action == "exportDB":
             err = ReleaseTools.export_new_distrib(True)
@@ -850,11 +851,14 @@ class RestDistributionManager(Resource):
 
 class RestReset(Resource):
     def post(self):
+        print("reset begin")
         err, fpath = DatabaseManager.reset_database()
         if err == 0:
+            print("reset done")
             return make_response(json.dumps({"message": "All distributions have been imported: Database is reset"}),
                                  200, headers_json)
         else:
+            print("reset error")
             abort_error("INTERNAL_ERROR", "Error while importing '"+fpath+"', file was not found")
 
 class RestCommit(Resource):

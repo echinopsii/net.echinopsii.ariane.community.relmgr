@@ -24,131 +24,171 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Release Manager UI</title>
+    <title>Ariane Release Manager</title>
+
+    <!-- Global Styles-->
+    <link rel="stylesheet" type="text/css" href="../static/style/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="../static/style/index.css">
+    
+    <!-- Fonts -->
+    <link rel="stylesheet" href="../static/style/font-awesome.min.css">
+    
 </head>
 <body ng-app="ArianeUI">
 <div class="mainBody">
-    <!-- ****************************************************** COLUMN DISTRIBUTION ****************************************************** -->
-    <div class="colBase" ng-controller="DisplayColBaseCtrl">
-        <div class="colHeader">
-            <span>Distribution
-                <button class="btnRelease" ng-if="page=='view'" ng-disabled="!btnActive.release" ng-click="clickReleaseMod()">Release</button>
-                <button class="btnRelease" ng-if="page=='view'" ng-disabled="!btnActive.dev" ng-click="clickDevEdit()">DEV</button>
-                <button class="btnRelease" ng-if="page=='view'" ng-show="btnActive.export" ng-disabled="!btnActive.export" ng-click="clickExport()">EXPORT</button>
-            </span>
-        </div>
-        <div class="colBody">
-            <span class="listRoot">Distributions
-                <button class="btnExtend" ng-click="toggleDistList()">+/-</button>
-                <span ng-if="page=='view'">
-                    <button class="btnAction" ng-disabled="!btnActive.refresh" ng-click="clickRefresh()">REFRESH</button>
-                    <button class="btnAction" ng-disabled="!btnActive.reset.active" ng-click="toggleResetDB()">RESET</button>
-                    <span ng-show="btnActive.reset.showConfirm">Reset Database ? <button ng-click="clickResetDB('YES')">YES</button> <button ng-click="clickResetDB('NO')">NO</button></span>
-                </span>
-            </span>
-            <div class="DistList" ng-show="isDistToggle()">
-            <ul ng-repeat="dist in dists">
-                {% raw %}
-                <li ng-class="dist.selected ? 'DistSelected' : 'DistNotSelected'" ng-click="clickDist(dist)"><label>{{ dist.version }}</label></li>
-                {% endraw %}
-            </ul>
-            </div>
-            <!-- ************************ INCLUDED TEMPLATE  ************************ -->
-            <div ng-include="baseTemplate.url"></div>
-        </div>
-    </div>
-    <!-- ****************************************************** COLUMN COMPOSITION ******************************************************-->
-    <div class="colNodes">
-        <div class="colHeader">
-            <span>Composition</span>
-        </div>
-        <div class="colBody" ng-controller="DisplayColNodesCtrl">
-        <span class="listRoot">Components <!-- ****************** Components ****************** -->
-            <button class="btnExtend" ng-click="toggleModList()">+/-</button>
-            <button class="btnAction" ng-if="page=='releaseA' && !isPlugin && enableEdit" ng-disabled="activeEdit" ng-click="addElement('module')">Add</button>
-        </span>
-        <div class="ModList" ng-show="isModToggle()">
-            <ul ng-repeat="module in modules">
-                {% raw %}
-                <li ng-class="module.selected ? 'ModSelected' : 'ModNotSelected'">
-                    <span>
-                        <label ng-click="clickMod(module)">{{ module.name }} {{module.version}}</label><span ng-if="module.order"> ({{ module.order }})</span>
-                        <span ng-if="page=='releaseA' && module.selected && enableEdit">
-                            <!--<button class="btnAction" ng-click="addElement('submodule')">Add</button>-->
-                            <button class="btnAction" ng-disabled="activeEdit" ng-click="delElement(module)">Delete</button>
-                        </span>
-                    </span>
-                {% endraw %}
-                </li>
-            </ul>
-        </div>
-        <hr class="separateur"> <!-- ****************** Modules ****************** -->
-            {% raw %}
-        <div class="listRoot">Modules
-            (<span ng-if="subSet.parent">{{subSet.parent.name}}</span>)
-            <button class="btnExtend" ng-click="toggleSubList()">+/-</button>
-            <button class="btnAction" ng-if="page=='releaseA' && subSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('submodule', subSet.parent)">Add</button>
-        </div>
-            {% endraw %}
-        <div class="SubList" ng-show="isSubToggle()">
-            <ul ng-repeat="submodule in subSet.modules">
-                {% raw %}
-                <li>
-                    <span>
-                        <label ng-class="submodule.selected ? 'SubSelected' : 'SubNotSelected'" ng-click="clickSub(submodule)">{{ submodule.name }} ({{ submodule.order }})</label>
-                        <button class="btnExtend" ng-if="submodule.issubparent" ng-click="toggleModSub(submodule)">+/-</button>
-                        <span ng-if="page=='releaseA' && submodule.issubparent && submodule.selected && enableEdit">
-                            <button class="btnAction" ng-disabled="activeEdit" ng-click="addElement('submodule', submodule)">Add</button>
-                        </span>
-                        <button class="btnAction" ng-if="page=='releaseA' && submodule.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(submodule)">Delete</button>
-                    </span>
-                        <div class="ModSubList" ng-if="submodule.issubparent" ng-show="isModSubToggle(submodule)">
-                            <ul ng-repeat="sub in submodule.sublist" ng-include="'field_renderer.html'">
-                            </ul>
-                        </div>
-                </li>
-                {% endraw %}
-            </ul>
-        </div>
-            <!--<hr class="separateur">      ****************** Files ****************** -->
-        <div class="listRoot">Files
-            {% raw %}
-            (<span ng-if="fileSet.parent">{{fileSet.parent.name | prefix:'Distrib_':fileSet.parent:'node_type':'distrib' | sufix:'version':fileSet.parent:'node_type':'distrib'}}</span>)
-            {% endraw %}
-            <button class="btnExtend" ng-disabled="0" ng-click="toggleFileList()">+/-</button>
-            <button class="btnAction" ng-if="page=='releaseA' && fileSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('filenode')">Add</button>
-        </div>
-        <div class="FileList" ng-show="isFileToggle()">
-            <ul ng-repeat="filenode in fileSet.filenodes">
-            {% raw %}
-                <li ng-class="filenode.selected ? 'FileSelected' : 'FileNotSelected'" ng-click="clickFile(filenode)">{{ filenode.name | limitDisplay : limitLetterNum }}
-                    <button class="btnAction" ng-if="page=='releaseA' && filenode.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(filenode)">Delete</button>
-                </li>
-            {% endraw %}
-            </ul>
-        </div>
-        </div>
-    </div>
-    <!-- ****************************************************** COLUMN EDITION ******************************************************-->
-    <div class="colEdit" ng-controller="EditCtrl">
-        <div ng-include="editionTemplate.url"></div>
-    </div>
-</div>
-<div class="logSection" ng-controller="LogCtrl">
-    <span><--- * Log Info/Error * -------------------------- ></span>
-    {% raw %}
-    <ul ng-repeat="log in log.list">
-        <li ng-class="log.type" ng-show="log.show">
-            <input type="checkbox" ng-model="log.show">
-            {{log.mode}} ({{log.status}}): {{log.message}}
-        </li>
-    </ul>
-    {% endraw %}
-</div>
-<!--<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular.min.js"></script>-->
-<script type="text/javascript" src="../static/js/lib/jquery-1.8.0.min.js"></script>
+	
+	<div class="container-fluid">
+		
+		<div class="row title">
+			<h1><img src="../static/img/avatar-ariane.png" width="50px" /> Ariane Release tool</h1>
+		</div>
+		
+		<div class="row">
+			
+		    <!-- ****************************************************** COLUMN DISTRIBUTION ****************************************************** -->
+		    <div class="col-xs-12 col-md-4 col colBase" ng-controller="DisplayColBaseCtrl">
+			    <div class="colWrapper">   
+			        <div class="colHeader">
+			            <span>
+			            <h3>Distribution</h3>
+			                <button class="btn btn-sm btnGreen" ng-if="page=='view'" ng-disabled="!btnActive.release" ng-click="clickReleaseMod()"><i class="fa fa-magic"></i> Release</button>
+			                <button class="btn btn-sm btnGreen" ng-if="page=='view'" ng-disabled="!btnActive.dev" ng-click="clickDevEdit()">DEV</button>
+			                <button class="btn btn-sm btnGreen" ng-if="page=='view'" ng-show="btnActive.export" ng-disabled="!btnActive.export" ng-click="clickExport()">EXPORT</button>
+			            </span>
+			        </div>
+			        <div class="colBody">
+			            <span class="listRoot">Distributions
+			                <button class="btn btn-sm btnExtend" ng-click="toggleDistList()">+/-</button>
+			                <span ng-if="page=='view'">
+			                    <button class="btn btn-sm btnAction pull-right" ng-disabled="!btnActive.reset.active" ng-click="toggleResetDB()">Reset</button>
+			                    <button class="btn btn-sm btnAction pull-right" ng-disabled="!btnActive.refresh" ng-click="clickRefresh()"><i class="fa fa-refresh"></i> Refresh</button>
+			                    
+			                    
+			                    <span ng-show="btnActive.reset.showConfirm">Reset Database ? <button ng-click="clickResetDB('YES')">Yes</button> <button ng-click="clickResetDB('NO')">No</button></span>
+			                </span>
+			            </span>
+			            <div class="DistList" ng-show="isDistToggle()">
+			            <ul ng-repeat="dist in dists">
+			                {% raw %}
+			                <li ng-class="dist.selected ? 'DistSelected' : 'DistNotSelected'" ng-click="clickDist(dist)"><label>{{ dist.version }}</label></li>
+			                {% endraw %}
+			            </ul>
+			            </div>
+			            <!-- ************************ INCLUDED TEMPLATE  ************************ -->
+			            <div ng-include="baseTemplate.url"></div>
+			        </div>
+		    	</div><!-- end .colWrapper -->
+		    </div><!-- end .col -->
+		    
+		    <!-- ****************************************************** COLUMN COMPOSITION ******************************************************-->
+		    <div class="col-xs-12 col-md-4 col colNodes">
+			    <div class="colWrapper">
+			        <div class="colHeader">
+			            <span>
+			            <h3>Composition</h3>
+			            </span>
+			        </div>
+			        <div class="colBody" ng-controller="DisplayColNodesCtrl">
+			        <span class="listRoot">Components <!-- ****************** Components ****************** -->
+			            <button class="btn btn-sm btnExtend" ng-click="toggleModList()">+/-</button>
+			            <button class="btn btn-sm btnAction" ng-if="page=='releaseA' && !isPlugin && enableEdit" ng-disabled="activeEdit" ng-click="addElement('module')">Add</button>
+			        </span>
+			        <div class="ModList" ng-show="isModToggle()">
+			            <ul ng-repeat="module in modules">
+			                {% raw %}
+			                <li ng-class="module.selected ? 'ModSelected' : 'ModNotSelected'">
+			                    <span>
+			                        <label ng-click="clickMod(module)">{{ module.name }} {{module.version}}</label><span ng-if="module.order"> ({{ module.order }})</span>
+			                        <span ng-if="page=='releaseA' && module.selected && enableEdit">
+			                            <!--<button class="btn btnAction" ng-click="addElement('submodule')">Add</button>-->
+			                            <button class="btn btn-sm btnAction" ng-disabled="activeEdit" ng-click="delElement(module)">Delete</button>
+			                        </span>
+			                    </span>
+			                {% endraw %}
+			                </li>
+			            </ul>
+			        </div>
+			        <hr class="separateur"> <!-- ****************** Modules ****************** -->
+			            {% raw %}
+			        <div class="listRoot">Modules
+			            (<span ng-if="subSet.parent">{{subSet.parent.name}}</span>)
+			            <button class="btn btn-sm btnExtend" ng-click="toggleSubList()">+/-</button>
+			            <button class="btn btn-sm btnAction" ng-if="page=='releaseA' && subSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('submodule', subSet.parent)">Add</button>
+			        </div>
+			            {% endraw %}
+			        <div class="SubList" ng-show="isSubToggle()">
+			            <ul ng-repeat="submodule in subSet.modules">
+			                {% raw %}
+			                <li>
+			                    <span>
+			                        <label ng-class="submodule.selected ? 'SubSelected' : 'SubNotSelected'" ng-click="clickSub(submodule)">{{ submodule.name }} ({{ submodule.order }})</label>
+			                        <button class="btn btnExtend" ng-if="submodule.issubparent" ng-click="toggleModSub(submodule)">+/-</button>
+			                        <span ng-if="page=='releaseA' && submodule.issubparent && submodule.selected && enableEdit">
+			                            <button class="btn btnAction" ng-disabled="activeEdit" ng-click="addElement('submodule', submodule)">Add</button>
+			                        </span>
+			                        <button class="btn btnAction" ng-if="page=='releaseA' && submodule.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(submodule)">Delete</button>
+			                    </span>
+			                        <div class="ModSubList" ng-if="submodule.issubparent" ng-show="isModSubToggle(submodule)">
+			                            <ul ng-repeat="sub in submodule.sublist" ng-include="'field_renderer.html'">
+			                            </ul>
+			                        </div>
+			                </li>
+			                {% endraw %}
+			            </ul>
+			        </div>
+			            <!--<hr class="separateur">      ****************** Files ****************** -->
+			        <div class="listRoot">Files
+			            {% raw %}
+			            (<span ng-if="fileSet.parent">{{fileSet.parent.name | prefix:'Distrib_':fileSet.parent:'node_type':'distrib' | sufix:'version':fileSet.parent:'node_type':'distrib'}}</span>)
+			            {% endraw %}
+			            <button class="btn btn-sm btnExtend" ng-disabled="0" ng-click="toggleFileList()">+/-</button>
+			            <button class="bt btn-smn btnAction" ng-if="page=='releaseA' && fileSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('filenode')">Add</button>
+			        </div>
+			        <div class="FileList" ng-show="isFileToggle()">
+			            <ul ng-repeat="filenode in fileSet.filenodes">
+			            {% raw %}
+			                <li ng-class="filenode.selected ? 'FileSelected' : 'FileNotSelected'" ng-click="clickFile(filenode)">{{ filenode.name | limitDisplay : limitLetterNum }}
+			                    <button class="btn btnAction" ng-if="page=='releaseA' && filenode.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(filenode)">Delete</button>
+			                </li>
+			            {% endraw %}
+			            </ul>
+			        </div>
+			        </div>
+			    </div><!-- end .colWrapper -->
+		    </div><!-- end .col -->
+		    
+		    <!-- ****************************************************** COLUMN EDITION ******************************************************-->
+		    <div class="col-xs-12 col-md-4 col colEdit" ng-controller="EditCtrl">
+			    <div class="colWrapper">
+			        <div ng-include="editionTemplate.url"></div>
+			    </div>
+		    </div><!-- end .col -->
+		    
+		</div>
+					
+		<div class="row">
+		
+				<div class="col-xs-12 logSection" ng-controller="LogCtrl">
+				    <span><--- * Log Info/Error * -------------------------- ></span>
+				    {% raw %}
+				    <ul ng-repeat="log in log.list">
+				        <li ng-class="log.type" ng-show="log.show">
+				            <input type="checkbox" ng-model="log.show">
+				            {{log.mode}} ({{log.status}}): {{log.message}}
+				        </li>
+				    </ul>
+				    {% endraw %}
+				
+		</div>
+		
+		</div>
+		
+		</div> <!-- end .row -->
+	
+	</div><!-- end .container -->
+	
+<script type="text/javascript" src="../static/js/lib/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="../static/js/lib/bootstrap.min.js"></script>
 <script type="text/javascript" src="../static/js/lib/angular.min.js"></script>
 <script type="text/javascript" src="../static/js/app.js"></script>
 <script type="text/javascript" src="../static/js/services/ajax.js"></script>
@@ -163,9 +203,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <li>
         <span>
             <label ng-class="sub.selected ? 'SubSelected' : 'SubdNotSelected'" ng-click="clickSub(sub)">{{ sub.name }} ({{ sub.order }})</label>
-            <button class="btnExtend" ng-if="sub.issubparent" ng-click="toggleModSub(sub)">+/-</button>
-            <span ng-if="page=='releaseA' && sub.issubparent && sub.selected && enableEdit"><button class="btnAction" ng-disabled="activeEdit" ng-click="addElement('submodule', sub)">Add</button></span>
-            <button class="btnAction" ng-if="page=='releaseA' && sub.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(sub)">Delete</button>
+            <button class="btn btnExtend" ng-if="sub.issubparent" ng-click="toggleModSub(sub)">+/-</button>
+            <span ng-if="page=='releaseA' && sub.issubparent && sub.selected && enableEdit"><button class="btn btnAction" ng-disabled="activeEdit" ng-click="addElement('submodule', sub)">Add</button></span>
+            <button class="btn btnAction" ng-if="page=='releaseA' && sub.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(sub)">Delete</button>
         </span>
         <div class="ModSubList" ng-if="sub.issubparent" ng-show="isModSubToggle(sub)">
             <ul ng-repeat="sub in sub.sublist">
@@ -175,5 +215,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </li>
     {% endraw %}
 </script>
+
+
+
 </body>
 </html>

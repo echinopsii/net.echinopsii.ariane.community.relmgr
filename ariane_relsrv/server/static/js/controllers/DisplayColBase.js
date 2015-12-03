@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /**
  * Created by stanrenia on 14/08/15.
  */
-
+//define_url
 angular.module('ArianeUI')
     .controller('DisplayColBaseCtrl', function ($scope, serviceAjax, serviceUI) {
         // config
@@ -72,6 +72,8 @@ angular.module('ArianeUI')
                 .success(function(data){
                     if(data.run_mode)
                         $scope.CONFIG.mode = data.run_mode;
+                    if(data.relmgr_url)
+			serviceAjax.define_url(data.relmgr_url);
                     if($scope.CONFIG.mode == "test")
                         $scope.btnActive.export = true;
                 });

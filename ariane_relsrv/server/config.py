@@ -41,6 +41,7 @@ class Config(object):
         self.testing = None
         self.relmgr_host = None
         self.relmgr_port = None
+        self.relmgr_url = None
 
     def parse(self, config_file_path):
         if not os.path.isfile(config_file_path):
@@ -71,4 +72,5 @@ class Config(object):
             self.testing = conf["TESTING"]
             self.relmgr_host = conf["RELMGR_HOST"]
             self.relmgr_port = conf["RELMGR_PORT"]
+            self.relmgr_url = conf["RELMGR_URL"]
             self.config_file_path = config_file_path

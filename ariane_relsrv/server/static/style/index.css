@@ -19,21 +19,77 @@
  You should have received a copy of the GNU Affero General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+ 
+/*--- Global ---*/
 
+body {
+	margin: 0;
+	padding: 0;
+	background: #f5f5f5;
+} 
+
+
+/*--- STRUCTURE ---*/
+.colHeader {
+    padding: 5px 0;
+    text-align: center;
+    min-height: 77px;
+    color: #787878;
+    border-bottom: 1px solid #ccc;
+}
+.colBody {
+	padding: 10px 0;
+}
+.col .colWrapper { 
+	margin-top: 20px;
+	padding: 10px;
+	border-radius: 4px;
+	border: 1px solid #ccc;
+	box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    background: #fff;
+}
+.logSection {
+    color: #00f400;
+    background-color: #0e0303;
+}
+
+
+/*--- TYPO ---*/
+.title {
+	text-align: center;
+}
+.title h1 {
+	margin: 10px 0;
+	font-weight: 100;
+	text-transform: uppercase;
+}
+
+.colHeader h3 {
+	width: 100%;
+	text-align: center;
+	text-transform: uppercase;
+	font-weight: 100;
+	letter-spacing: 0.05em;
+}
 ul {
     list-style: none;
+    padding: 0;
+    margin: 0;
 }
-.colHeader{
-    background-color: #9196b2;
+ul li {
+	padding: 0 5px;
 }
-.colBase{
-    background-color: #87CEFA;
-    float: left;
-    width: 30%;
-    padding-right: 2%;
-}
-.DistList{
+
+
+
+.DistList {
+    margin-top: 10px;
     background-color: #75aad3;
+}
+.DistList ul {
+	margin-bottom: 1px;
 }
 .DistSelected{
     background-color: red;
@@ -51,12 +107,7 @@ ul {
     background-color: #3f6dff;
 }
 
-.colNodes{
-    background-color: #E0FFFF;
-    float: left;
-    width: 30%;
-    padding-right: 2%;
-}
+
 .ModList ul {
     font-size: 0;
 }
@@ -97,22 +148,7 @@ ul {
     background-color: #E0FFFF;
 }
 
-.colEdit{
-    background-color: #4e7878;
-    float: left;
-    width: 30%;
-    height: 80vh;
-    padding-right: 2%;
-    overflow-y: scroll;
-}
-.logSection{
-    color: #00f400;
-    background-color: #0e0303;
-    float: left;
-    width: 100%;
-    padding-top: 1%;
-    padding-left: 1%;
-}
+
 .info{
     color: white;
 }
@@ -121,6 +157,21 @@ ul {
 }
 .input_warning{
     color: red;
+}
+
+
+
+/*--- BUTTONS ---*/
+.btn.pull-right {
+	margin: 0 0 0 4px;
+}
+.btnGreen {
+	background: #63d465;
+	color: #fff;
+}
+.btnRed {
+	background: #f23127;
+	color: #fff;
 }
 .btnValidate {
     background: #fc0505;
@@ -138,7 +189,6 @@ ul {
     padding: 10px 20px 10px 20px;
     text-decoration: none;
 }
-
 .btnValidate:hover {
     background: #3cfc4f;
     background-image: -webkit-linear-gradient(top, #3cfc4f, #34d95d);
@@ -148,6 +198,16 @@ ul {
     background-image: linear-gradient(to bottom, #3cfc4f, #34d95d);
     text-decoration: none;
 }
+.btnExtend {
+	border: 1px solid #ccc;
+	padding: 2px 4px;
+	border-radius: 3px;
+	background: #fff;
+	font-weight: bold;
+	font-size: 0.7rem;
+}
+
+
 .centerize{
     text-align: center;
 }
