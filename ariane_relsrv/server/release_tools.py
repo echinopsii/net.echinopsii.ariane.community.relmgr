@@ -26,8 +26,9 @@ import shutil
 import json
 import re
 from datetime import date
+
+from ariane_reltreelib import command
 from ariane_reltreelib.dao import ariane_delivery
-from bootstrap import command
 from ariane_reltreelib import exceptions as err
 from ariane_reltreelib.generator.generator import GitTagHandler
 
@@ -723,8 +724,8 @@ class FileGenManager(object):
         if ReleaseTools.make_modules_to_tag_list() == -1:
             return 1, None  # "There is no copy of the master SNAPSHOT Distribution"
 
-        cmd = command.Command(ariane=ariane)
-        cmd.g.set_release_module_exceptions(GitManager.MODULES_EXCEPTIONS)
+        cmd = command.Command(dao_ariane=ariane, project_path=project_path)
+        cmd.gen.set_release_module_exceptions(GitManager.MODULES_EXCEPTIONS)
         try:
             cmd.execute(cmd_str, version, name)
             return 0, None

@@ -20,17 +20,17 @@
 
 import sys, os, shutil, argparse, subprocess, json
 
-module_name = '/ariane.community.relmgr'
-project_path = str(os.getcwd())
-if not os.path.exists(project_path + module_name):
-    if module_name in project_path:
-        project_path = project_path[:project_path.index(module_name)]
-        if not os.path.exists(project_path + module_name):
-            raise Exception("Incorrect project path: ", project_path)
-        sys.path.append(project_path + module_name)
-else:
-    if project_path + module_name not in sys.path:
-        sys.path.append(project_path + module_name)
+#module_name = '/ariane.community.relmgr'
+#project_path = str(os.getcwd())
+#if not os.path.exists(project_path + module_name):
+#    if module_name in project_path:
+#        project_path = project_path[:project_path.index(module_name)]
+#        if not os.path.exists(project_path + module_name):
+#             raise Exception("Incorrect project path: ", project_path)
+#         sys.path.append(project_path + module_name)
+# else:
+#     if project_path + module_name not in sys.path:
+#         sys.path.append(project_path + module_name)
 
 from ariane_reltreelib.generator import generator
 from ariane_reltreelib.dao import ariane_delivery
@@ -43,27 +43,35 @@ __author__ = 'stanrenia'
 # commandes: pom -version -Mod/Plug, plan -version -Mod/Plug, lib -version -Mod/Plug, vsh -version installer, vsh -verison -plugin
 
 class Command(object):
-    ariane = None
-    g = None
+    dao_ariane = None
+    gen = None
     commands_dist = ["distribution", "core_only", "distribution_only", "module_only", "plugin_only", "json_dist",
                      "distrib_plugin_only", "pom_dist", "json_plugins", "json_plugin_dist", "json_git_repos"]
     commands_mod = ["pom", "plan", "lib_json", "vsh"]
+    project_path = None
     conf = None
 
-    def __init__(self, ariane=None):
-        if ariane is None:
-            with open(project_path+module_name+'/ariane_relsrv/server/misc/confsrv.json', 'r') as target:
-                Command.conf = json.load(target)
-            if Command.conf is None:
-                raise err.CommandError("GraphDB login file can not be read. It should be '(GraphDB_name)_login.json")
-            Command.ariane = ariane_delivery.DeliveryTree({"login": Command.conf["NEO4J_LOGIN"], "password": Command.conf["NEO4J_PASSWORD"], "type": "neo4j"})
-            Command.g = generator.Generator(Command.ariane, {"outputs": project_path, "templates": project_path})
+    def __init__(self, dao_ariane=None, project_path=None):
+        if dao_ariane is None:
+            raise err.CommandError("Ariane DAO not provided.")
+            # ERROR
+            # with open(project_path+module_name+'/ariane_relsrv/server/misc/confsrv.json', 'r') as target:
+            #     Command.conf = json.load(target)
+            # if Command.conf is None:
+            #     raise err.CommandError("GraphDB login file can not be read. It should be '(GraphDB_name)_login.json")
+            # Command.ariane = ariane_delivery.DeliveryTree({"login": Command.conf["NEO4J_LOGIN"], "password": Command.conf["NEO4J_PASSWORD"], "type": "neo4j"})
+            # Command.g = generator.Generator(Command.ariane, {"outputs": project_path, "templates": project_path})
         else:
-            Command.ariane = ariane
-            Command.g = generator.Generator(Command.ariane, {"outputs": project_path, "templates": project_path})
+            if project_path is None:
+                raise err.CommandError("Ariane project path not provided.")
+                pass
+            else:
+                Command.dao_ariane = dao_ariane
+                Command.project_path = project_path
+                Command.gen = generator.Generator(Command.dao_ariane, {"outputs": project_path, "templates": project_path})
 
     def import_all_distribs(self):
-        os.system(Command.conf["NEO4J_PATH"]+"/bin/neo4j-shell -file " + project_path + Command.conf["EXPORT_DB"] + "all.cypher")
+        os.system(Command.conf["NEO4J_PATH"]+"/bin/neo4j-shell -file " + Command.project_path + Command.conf["EXPORT_DB"] + "all.cypher")
 
     def get_number_of_distribs(self):
         fnames = []
@@ -83,55 +91,55 @@ class Command(object):
         version = args.version
         name = args.name
         print(cmd, version)
-        shutil.copy(project_path+"/ariane.community.distrib/resources/maven/plan_module_parent_tpl.xml",
-                    project_path)
+        # shutil.copy(project_path+"/ariane.community.distrib/resources/maven/plan_module_parent_tpl.xml",
+        #             project_path)
         self.execute(cmd, version, name)
 
     def execute(self, cmd, version, name):
-        distrib = Command.ariane.distribution_service.get_unique({"version": version})
+        distrib = Command.dao_ariane.distribution_service.get_unique({"version": version})
         if isinstance(distrib, ariane_delivery.Distribution):
             if cmd in Command.commands_dist:
                 if cmd == "distribution":
-                    Command.g.generate_all_distribution(version)
+                    Command.gen.generate_all_distribution(version)
                 else:
                     if "only" in cmd:
                         method = 'generate_'+str(cmd).replace('_only', '_files')
-                        method = getattr(Command.g, method)
+                        method = getattr(Command.gen, method)
                         method(version)
                     else:
-                        fnode = Command.ariane.get_one_file(distrib, cmd)
+                        fnode = Command.dao_ariane.get_one_file(distrib, cmd)
                         if cmd == "json_plugins":
-                            distribs = Command.ariane.distribution_service.get_all()
+                            distribs = Command.dao_ariane.distribution_service.get_all()
                             number_distribs = self.get_number_of_distribs()
                             if len(distribs) < number_distribs:
                                 if len(distribs) > 0:
-                                    Command.ariane.delete_all()
+                                    Command.dao_ariane.delete_all()
                                 self.import_all_distribs()
                             # if self.import_data():
                             #     print("Importing missing data")
-                            if not Command.ariane.check_uniqueness():
+                            if not Command.dao_ariane.check_uniqueness():
                                 raise err.CommandError("Error while importing missing Distributions")
-                            Command.g.generate_json_plugins(version, fnode)
+                            Command.gen.generate_json_plugins(version, fnode)
                         else:
-                            method = getattr(Command.g, 'generate_'+cmd)
+                            method = getattr(Command.gen, 'generate_'+cmd)
                             if fnode is not None:
                                 method(version, fnode)
 
             elif cmd in Command.commands_mod:
                 if name is not None:
-                    modules = Command.ariane.module_service.get_all(distrib)
-                    plugins = Command.ariane.plugin_service.get_all(distrib)
+                    modules = Command.dao_ariane.module_service.get_all(distrib)
+                    plugins = Command.dao_ariane.plugin_service.get_all(distrib)
                     if cmd == "vsh":
                         if name == "installer":
                             for m in modules:
-                                fnode = Command.ariane.get_one_file(m, "vsh")
+                                fnode = Command.dao_ariane.get_one_file(m, "vsh")
                                 if fnode is not None:
-                                    Command.g.generate_vsh_installer(version, modules.copy(), fnode)
+                                    Command.gen.generate_vsh_installer(version, modules.copy(), fnode)
                         else:
-                            p = Command.ariane.plugin_service.get_unique({"name": name})
+                            p = Command.dao_ariane.plugin_service.get_unique({"name": name})
                             if p is not None:
-                                fvsh = Command.ariane.get_one_file(p, "vsh")
-                                Command.g.generate_vsh_plugin(p, fvsh)
+                                fvsh = Command.dao_ariane.get_one_file(p, "vsh")
+                                Command.gen.generate_vsh_plugin(p, fvsh)
                             else:
                                 raise err.CommandError("Plugin name not found in database")
                     else:
@@ -146,22 +154,22 @@ class Command(object):
                         if m is not None:
                             # Call method if get succededed
                             if isinstance(m, ariane_delivery.Module):
-                                Command.ariane.module_service.update_arianenode_lists(m)
+                                Command.dao_ariane.module_service.update_arianenode_lists(m)
                             else:
-                                Command.ariane.plugin_service.update_arianenode_lists(m)
+                                Command.dao_ariane.plugin_service.update_arianenode_lists(m)
 
                             if cmd == "pom":
-                                Command.g.generate_pom(m)
+                                Command.gen.generate_pom(m)
                             elif cmd == "plan":
-                                fnode = Command.ariane.get_one_file(m, "plan")
+                                fnode = Command.dao_ariane.get_one_file(m, "plan")
                                 if fnode is not None:
-                                    Command.g.generate_plan(m, fnode)
+                                    Command.gen.generate_plan(m, fnode)
                                 else:
                                     raise err.CommandError("Component or Plugin named:{} does not have a .plan file".format(m.name))
                             elif cmd == "lib_json":
-                                fnode = Command.ariane.get_one_file(m, "json_build")
+                                fnode = Command.dao_ariane.get_one_file(m, "json_build")
                                 if fnode is not None:
-                                    Command.g.generate_plan(m, fnode)
+                                    Command.gen.generate_plan(m, fnode)
                                 else:
                                     raise err.CommandError("Component or Plugin named:{} does not have a .json build file".format(m.name))
                         else:
@@ -173,7 +181,6 @@ class Command(object):
             raise err.CommandError("Distribution not found in database")
 
 
-
-if __name__ == '__main__':
-    cmd = Command()
-    cmd.execute_parse()
+# if __name__ == '__main__':
+#     cmd = Command()
+#     cmd.execute_parse()

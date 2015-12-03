@@ -12,3 +12,5 @@ errors.log
 info.log
 tests/errors.log
 tests/info.log
+bootstrap/misc/confsrv.json
+bootstrap/misc/relmgr_passwd
