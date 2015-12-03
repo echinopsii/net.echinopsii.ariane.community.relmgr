@@ -58,6 +58,10 @@ body {
     color: #00f400;
     background-color: #0e0303;
 }
+.logList {
+    height: 20vh;
+    overflow-y: scroll;
+}
 
 
 /*--- TYPO ---*/
@@ -145,6 +149,10 @@ ul.blockList li.active {
     max-width: 300px;
     width: 70%;
 }
+.divFileDiff{
+    height: 60vh;
+    overflow-y: scroll;
+}
 
 .info{
     color: white;
@@ -218,7 +226,7 @@ ul.blockList li.active {
     color: #fc0f21;
 }
 .DiffWhite{
-    color: white;
+    color: #5352ff;
 }
 .DiffBlue{
     color: aqua;
