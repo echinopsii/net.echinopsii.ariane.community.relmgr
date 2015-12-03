@@ -57,8 +57,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			            </span>
 			        </div>
 			        <div class="colBody">
-			            <span class="listRoot">Distributions
-			                <button class="btn btn-sm btnExtend" ng-click="toggleDistList()">+/-</button>
+			            <span class="listRoot">Distributions<button class="btn btn-sm btnExtend" ng-click="toggleDistList()">+/-</button>
 			                <span ng-if="page=='view'">
 			                    <button class="btn btn-sm btnAction pull-right" ng-disabled="!btnActive.reset.active" ng-click="toggleResetDB()">Reset</button>
 			                    <button class="btn btn-sm btnAction pull-right" ng-disabled="!btnActive.refresh" ng-click="clickRefresh()"><i class="fa fa-refresh"></i> Refresh</button>
@@ -68,9 +67,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			                </span>
 			            </span>
 			            <div class="DistList" ng-show="isDistToggle()">
-			            <ul ng-repeat="dist in dists">
+			            <ul class="blockList">
 			                {% raw %}
-			                <li ng-class="dist.selected ? 'DistSelected' : 'DistNotSelected'" ng-click="clickDist(dist)"><label>{{ dist.version }}</label></li>
+			                <li ng-repeat="dist in dists" ng-class="dist.selected ? 'active' : ''" ng-click="clickDist(dist)"><label>{{ dist.version }}</label></li>
 			                {% endraw %}
 			            </ul>
 			            </div>
