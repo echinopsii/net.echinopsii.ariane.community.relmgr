@@ -105,28 +105,16 @@ ul.blockList li.active {
     color: #333;
 }
 
+.ModList ul li{
+    background-color: #484745;
+}
 
-
-.ModList ul {
-    font-size: 0;
-}
-.ModList ul li {
-    font-size: 18px;
-    display: inline-block;
-}
-.SubList ul {
-    font-size: 0;
-}
 .SubList ul li {
-    font-size: 18px;
-    display: inline-block;
+    background-color: #484745;
 }
-.FileList ul {
-    font-size: 0;
-}
+
 .FileList ul li {
-    font-size: 18px;
-    display: inline-block;
+    background-color: #484745;
 }
 .ModSelected{
     background-color: red;
@@ -147,6 +135,16 @@ ul.blockList li.active {
     background-color: #E0FFFF;
 }
 
+.editPropInput label{
+    min-width: 120px;
+    text-align: right;
+    padding-right: 5px;
+    color: #8b8b8b;
+}
+.editPropInput input[type="text"]{
+    max-width: 300px;
+    width: 70%;
+}
 
 .info{
     color: white;

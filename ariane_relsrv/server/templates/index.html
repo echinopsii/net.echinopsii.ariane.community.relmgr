@@ -93,11 +93,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			            <button class="btn btn-sm btnAction" ng-if="page=='releaseA' && !isPlugin && enableEdit" ng-disabled="activeEdit" ng-click="addElement('module')">Add</button>
 			        </span>
 			        <div class="ModList" ng-show="isModToggle()">
-			            <ul ng-repeat="module in modules">
+			            <ul class="blockList" >
 			                {% raw %}
-			                <li ng-class="module.selected ? 'ModSelected' : 'ModNotSelected'">
+			                <li ng-repeat="module in modules" ng-class="module.selected ? 'active' : ''" ng-click="clickMod(module)">
 			                    <span>
-			                        <label ng-click="clickMod(module)">{{ module.name }} {{module.version}}</label><span ng-if="module.order"> ({{ module.order }})</span>
+			                        <label >{{ module.name }} {{module.version}}</label><span ng-if="module.order"> ({{ module.order }})</span>
 			                        <span ng-if="page=='releaseA' && module.selected && enableEdit">
 			                            <!--<button class="btn btnAction" ng-click="addElement('submodule')">Add</button>-->
 			                            <button class="btn btn-sm btnAction" ng-disabled="activeEdit" ng-click="delElement(module)">Delete</button>
@@ -116,11 +116,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			        </div>
 			            {% endraw %}
 			        <div class="SubList" ng-show="isSubToggle()">
-			            <ul ng-repeat="submodule in subSet.modules">
+			            <ul class="blockList">
 			                {% raw %}
-			                <li>
+			                <li ng-repeat="submodule in subSet.modules" ng-class="submodule.selected ? 'active' : ''" ng-click="clickSub(submodule)">
 			                    <span>
-			                        <label ng-class="submodule.selected ? 'SubSelected' : 'SubNotSelected'" ng-click="clickSub(submodule)">{{ submodule.name }} ({{ submodule.order }})</label>
+			                        <label>{{ submodule.name }} ({{ submodule.order }})</label>
 			                        <button class="btn btnExtend" ng-if="submodule.issubparent" ng-click="toggleModSub(submodule)">+/-</button>
 			                        <span ng-if="page=='releaseA' && submodule.issubparent && submodule.selected && enableEdit">
 			                            <button class="btn btnAction" ng-disabled="activeEdit" ng-click="addElement('submodule', submodule)">Add</button>
@@ -135,7 +135,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			                {% endraw %}
 			            </ul>
 			        </div>
-			            <!--<hr class="separateur">      ****************** Files ****************** -->
+			            <hr class="separateur">      <!--****************** Files ******************-->
 			        <div class="listRoot">Files
 			            {% raw %}
 			            (<span ng-if="fileSet.parent">{{fileSet.parent.name | prefix:'Distrib_':fileSet.parent:'node_type':'distrib' | sufix:'version':fileSet.parent:'node_type':'distrib'}}</span>)
@@ -144,9 +144,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			            <button class="bt btn-smn btnAction" ng-if="page=='releaseA' && fileSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('filenode')">Add</button>
 			        </div>
 			        <div class="FileList" ng-show="isFileToggle()">
-			            <ul ng-repeat="filenode in fileSet.filenodes">
+			            <ul class="blockList">
 			            {% raw %}
-			                <li ng-class="filenode.selected ? 'FileSelected' : 'FileNotSelected'" ng-click="clickFile(filenode)">{{ filenode.name | limitDisplay : limitLetterNum }}
+			                <li ng-repeat="filenode in fileSet.filenodes" ng-class="filenode.selected ? 'active' : ''" ng-click="clickFile(filenode)">{{ filenode.name | limitDisplay : limitLetterNum }}
 			                    <button class="btn btnAction" ng-if="page=='releaseA' && filenode.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(filenode)">Delete</button>
 			                </li>
 			            {% endraw %}
@@ -199,9 +199,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 <script type="text/javascript" src="../static/js/controllers/Log.js"></script>
 <script type="text/ng-template" id="field_renderer.html">
     {% raw %}
-    <li>
+    <li ng-class="sub.selected ? 'active' : ''" ng-click="clickSub(sub)">
         <span>
-            <label ng-class="sub.selected ? 'SubSelected' : 'SubdNotSelected'" ng-click="clickSub(sub)">{{ sub.name }} ({{ sub.order }})</label>
+            <label >{{ sub.name }} ({{ sub.order }})</label>
             <button class="btn btnExtend" ng-if="sub.issubparent" ng-click="toggleModSub(sub)">+/-</button>
             <span ng-if="page=='releaseA' && sub.issubparent && sub.selected && enableEdit"><button class="btn btnAction" ng-disabled="activeEdit" ng-click="addElement('submodule', sub)">Add</button></span>
             <button class="btn btnAction" ng-if="page=='releaseA' && sub.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(sub)">Delete</button>
