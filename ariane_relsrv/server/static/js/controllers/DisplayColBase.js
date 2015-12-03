@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 angular.module('ArianeUI')
     .controller('DisplayColBaseCtrl', function ($scope, serviceAjax, serviceUI) {
         // config
-        $scope.CONFIG = {mode: "release"};
+        $scope.CONFIG = CONFIG;
         // data
         $scope.dists = [];
         var plugins = [];
@@ -68,7 +68,8 @@ angular.module('ArianeUI')
         $scope.togPlug = true;
         /* ********************* Main FUNCTIONS ********************* */
         (function init(){
-            serviceAjax.distribManager("other", "getConfig")
+            // No need to get config by Ajax for the moment, we do this using Jinja2 templates renderer;
+            /*serviceAjax.distribManager("other", "getConfig")
                 .success(function(data){
                     if(data.run_mode)
                         $scope.CONFIG.mode = data.run_mode;
@@ -76,7 +77,9 @@ angular.module('ArianeUI')
 			serviceAjax.define_url(data.relmgr_url);
                     if($scope.CONFIG.mode == "test")
                         $scope.btnActive.export = true;
-                });
+                });*/
+            if($scope.CONFIG.mode == "test")
+                $scope.btnActive.export = true;
             loadDistribs();
         })();
         function loadDistribs(callFunction){
@@ -228,7 +231,6 @@ angular.module('ArianeUI')
                     .success(function(data){
                         serviceAjax.distribManager("RELEASE", "", distrib)
                             .success(function(data){
-                                $scope.CONFIG.mode = data.run_mode;
                                 $scope.mode = "Release";
                                 $scope.dists = [];
                                 $scope.dists.push(data.distrib);
@@ -256,7 +258,6 @@ angular.module('ArianeUI')
                 serviceUI.setNotifyLog("info", "View", "Entering into DEV Edition mode...");
                 serviceAjax.distribManager("DEV")
                     .success(function(data){
-                        $scope.CONFIG.mode = data.run_mode;
                         $scope.mode = "DEV";
                         $scope.dists = [];
                         $scope.dists.push(data.distrib);

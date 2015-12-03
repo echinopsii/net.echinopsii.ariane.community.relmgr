@@ -32,11 +32,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </form>
     </div>
     <hr ng-if="mode == 'Release'" class="separateur">
-    <span>
-        Commit - <label for="task">Task</label><input type="text" id="task" ng-model="cmdRelC.task"/>
-          <label for="comment">Comments</label><input type="text" id="comment" ng-model="cmdRelC.comment"/>
-    </span>
-        <div class="input_warning" ng-if="cmdRelC.warn">{{ cmdRelC.warning }}</div>
+    <ul>
+        <li>Commit - <label for="task">Task</label><input type="text" id="task" ng-model="cmdRelC.task"/></li>
+        <li><label for="comment">Comments</label><input type="text" id="comment" ng-model="cmdRelC.comment"/></li>
+    </ul>
+    <div class="input_warning" ng-if="cmdRelC.warn">{{ cmdRelC.warning }}</div>
     <hr class="separateur">
     <button ng-if="CONFIG.mode == 'test'" ng-click="TestValidRelC()">TestValidTags</button>
     <button class="btn btnGreen" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relC')">VALIDATE</button>

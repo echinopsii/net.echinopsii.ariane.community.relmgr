@@ -24,7 +24,8 @@
  */
 angular.module('ArianeUI')
     .factory('serviceAjax', function serviceAjax($http, $rootScope) {
-        var url = "" + url + "";
+        var url = CONFIG.url;
+        var port = CONFIG.port;
         var nodeKeys = ['name', 'version', 'groupId', 'artifactId', 'order', 'git_repos','nID', 'type', 'path'];
         function cleanElementAttr(element){
             var copy = JSON.parse(JSON.stringify(element));
@@ -55,35 +56,35 @@ angular.module('ArianeUI')
             },
             distrib: function(version){
                 if (version == "")
-                    return $http.get("http://jenkins.lab.prod:5000/rest/distrib");
+                    return $http.get("http://" + url + ":" + port + "/rest/distrib");
                 else
-                    return $http.get("http://jenkins.lab.prod:5000/rest/distrib/" + version);
+                    return $http.get("http://" + url + ":" + port + "/rest/distrib/" + version);
             },
             distribManager: function(mode, action, distrib){
                 action = (typeof action === "undefined" ? "" : action);
                 distrib = (typeof distrib === "undefined" ? "" : JSON.stringify(cleanElementAttr(distrib)));
-                return $http.post("http://jenkins.lab.prod:5000/rest/distribmanager", {mode: mode, action: action, distrib: distrib})
+                return $http.post("http://" + url + ":" + port + "/rest/distribmanager", {mode: mode, action: action, distrib: distrib})
             },
             module: function(dist){
                 if (dist.version != "")
-                    return $http.get("http://" + url + ":5000/rest/module?version="+dist.version);
+                    return $http.get("http://" + url + ":" + port + "/rest/module?version="+dist.version);
             },
             plugin: function(version){
                 if (version != "")
-                    return $http.get("http://" + url + ":5000/rest/plugin?version="+version);
+                    return $http.get("http://" + url + ":" + port + "/rest/plugin?version="+version);
             },
             submodule: function(modplug){
                 var element = cleanElementAttr(modplug);
                 var data = {"parent": element};
                 var config = {params: data};
-                return $http.get("http://" + url + ":5000/rest/submodule", config);
+                return $http.get("http://" + url + ":" + port + "/rest/submodule", config);
             },
             file: function(element){
                 var c_element = cleanElementAttr(element);
                 if (c_element != {}){
                     var data = {"parent": c_element};
                     var config = {params: data};
-                    return $http.get("http://" + url + ":5000/rest/filenode", config);
+                    return $http.get("http://" + url + ":" + port + "/rest/filenode", config);
                 }
             },
             save: function(element, type){
@@ -91,7 +92,7 @@ angular.module('ArianeUI')
                 var data = {};
                 data[type] = JSON.stringify(c_element);
                 var config = {data: data, headers: {'Content-Type': 'application/json'}, dataType:'json'};
-                return $http.post("http://" + url + ":5000/rest/"+type, data);
+                return $http.post("http://" + url + ":" + port + "/rest/"+type, data);
                 // Handle res
             },
             create: function(element, type, parent){
@@ -104,16 +105,16 @@ angular.module('ArianeUI')
                     if(typeof element.issubparent != "undefined") { data["isSubModuleParent"] = element.issubparent ? 'yes' : 'no';}
                     var c_parent = cleanElementAttr(parent);
                     data["parent"] = JSON.stringify(c_parent);
-                    return $http.post("http://" + url + ":5000/rest/"+type, data);
+                    return $http.post("http://" + url + ":" + port + "/rest/"+type, data);
                 }
                 else if(type == "filenode"){
                     var c_parent = cleanElementAttr(parent);
                     data["parent"] = JSON.stringify(c_parent);
-                    return $http.post("http://" + url + ":5000/rest/"+type, data);
+                    return $http.post("http://" + url + ":" + port + "/rest/"+type, data);
                 }
                 else{
                     data["dist_version"] = parent.version;
-                    return $http.post("http://" + url + ":5000/rest/"+type, data);
+                    return $http.post("http://" + url + ":" + port + "/rest/"+type, data);
                 }
             },
             delete: function(element){
@@ -122,37 +123,37 @@ angular.module('ArianeUI')
                 if(element.nID <= 0 || element.node_type == "")
                     return false;
                 var type = element.node_type;
-                return $http.delete("http://" + url + ":5000/rest/"+type+'/'+element.nID.toString());
+                return $http.delete("http://" + url + ":" + port + "/rest/"+type+'/'+element.nID.toString());
             },
             generate: function (command, version) {
                 var data = {command: command + ' ' + version};
-                return $http.post("http://" + url + ":5000/rest/generation", data);
+                return $http.post("http://" + url + ":" + port + "/rest/generation", data);
             },
             buildZip: function(version, tags, action){
                 var data = {version: version, tags: tags, action: action}; // tags is boolean
-                return $http.post("http://" + url + ":5000/rest/buildzip", data);
+                return $http.post("http://" + url + ":" + port + "/rest/buildzip", data);
             },
             commit: function(mode, task, comment, isdistrib, isplugin){
                 var data = {isdistrib: isdistrib,isplugin: isplugin, mode: mode, task: task, comment: comment};
-                return $http.post("http://" + url + ":5000/rest/commit", data);
+                return $http.post("http://" + url + ":" + port + "/rest/commit", data);
             },
             deleteZip: function(version){
                 var data = {version: version};
                 var config = {params: data};
-                return $http.delete("http://" + url + ":5000/rest/getdelzip", config);
+                return $http.delete("http://" + url + ":" + port + "/rest/getdelzip", config);
             },
             getFileDiff: function(filenode){
                 if(filenode.node_type == "filenode"){
                     var data = {"filenode": filenode};
                     var config = {params: data};
-                    return $http.get("http://" + url + ":5000/rest/filediff", config);
+                    return $http.get("http://" + url + ":" + port + "/rest/filediff", config);
                 }
             },
             checkout: function(version, mode, isdistrib, isplugin){
-                return $http.post("http://" + url + ":5000/rest/checkout", {version: version, isdistrib: isdistrib, isplugin: isplugin, mode: mode});
+                return $http.post("http://" + url + ":" + port + "/rest/checkout", {version: version, isdistrib: isdistrib, isplugin: isplugin, mode: mode});
             },
             resetDB: function(){
-                return $http.post("http://" + url + ":5000/rest/reset");
+                return $http.post("http://" + url + ":" + port + "/rest/reset");
             }
         };
     });

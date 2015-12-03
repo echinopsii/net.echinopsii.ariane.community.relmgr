@@ -83,7 +83,8 @@ headers_html = {'Content-Type': 'text/html'}
 class UI(Resource):
     @relmgrAuth.requires_auth
     def get(self):
-        return make_response(render_template('index.html'), 200, headers_html)
+        return make_response(render_template('index.html', url=RELMGR_CONFIG.relmgr_url, port=RELMGR_CONFIG.relmgr_port,
+                                             mode=RELMGR_CONFIG.ui_running_mode), 200, headers_html)
 class TempBaseEdit(Resource):
     def get(self):
         return make_response(render_template('baseEdition.html'), 200, headers_html)
@@ -784,14 +785,12 @@ class RestDistributionManager(Resource):
             abort_error("BAD_REQUEST", "You must provide the 'mode' parameter")
         mode = args["mode"]
         if mode == "DEV":
-            ui_running_mode = ReleaseTools.get_ui_running_mode()
             dev = ariane.distribution_service.get_dev_distrib()
             if "-SNAPSHOT" in dev.version:
                 cpy_dev = DatabaseManager.get_distrib_copies()
                 if len(cpy_dev) != 1:
                     abort_error("BAD_REQUEST", "No copy was found in database, can not continue")
-                return make_response(json.dumps({"distrib": dev.get_properties(gettype=True),
-                                                 "run_mode": ui_running_mode}), 200, headers_json)
+                return make_response(json.dumps({"distrib": dev.get_properties(gettype=True)}), 200, headers_json)
 
             newdevcp = DatabaseManager.make_dev_distrib()
             if newdevcp == 1:
@@ -804,8 +803,7 @@ class RestDistributionManager(Resource):
             elif newdevcp == 4:
                 abort_error("INTERNAL_ERROR", "Error occured while copying the New DEV Distribution into the database")
 
-            return make_response(json.dumps({"distrib": newdevcp.get_properties(gettype=True),
-                                             "run_mode": ui_running_mode}), 200, headers_json)
+            return make_response(json.dumps({"distrib": newdevcp.get_properties(gettype=True)}), 200, headers_json)
         elif mode == "RELEASE":
             if args["distrib"] is None:
                 abort_error("BAD_REQUEST", "You must provide the 'distrib' parameter")
@@ -818,8 +816,7 @@ class RestDistributionManager(Resource):
             if err == 1:
                 abort_error("FORBIDDEN", "Distribution copy already exists in database")
             else:
-                return make_response(json.dumps({"distrib": cd.get_properties(gettype=True),
-                                                 "run_mode": ReleaseTools.get_ui_running_mode()}), 200, headers_json)
+                return make_response(json.dumps({"distrib": cd.get_properties(gettype=True)}), 200, headers_json)
 
         elif action == "getDEV":
             dev = ariane.distribution_service.get_dev_distrib()

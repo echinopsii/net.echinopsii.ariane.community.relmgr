@@ -32,6 +32,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     
     <!-- Fonts -->
     <link rel="stylesheet" href="../static/style/font-awesome.min.css">
+
+	<script type="text/javascript">
+		var CONFIG = {};
+		CONFIG["url"] = "{{url}}"; // JINJA2 POWER: index.html is rendered with parameters 'url' and 'mode' accessible
+		CONFIG["mode"] = "{{mode}}";
+		CONFIG["port"] = "{{port}}";
+		console.log("Config: " + CONFIG);
+	</script>
     
 </head>
 <body ng-app="ArianeUI">
@@ -214,8 +222,5 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </li>
     {% endraw %}
 </script>
-
-
-
 </body>
 </html>
