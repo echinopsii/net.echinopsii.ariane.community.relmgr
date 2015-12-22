@@ -17,7 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from ariane_relsrv.server.__main__ import ariane_delivery, RELMGR_CONFIG
+from ariane_relsrv.server.config import Config
+from ariane_reltreelib.dao import ariane_delivery
 import unittest, os
 from create_db_from_file import create_db_file
 
@@ -27,9 +28,15 @@ class AppTest(unittest.TestCase):
     # TODO test SubModuleParent
 
     def setUp(self):
+        config_path = "/etc/ariane_relmgr/confsrv.json"
+        RELMGR_CONFIG = Config()
+        RELMGR_CONFIG.parse(config_path)
         # Init variables:
-        args = {"login": "neo4j", "password":"admin", "type": "neo4j"}
-        self.ariane = ariane_delivery.DeliveryTree(args)
+        self.ariane = ariane_delivery.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login,
+                                                    "password": RELMGR_CONFIG.neo4j_password,
+                                                    "host": RELMGR_CONFIG.neo4j_host,
+                                                    "port": RELMGR_CONFIG.neo4j_port,
+                                                    "type": "neo4j"})
         self.ariane.delete_all()
         self.sub = ariane_delivery.SubModule("arti", "0.2", "oyo", "oyo.arti")
         self.sub2 = ariane_delivery.SubModule("marti", "0.2", "aya", "aya.marti")

@@ -296,7 +296,7 @@ class DistributionService(DeliveryTree):
         return list_distrib
 
     def get_relations(self, args):
-        return self._get_relations(args, ["COMPATIBLE WITH", "DEPENDS ON"])
+        return self._get_relations(args, ArianeRelation.Dist_relations)
 
     def get_dev_distrib(self):
         dev = self.get_unique({"editable": "true"})
@@ -488,7 +488,7 @@ class ModuleService(DeliveryTree):
         """
         list_mod = []
         if type(args) is Distribution:
-            args = {"reverse": True, "node": args.node, "relation": "DEPENDS ON"}
+            args = {"reverse": False, "node": args.node, "relation": ArianeRelation.Dist_Module}
             list_node = DeliveryTree.graph_dao.get_all(args)
             for node in list_node:
                 list_mod.append(self._create_ariane_node(node))
@@ -502,7 +502,7 @@ class ModuleService(DeliveryTree):
 
     def get_relations(self, args, rels=None):
         if rels is None:
-            return self._get_relations(args, ["COMPOSED OF", "DEPENDS ON"])
+            return self._get_relations(args, ArianeRelation.Module_relations)
         return self._get_relations(args, rels)
 
     def __get_name_version_master(self, version):
@@ -594,7 +594,7 @@ class PluginService(DeliveryTree):
         list_plugin = []
         if isinstance(args, Distribution):
             distrib = args
-            args = {"reverse": True, "node": args.node, "relation": "COMPATIBLE WITH"}
+            args = {"reverse": True, "node": args.node, "relation": ArianeRelation.Plugin_Dist}
             list_node = DeliveryTree.graph_dao.get_all(args)
             for node in list_node:
                 plugin = self._create_ariane_node(node)
@@ -612,7 +612,7 @@ class PluginService(DeliveryTree):
         return list_plugin
 
     def get_relations(self, args):
-        return self._get_relations(args, ["COMPOSED OF", "COMPATIBLE WITH", "DEPENDS ON"])
+        return self._get_relations(args, ArianeRelation.Plugin_relations)
 
     def __get_name_version_master(self, version):
         if "SNAPSHOT" in version:
@@ -683,7 +683,7 @@ class SubModuleService(DeliveryTree):
         :return: a list of all SubModule object related to the module
         """
         list_submod = []
-        args = {"reverse": False, "node": module.node, "label": self._ariane_node.__class__.__name__, "relation": "COMPOSED OF"}
+        args = {"reverse": False, "node": module.node, "label": self._ariane_node.__class__.__name__, "relation": ArianeRelation.Module_SubModule}
         list_node = DeliveryTree.graph_dao.get_all(args)
         for node in list_node:
             sub = self._create_ariane_node(node)
@@ -691,7 +691,7 @@ class SubModuleService(DeliveryTree):
         return list_submod
 
     def get_relations(self, args):
-        return self._get_relations(args, ["COMPOSED OF"])
+        return self._get_relations(args, ArianeRelation.SubModule_relations)
 
     def get_parent(self, submod):
         grid = submod.groupId
@@ -749,7 +749,7 @@ class SubModuleParentService(DeliveryTree):
         :return: a list of all SubModule object related to the module
         """
         list_submod = []
-        args = {"reverse": False, "node": module.node, "label": self._ariane_node.__class__.__name__, "relation": "COMPOSED OF"}
+        args = {"reverse": False, "node": module.node, "label": self._ariane_node.__class__.__name__, "relation": ArianeRelation.Module_SubModule}
         list_node = DeliveryTree.graph_dao.get_all(args)
         for node in list_node:
             sub = self._create_ariane_node(node)
@@ -758,7 +758,7 @@ class SubModuleParentService(DeliveryTree):
         return list_submod
 
     def get_relations(self, args):
-        return self._get_relations(args, ["COMPOSED OF"])
+        return self._get_relations(args, ArianeRelation.SubModuleParent_relations)
 
     def get_parent(self, submod):
         grid = submod.groupId
@@ -793,6 +793,21 @@ class SubModuleParentService(DeliveryTree):
         return self._ariane_node.node_type
 
 class ArianeRelation(object):
+    Dist_Module = "composedBy"
+    Module_Module = "dependency"
+    Module_Plugin = Module_Module
+    Module_SubModule = "module"
+    Plugin_Dist = "compatibleWith"
+    Plugin_Module = Module_Module
+    Plugin_SubModule = Module_SubModule
+    SubModuleParent_SubModule = Module_SubModule
+
+    Dist_relations = [Dist_Module, Plugin_Dist]
+    Module_relations = [Dist_Module, Module_Module, Module_SubModule]
+    Plugin_relations = [Plugin_Dist, Plugin_Module, Plugin_SubModule]
+    SubModuleParent_relations = [SubModuleParent_SubModule]
+    SubModule_relations = [Module_SubModule]
+
     def __init__(self, start, relation, end, properties, rel_node):
         self.start = start
         self.relation = relation
@@ -983,10 +998,10 @@ class Distribution(ArianeNode):
             self._old_version = self.version
 
             for plugin_dict in self.list_plugin:
-                self.__create_relation(plugin_dict["Plugin"], "COMPATIBLE WITH", plugin_dict["properties"])
+                self.__create_relation(plugin_dict["Plugin"], ArianeRelation.Plugin_Dist, plugin_dict["properties"], reverse=False)
 
             for mod in self.list_module:
-                self.__create_relation(mod, "DEPENDS ON")
+                self.__create_relation(mod, ArianeRelation.Dist_Module)
 
             for fnode in self.list_files:
                 self._create_file(fnode)
@@ -1017,16 +1032,19 @@ class Distribution(ArianeNode):
         if isinstance(module, Module):
             self.list_module.append(module)
             if self._is_saved():
-                self.__create_relation(module, "DEPENDS ON")
+                self.__create_relation(module, ArianeRelation.Dist_Module)
 
     def add_plugin(self, plugin, prop=None):
         if isinstance(plugin, Plugin):
             self.list_plugin.append({"Plugin": plugin, "properties": prop})
             if self._is_saved():
-                self.__create_relation(plugin, "COMPATIBLE WITH", prop)
+                self.__create_relation(plugin, ArianeRelation.Plugin_Dist, prop, reverse=False)
 
-    def __create_relation(self, mod_plug, relation, prop=None):
-        link_args = {"node": mod_plug.node, "relation": relation, "linked_node": self.node}
+    def __create_relation(self, mod_plug, relation, prop=None, reverse=True):
+        if reverse:
+            link_args = {"node": self.node, "relation": relation, "linked_node": mod_plug.node}
+        else:
+            link_args = {"node": mod_plug.node, "relation": relation, "linked_node": self.node}
         if prop is not None:
             link_args["properties"] = prop
         nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
@@ -1182,7 +1200,7 @@ class Module(ArianeNode):
         :param submod: SubModule object
         :return: Nothing
         """
-        link_args = {"node": self.node, "relation": "COMPOSED OF", "linked_node": submod.node}
+        link_args = {"node": self.node, "relation": ArianeRelation.Module_SubModule, "linked_node": submod.node}
         nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
         self.list_relation.append(rel)
         if nid is not None:
@@ -1208,7 +1226,7 @@ class Module(ArianeNode):
     def __create_dependency(self, mod_args):
         properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"]}
         module = mod_args["module"]
-        link_args = {"node": self.node, "relation": "DEPENDS ON", "linked_node": module.node, "properties": properties.copy()}
+        link_args = {"node": self.node, "relation": ArianeRelation.Module_Module, "linked_node": module.node, "properties": properties.copy()}
 
         nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
 
@@ -1223,7 +1241,11 @@ class Module(ArianeNode):
             self.list_module_dependency.append(properties)
 
     def __update_dependencies(self):
-        rels = DeliveryTree.module_service.get_relations(self, ["DEPENDS ON"])
+        """
+        Updates module relationships properties. This function is called after module's version edition.
+        :return:
+        """
+        rels = DeliveryTree.module_service.get_relations(self, [ArianeRelation.Module_Module, ArianeRelation.Dist_Module])
         for rel in rels:
             if not isinstance(rel, ArianeRelation):
                 continue
@@ -1450,7 +1472,7 @@ class Plugin(ArianeNode):
                 self._len_list_submod = len(self.list_submod)
 
     def __create_relation(self, submod):
-        link_args = {"node": self.node, "relation": "COMPOSED OF", "linked_node": submod.node}
+        link_args = {"node": self.node, "relation": ArianeRelation.Plugin_SubModule, "linked_node": submod.node}
         nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
         self.list_relation.append(rel)
         if nid is not None:
@@ -1476,7 +1498,7 @@ class Plugin(ArianeNode):
     def __create_dependency(self, mod_args):
         properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"]}
         module = mod_args["module"]
-        link_args = {"node": self.node, "relation": "DEPENDS ON", "linked_node": module.node, "properties": properties.copy()}
+        link_args = {"node": self.node, "relation": ArianeRelation.Plugin_Module, "linked_node": module.node, "properties": properties.copy()}
 
         nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
 
@@ -1602,7 +1624,7 @@ class SubModuleParent(ArianeNode):
                 self.__create_relation(submod)
 
     def __create_relation(self, submod):
-        link_args = {"node": self.node, "relation": "COMPOSED OF", "linked_node": submod.node}
+        link_args = {"node": self.node, "relation": ArianeRelation.SubModuleParent_SubModule, "linked_node": submod.node}
         nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
         self.list_relation.append(rel)
         if nid is not None:

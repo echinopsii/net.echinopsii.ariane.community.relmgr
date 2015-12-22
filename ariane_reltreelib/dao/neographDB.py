@@ -121,6 +121,14 @@ class NeoGraph(object):
             node.push()
         return node
 
+    # TO EDIT RELATION NAME, execute this cypher command:
+    # MATCH (n:Plugin)-[r]->(m:Module)
+    # CREATE (n)-[r2:dependency]->(m)
+    # // copy properties, if necessary
+    #     SET r2 = r
+    # WITH r
+    # DELETE r
+
     def save_relation(self, args):
         if ("start_nID" in args.keys()) and ("relation" in args.keys()) and ("end_nID" in args.keys()) and\
            ("properties" in args.keys()):
