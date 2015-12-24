@@ -25,7 +25,7 @@ from create_db_from_file import create_db_file
 __author__ = 'stanrenia'
 
 class AppTest(unittest.TestCase):
-    # TODO test ModuleParent
+    # TODO test Module
 
     def setUp(self):
         config_path = "/etc/ariane_relmgr/confsrv.json"
@@ -41,7 +41,7 @@ class AppTest(unittest.TestCase):
         self.sub = ariane_delivery.Module("arti", "0.2", "oyo", "oyo.arti")
         self.sub2 = ariane_delivery.Module("marti", "0.2", "aya", "aya.marti")
         self.sub2.add_file(ariane_delivery.FileNode("ael", "ald", "aeda", "/dad/ae"))
-        self.subpar = ariane_delivery.ModuleParent("papa", "0.3")
+        self.subpar = ariane_delivery.Module("papa", "0.3")
         self.sub4 = ariane_delivery.Module("fils", "0.3", "son", "son.fils")
         self.mod = ariane_delivery.Component("My", "0.2.2", "other")
         self.mod2 = ariane_delivery.Component("idm", "0.3.2", "core")
@@ -193,39 +193,55 @@ class AppTest(unittest.TestCase):
             for rel in relation_list:
                 self.assertIsInstance(rel, ariane_delivery.ArianeRelation)
 
-    def test_ModuleParentService(self):
+    def test_ModuleServiceWithParent(self):
         #   Save a modified module
         self.subpar.version = "0.4"
         self.subpar.save()
 
-        listmodule = self.ariane.module_parent_service.get_all(self.mod)
-        self.assertEqual(self.subpar, listmodule[0])
-        listfound = self.ariane.module_parent_service.find({"name": "papa"})
+        listmodule = self.ariane.module_service.get_all(self.mod)
+        self.assertTrue(self.subpar in listmodule)
+        listfound = self.ariane.module_service.find({"name": "papa"})
         self.assertEqual(self.subpar, listfound[0])
 
-        listfound = self.ariane.module_parent_service.find(self.subpar)
+        listfound = self.ariane.module_service.find(self.subpar)
         self.assertEqual(self.subpar, listfound[0])
 
-        listfound = self.ariane.module_parent_service.find({"version": "0.4"})
-        self.assertEqual(self.subpar, listfound[0])
+        listfound = self.ariane.module_service.find({"version": "0.4"})
+        self.assertTrue(self.subpar in listfound)
 
         #   get_unique service method
-        unique = self.ariane.module_parent_service.get_unique({"name": "papa"})
+        unique = self.ariane.module_service.get_unique({"name": "papa"})
         self.assertEqual(self.subpar, unique)
 
-        unique = self.ariane.module_parent_service.get_unique({"name": "bob"})
+        unique = self.ariane.module_service.get_unique({"name": "bob"})
         self.assertIsNone(unique)
 
-        self.mod2.add_module(ariane_delivery.ModuleParent("daddy", "0.4"))
+        self.mod2.add_module(ariane_delivery.Module("daddy", "0.4"))
 
-        unique = self.ariane.module_parent_service.get_unique({"version": "0.4"})
+        unique = self.ariane.module_service.get_unique({"version": "0.4"})
         self.assertEqual(unique, 0)
 
         #   get_relations service method
-        related_nodes = self.ariane.module_parent_service.get_relations(self.subpar)
+        related_nodes = self.ariane.module_service.get_relations(self.subpar)
         self.assertGreater(len(related_nodes), 0)
         for rel in related_nodes:
             self.assertIsInstance(rel, ariane_delivery.ArianeRelation)
+
+        newchild = ariane_delivery.Module("child", "testme")
+        newpar = ariane_delivery.Module("bigpar", "testme")
+        newpar.save()
+        self.assertFalse(newpar.isParent())
+        newpar.add_module(newchild)
+        self.assertTrue(newpar.isParent())
+        self.mod.add_module(newpar)
+        listfound = self.ariane.component_service.find(self.mod)
+        self.ariane.component_service.update_arianenode_lists(listfound[0])
+        self.assertTrue(newpar in listfound[0].list_module)
+
+        newpar.delete()
+        listfound = self.ariane.component_service.find(self.mod)
+        self.ariane.component_service.update_arianenode_lists(listfound[0])
+        self.assertTrue(newpar not in listfound[0].list_module)
 
     def test_ComponentService(self):
         self.mod.version = "newmew"
@@ -398,7 +414,7 @@ class AppTest(unittest.TestCase):
                 if isinstance(s, ariane_delivery.Module):
                     self.ariane.module_service.update_arianenode_lists(m)
                 else:
-                    self.ariane.module_parent_service.update_arianenode_lists(m)
+                    self.ariane.module_service.update_arianenode_lists(m)
                 s.version = "123"
                 s.save()
                 for sf in s.list_files:
@@ -415,7 +431,7 @@ class AppTest(unittest.TestCase):
                 if isinstance(s, ariane_delivery.Module):
                     self.ariane.module_service.update_arianenode_lists(p)
                 else:
-                    self.ariane.module_parent_service.update_arianenode_lists(p)
+                    self.ariane.module_service.update_arianenode_lists(p)
                 s.version = "45767"
                 s.save()
                 for sf in s.list_files:
@@ -480,7 +496,7 @@ class AppTest(unittest.TestCase):
         self.assertIsNone(self.ariane.component_service.find({"nID": 1}))
         self.assertIsNone(self.ariane.plugin_service.find({"nID": 1}))
         self.assertIsNone(self.ariane.module_service.find({"nID": 1}))
-        self.assertIsNone(self.ariane.module_parent_service.find({"nID": 1}))
+        self.assertIsNone(self.ariane.module_service.find({"nID": 1}))
 
     def notest_add_error(self):
         A = ariane_delivery.Component("A", "myversion")
@@ -528,8 +544,8 @@ class AppTest(unittest.TestCase):
         d = self.ariane.distribution_service.get_unique({"version": "0.6.3"})
         p = ariane_delivery.Plugin("Gyoza", "Nip2.0")
         p.add_file(ariane_delivery.FileNode("gyoFile", "pom", "2.0", "/gyoza/files"))
-        subpar = ariane_delivery.ModuleParent('Papu', 'Daddy', "net.dady", "net.dady.papu")
-        subpar2 = ariane_delivery.ModuleParent('Yapu', 'Daddy', 'net.dady.papu', 'net.dady.papu.yapu')
+        subpar = ariane_delivery.Module('Papu', 'Daddy', "net.dady", "net.dady.papu")
+        subpar2 = ariane_delivery.Module('Yapu', 'Daddy', 'net.dady.papu', 'net.dady.papu.yapu')
         subpar2.add_module(ariane_delivery.Module('aaa', "2", "r.2", "r.2.aaa"))
         subpar2.add_module(ariane_delivery.Module('bbb', '2', "r.2", "r.2.bbb"))
         subpar.add_module(subpar2)
@@ -595,7 +611,7 @@ class AppTest(unittest.TestCase):
         sub = ariane_delivery.Module("base", "0.1.0")
         sub2 = ariane_delivery.Module("wat", "0.1.0")
         sub2.add_file(ariane_delivery.FileNode("pom", "pom", "0.1.1", "/a"))
-        subpar = ariane_delivery.ModuleParent("par", "0.1.0")
+        subpar = ariane_delivery.Module("par", "0.1.0")
         subpar.add_module(sub)
         mod2.add_module(subpar)
         mod.add_module(sub2)
