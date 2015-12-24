@@ -37,7 +37,6 @@ from ariane_reltreelib.dao import ariane_delivery
 from ariane_reltreelib import exceptions as err
 
 __author__ = 'stanrenia'
-# TODO Handle error and choose path
 # Liste commandes: distribution, distrib_only, modules_only, plugins_only: -version
 # commandes: pom_dist, json_plugins, json_plugin_dist, json_git, json_dist: -version
 # commandes: pom -version -Mod/Plug, plan -version -Mod/Plug, lib -version -Mod/Plug, vsh -version installer, vsh -verison -plugin
@@ -85,7 +84,7 @@ class Command(object):
         parser = argparse.ArgumentParser()
         parser.add_argument("command", help="File generation command")
         parser.add_argument("version", help="Ariane Delivery version generated")
-        parser.add_argument("--name", help="Module or Plugin name in which the file is generated")
+        parser.add_argument("--name", help="Component or Plugin name in which the file is generated")
         args = parser.parse_args()
         cmd = args.command
         version = args.version
@@ -127,14 +126,14 @@ class Command(object):
 
             elif cmd in Command.commands_mod:
                 if name is not None:
-                    modules = Command.dao_ariane.module_service.get_all(distrib)
+                    components = Command.dao_ariane.component_service.get_all(distrib)
                     plugins = Command.dao_ariane.plugin_service.get_all(distrib)
                     if cmd == "vsh":
                         if name == "installer":
-                            for m in modules:
+                            for m in components:
                                 fnode = Command.dao_ariane.get_one_file(m, "vsh")
                                 if fnode is not None:
-                                    Command.gen.generate_vsh_installer(version, modules.copy(), fnode)
+                                    Command.gen.generate_vsh_installer(version, components.copy(), fnode)
                         else:
                             p = Command.dao_ariane.plugin_service.get_unique({"name": name})
                             if p is not None:
@@ -143,8 +142,8 @@ class Command(object):
                             else:
                                 raise err.CommandError("Plugin name not found in database")
                     else:
-                        # Get Module or Plugin
-                        mod = [mod for mod in modules if mod.name == name]
+                        # Get Component or Plugin
+                        mod = [mod for mod in components if mod.name == name]
                         plug = [plug for plug in plugins if plug.name == name]
                         m = None
                         if len(mod) > 0:
@@ -153,8 +152,8 @@ class Command(object):
                             m = plug[0]
                         if m is not None:
                             # Call method if get succededed
-                            if isinstance(m, ariane_delivery.Module):
-                                Command.dao_ariane.module_service.update_arianenode_lists(m)
+                            if isinstance(m, ariane_delivery.Component):
+                                Command.dao_ariane.component_service.update_arianenode_lists(m)
                             else:
                                 Command.dao_ariane.plugin_service.update_arianenode_lists(m)
 

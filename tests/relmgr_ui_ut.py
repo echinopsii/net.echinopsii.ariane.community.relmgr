@@ -25,12 +25,33 @@ import subprocess
 import os, shutil
 from datetime import date
 from ariane_reltreelib.dao import ariane_delivery
-from ariane_relsrv.server.__main__ import ariane, project_path
-from ariane_relsrv.server.restful import ReleaseTools
+from ariane_relsrv.server.config import Config
+# from ariane_relsrv.server.__main__ import ariane, project_path
+from ariane_relsrv.server.release_tools import ReleaseTools, InitReleaseTools, DatabaseManager
+import logging
+
+relmgr_path = __file__
+relmgr_path = relmgr_path[:-len("/tests/relmgr_ui_ut.py")]
+project_path = relmgr_path[:-len("/ariane.community.relmgr")]
+config_path = "/etc/ariane_relmgr/confsrv.json"
+RELMGR_CONFIG = Config()
+RELMGR_CONFIG.parse(config_path)
+# Init variables:
+ariane = ariane_delivery.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login,
+                                       "password": RELMGR_CONFIG.neo4j_password,
+                                       "host": RELMGR_CONFIG.neo4j_host,
+                                       "port": RELMGR_CONFIG.neo4j_port,
+                                       "type": "neo4j"})
+Config.setup_logging(RELMGR_CONFIG.log_file)
+LOGGER = logging.getLogger(__name__)
+myglobals = {"conf": RELMGR_CONFIG, "delivery_tree": ariane, "logger": LOGGER, "project_path": project_path,
+             "relmgr_path": relmgr_path}
+InitReleaseTools.set_globals(myglobals)
+
 
 class TestREST(unittest.TestCase):
 
-    def test_import_all_cypher(self):
+    def import_all_cypher(self):
         ariane.delete_all()
         os.system("/home/ikito/ECHINOPSII/srenia/neo4j-community-2.2.6/bin/neo4j-shell -file "
                   "/home/ikito/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/all.cypher")
@@ -77,7 +98,7 @@ class TestREST(unittest.TestCase):
             typ = ""
             if m in mcore:
                 typ = "core"
-            mod = ariane_delivery.Module(m, "0.7.1", typ)
+            mod = ariane_delivery.Component(m, "0.7.1", typ)
             versions = ["0.7.1", "0.4.3"] #, "0.7.1", "0.7.2", "0.7.3"]
             path = os.path.join(project_path, mod.get_directory_name())
             if not os.path.exists(path):
@@ -113,7 +134,7 @@ class TestREST(unittest.TestCase):
     def test_update_gitrepos_url(self):
         d = ariane.distribution_service.get_dev_distrib()
         ariane.distribution_service.update_arianenode_lists(d)
-        for m in d.list_module:
+        for m in d.list_component:
             m.git_repos = "https://stash.echinopsii.net/scm/~srenia/"
             m.save()
 
@@ -125,12 +146,12 @@ class TestREST(unittest.TestCase):
         print("*** List of tags: ***")
         print("distrib: " + tags.replace("\n", ", "))
 
-        mylist = ariane.module_service.get_all(dist)
+        mylist = ariane.component_service.get_all(dist)
         mylist.extend(ariane.plugin_service.get_all(dist))
         for m in mylist:
             tags = subprocess.check_output("git tag", shell=True, cwd=os.path.join(project_path, m.get_directory_name()))
             tags = tags.decode()
-            print("module/plugin: " + m.name + " " + tags.replace("\n", ", "))
+            print("component/plugin: " + m.name + " " + tags.replace("\n", ", "))
 
     def test_create_dev_distrib(self):
         mdist = ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
@@ -168,14 +189,14 @@ class TestREST(unittest.TestCase):
         d2.add_plugin(p)
         d2.save()
 
-    def test_update_modules(self):
+    def test_update_components(self):
         dist = ariane.distribution_service.get_dev_distrib()
-        modules = ariane.module_service.get_all(dist)
+        components = ariane.component_service.get_all(dist)
         version1 = "0.7.2"
         version2 = "0.4.2"
         version3 = "0.1.0"
         mod_dict = {"directory": version1, "mapping": version1, "portal": version1, "injector": version1,
                     "installer": version1, "environment": version1, "idm": version2, "messaging": version3}
-        for m in modules:
+        for m in components:
             m.version = mod_dict[m.name]
             m.save()

@@ -23,17 +23,7 @@ from tests import create_db_from_file
 import unittest, os
 
 __author__ = 'stanrenia'
-# TODO Corriger generate plan
-# TODO Corriger indent templates
-# TODO: Implémenter ArianeRelation.delete()
-# TODO: Implémenter les Erreurs (vérifier les paramètres d'entrées des fonctions public) et exceptions
-# TODO: Voir pourquoi node_id de Distribution change dans le test generator_ut.py, ajuster Generator.get_distrib() en fonction.
-# TODO Mettre Header: Licence, auteur, titre, description
-# TODO Déplacer les services Files (méthode make_files) dans un autre fichier.
-# TODO Possibilité d'améliorer le compare xml, afin d'afficher tous les fichiers à modifier au début du print. Voir d'automatiser les modifs à faire.
-# TODO Implémenter services FileNode (CreateRemoveUpdateDelete CRUD)
 # TODO Corriger warnings
-# TODO interface terminal pour génération fichiers
 
 class GeneratorTest(unittest.TestCase):
     @classmethod
@@ -54,8 +44,8 @@ class GeneratorTest(unittest.TestCase):
 
     # def test_path(self):
     #     print(os.getcwd(), os.path.realpath(__file__))
-    #     print(os.path.exists('..ariane_delivertytool/generator/exception_extension/module_vsh_exceptions.json'))
-    #     print(os.path.exists('/Users/stanrenia/py_neo4j_db/ariane_deliverytool/generator/exception_extension/module_vsh_exceptions.json'))
+    #     print(os.path.exists('..ariane_delivertytool/generator/exception_extension/component_vsh_exceptions.json'))
+    #     print(os.path.exists('/Users/stanrenia/py_neo4j_db/ariane_deliverytool/generator/exception_extension/component_vsh_exceptions.json'))
     #     print(os.listdir('./'))
 
     def test_import(self):
@@ -85,10 +75,10 @@ class GeneratorTest(unittest.TestCase):
         self.g.compare_files('xml', self.dir_output + fpom.path + fpom.name,
                            'models/pom-ariane.community.distrib-master.SNAPSHOT.xml')
 
-    def test_generate_pom_module(self):
+    def test_generate_pom_component(self):
         create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
         distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
-        modules = self.ariane.module_service.get_all(distrib)
+        components = self.ariane.component_service.get_all(distrib)
         plugins = self.ariane.plugin_service.get_all(distrib)
 
         for plug in plugins:
@@ -100,10 +90,10 @@ class GeneratorTest(unittest.TestCase):
                 self.g.compare_files('xml', self.dir_output+plug.get_directory_name()+'/'+psub.name+'/pom.xml',
                                    'models/'+plug.get_directory_name()+'/'+psub.name+'/pom.xml')
 
-        for mod in modules:
+        for mod in components:
             if mod.name == "environment":
                 continue
-            self.ariane.module_service.update_arianenode_lists(mod)
+            self.ariane.component_service.update_arianenode_lists(mod)
             self.g.generate_pom(mod)
             self.g.compare_files('xml', self.dir_output+mod.get_directory_name()+'/pom.xml',
                                'models/'+mod.get_directory_name()+'/pom.xml')
@@ -150,14 +140,14 @@ class GeneratorTest(unittest.TestCase):
         self.g.generate_json_git_repos(version, fjson)
         self.assertTrue((self.g.compare_files("json", self.dir_output+fjson.path+fjson.name, "models/"+fjson.name)))
 
-    def test_generate_module_lib(self):
+    def test_generate_component_lib(self):
         create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
         distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
-        modules = self.ariane.module_service.get_all(distrib)
+        components = self.ariane.component_service.get_all(distrib)
         plugins = self.ariane.plugin_service.get_all(distrib)
-        for m in modules:
+        for m in components:
             if m.name not in ["environment", "installer"]:
-                self.ariane.module_service.update_arianenode_lists(m)
+                self.ariane.component_service.update_arianenode_lists(m)
                 fjson = self.ariane.get_one_file(m, "json_build")
                 self.g.generate_lib_json(m, fjson)
                 self.assertTrue(self.g.compare_files("json", self.dir_output+fjson.path+fjson.name,
@@ -172,11 +162,11 @@ class GeneratorTest(unittest.TestCase):
     def test_generate_plan(self):
         create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
         distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
-        modules = self.ariane.module_service.get_all(distrib)
+        components = self.ariane.component_service.get_all(distrib)
         plugins = self.ariane.plugin_service.get_all(distrib)
-        for m in modules:
+        for m in components:
             if m.name not in ["environment", "installer"]:
-                self.ariane.module_service.update_arianenode_lists(m)
+                self.ariane.component_service.update_arianenode_lists(m)
                 fplan = self.ariane.get_one_file(m, "plan")
                 self.g.generate_plan(m, fplan)
                 self.assertTrue(self.g.compare_files('xml', self.dir_output+fplan.path+fplan.name,
@@ -191,13 +181,13 @@ class GeneratorTest(unittest.TestCase):
     def test_generate_installer_vsh(self):
         create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
         distrib = self.ariane.distribution_service.get_unique({"version": '0.6.4-SNAPSHOT'})
-        modules = self.ariane.module_service.get_all(distrib)
+        components = self.ariane.component_service.get_all(distrib)
         plugins = self.ariane.plugin_service.get_all(distrib)
-        for m in modules:
+        for m in components:
             mfiles = self.ariane.get_files(m)
             for f in mfiles:
                 if f.type == "vsh":
-                    self.g.generate_vsh_installer(modules.copy(), f)
+                    self.g.generate_vsh_installer(components.copy(), f)
                     self.assertTrue(self.g.compare_files('xml', self.dir_output+f.path+f.name, 'models/'+f.name))
         for p in plugins:
             pfiles = self.ariane.get_files(p)

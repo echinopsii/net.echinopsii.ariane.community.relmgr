@@ -24,7 +24,7 @@ __author__ = 'stanrenia'
 def create_db_file(filename):
     file_found = True
     state = "core"
-    list_module = []
+    list_component = []
     list_plugin = []
     args = {"login": "neo4j", "password":"admin", "type": "neo4j"}
     ariane = ariane_delivery.DeliveryTree(args)
@@ -42,16 +42,16 @@ def create_db_file(filename):
                     # print('list param: ', list_param)
                     if state == "core" and "distribution" in list_param:
                         distrib = ariane_delivery.Distribution(list_param[1], list_param[2], editable="false")
-                        state = "module"
+                        state = "component"
                     elif "dependency:" in list_param:
                         state = "dependency"
                     elif "plugin_dependency:" in list_param:
                         state = "plugin_dependency"
-                    elif state == "module" and "plugin" not in list_param and len(list_param) > 0:
+                    elif state == "component" and "plugin" not in list_param and len(list_param) > 0:
                         mod_name = list_param[0]
                         mod_version = list_param[1]
                         mod_type = list_param[2]
-                        mod = ariane_delivery.Module(mod_name, mod_version, mod_type)
+                        mod = ariane_delivery.Component(mod_name, mod_version, mod_type)
                         mod.order = mod_order
                         mod_order += 1
                         if len(list_param) > 3:
@@ -80,9 +80,9 @@ def create_db_file(filename):
                                     sub_order += 1
                                     sub.set_groupid_artifact(mod)
                                     mod.add_submodule(sub)
-                        list_module.append(mod)
+                        list_component.append(mod)
 
-                    elif state == "module" and "plugin" in list_param:
+                    elif state == "component" and "plugin" in list_param:
                         if "vmin" in list_param and "vmax" in list_param:
                             vmin = list_param[4]
                             vmax = list_param[6]
@@ -111,13 +111,13 @@ def create_db_file(filename):
                         vmax = list_param[3]
                         mod_a = None
                         mod_b = None
-                        for mod in list_module:
+                        for mod in list_component:
                             if mod.name == mod_name1:
                                 mod_a = mod
                             elif mod.name == mod_name2:
                                 mod_b = mod
                         if (mod_a is not None) and (mod_b is not None):
-                            mod_a.add_module_dependency({"module": mod_b, "version_min": vmin, "version_max": vmax})
+                            mod_a.add_component_dependency({"component": mod_b, "version_min": vmin, "version_max": vmax})
 
                     elif state == "plugin_dependency":
                         plugin_name = list_param[0]
@@ -131,20 +131,20 @@ def create_db_file(filename):
                             if p.name == plugin_name:
                                 plug_a = p
                                 break
-                        for mod in list_module:
+                        for mod in list_component:
                             if mod.name == mod_name2:
                                 mod_b = mod
                                 break
                         if (plug_a is not None) and (mod_b is not None):
-                            plug_a.add_module_dependency({"module": mod_b, "version_min": vmin, "version_max": vmax})
+                            plug_a.add_component_dependency({"component": mod_b, "version_min": vmin, "version_max": vmax})
 
     except FileNotFoundError:
         print("Error, file not find try another file name")
         return None
 
     # Save distrib
-    for mod in list_module:
-        distrib.add_module(mod)
+    for mod in list_component:
+        distrib.add_component(mod)
 
     for dictio in list_plugin:
         plug = dictio["plugin"]

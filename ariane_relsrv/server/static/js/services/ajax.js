@@ -46,8 +46,8 @@ angular.module('ArianeUI')
                 }
                 else if(type == 'plugin')
                     return {name: "", version: "", node_type:"plugin", nID:0};
-                else if(type == "module"){
-                    return {name: "", version: "", git_repos: "", type: "", order: "", node_type:"module", nID:0};
+                else if(type == "component"){
+                    return {name: "", version: "", git_repos: "", type: "", order: "", node_type:"component", nID:0};
                 }
                 else if(type == "submodule")
                     return {name: "", version: "", groupId: "", artifactId: "", order: "", node_type:"submodule", issubparent:"no", nID:0};
@@ -65,9 +65,9 @@ angular.module('ArianeUI')
                 distrib = (typeof distrib === "undefined" ? "" : JSON.stringify(cleanElementAttr(distrib)));
                 return $http.post("http://" + url + ":" + port + "/rest/distribmanager", {mode: mode, action: action, distrib: distrib})
             },
-            module: function(dist){
+            component: function(dist){
                 if (dist.version != "")
-                    return $http.get("http://" + url + ":" + port + "/rest/module?version="+dist.version);
+                    return $http.get("http://" + url + ":" + port + "/rest/component?version="+dist.version);
             },
             plugin: function(version){
                 if (version != "")

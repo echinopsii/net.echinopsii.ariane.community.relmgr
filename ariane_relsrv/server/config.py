@@ -23,6 +23,8 @@ __author__ = 'stan renia'
 import os
 import json
 import ariane_reltreelib.exceptions as err
+import logging
+import logging.config
 
 class Config(object):
     def __init__(self):
@@ -74,3 +76,16 @@ class Config(object):
             self.relmgr_port = conf["RELMGR_PORT"]
             self.relmgr_url = conf["RELMGR_URL"]
             self.config_file_path = config_file_path
+
+    @staticmethod
+    def setup_logging(default_path='misc/relsrv_logging_conf.json', default_level=logging.INFO):
+        path = default_path
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                config = json.load(f)
+            logging.config.dictConfig(config)
+        else:
+            logging.basicConfig(level=default_level)
+
+        logging.getLogger("py2neo").setLevel(logging.WARNING)
+        logging.getLogger("httpstream").setLevel(logging.WARNING)

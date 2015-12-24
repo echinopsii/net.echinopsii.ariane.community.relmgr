@@ -81,20 +81,20 @@ class ReleaseTools(object):
                             "'https://github.com/echinopsii/'".format(dist))
 
     @staticmethod
-    def make_modules_to_tag_list():
+    def make_components_to_tag_list():
         dist = ariane.distribution_service.get_dev_distrib()
         if dist.editable == "true":
             ariane.distribution_service.update_arianenode_lists(dist)
-            for m in dist.list_module:
+            for m in dist.list_component:
                 mpath = os.path.join(project_path, m.get_directory_name())
                 last_tag = GitTagHandler.get_last_tag(path=mpath)
                 mversion = m.version
                 if "-SNAPSHOT" in mversion:
                     mversion = mversion[:-len("-SNAPSHOT")]
                 if mversion > last_tag:
-                    GitManager.MODULES_TO_TAG.append(m.name)
+                    GitManager.COMPONENTS_TO_TAG.append(m.name)
                 else:
-                    GitManager.MODULES_EXCEPTIONS.append(m.name)
+                    GitManager.COMPONENTS_EXCEPTIONS.append(m.name)
 
     @staticmethod
     def update_version(version, position="minor", operation="inc"):
@@ -119,22 +119,25 @@ class ReleaseTools(object):
         LOGGER.info("Trying to copy and create the new 'all.cypher' file into " + path)
         if os.path.exists(path):
             os.chdir(path)
-            fname = "all_"+todaydate+".cypher"
+            fname = "all.cypher"
             if os.path.isfile(fname):
-                same_files = []
-                for (dp, dn, fn) in os.walk("."):
-                    same_files = [f for f in fn if todaydate in f]
-                    same_files = sorted(same_files, reverse=True)
-                    break
-                if len(same_files) == 1:
-                    fname = same_files[0].split('.')
-                    fname = fname[0] + '_1.cypher'
-                else:
-                    tmp = same_files[0].split('_')
-                    tmp = tmp[-1].split('.')
-                    tmp = str(int(tmp[0])+1)
-                    fname = "all_"+todaydate+"_"+tmp+".cypher"
-            shutil.copy("all.cypher", fname)
+                fname = "all_"+todaydate+".cypher"
+                if os.path.isfile(fname):
+                    same_files = []
+                    for (dp, dn, fn) in os.walk("."):
+                        same_files = [f for f in fn if todaydate in f]
+                        same_files = sorted(same_files, reverse=True)
+                        break
+                    if len(same_files) == 1:
+                        fname = same_files[0].split('.')
+                        fname = fname[0] + '_1.cypher'
+                    else:
+                        tmp = same_files[0].split('_')
+                        tmp = tmp[-1].split('.')
+                        tmp = str(int(tmp[0])+1)
+                        fname = "all_"+todaydate+"_"+tmp+".cypher"
+                shutil.copy("all.cypher", fname)
+
             os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(path, "all.cypher"))
             if erase_genuine_file:
                 os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(relmgr_path, "bootstrap",
@@ -216,8 +219,8 @@ class DatabaseManager(object):
         newdev.version = ReleaseTools.update_version(newdev.version)
         newdev.version += snapshot
         newdev.save()
-        modules = ariane.module_service.get_all(newdev)
-        for m in modules:
+        components = ariane.component_service.get_all(newdev)
+        for m in components:
             if snapshot in m.version:
                 newdev.delete()
                 return 3
@@ -299,8 +302,8 @@ class DatabaseManager(object):
             return 4
 
         cpy_dev = cpy_dev[0]
-        cpy_mod = ariane.module_service.get_all(cpy_dev)
-        dev_mod = ariane.module_service.get_all(dev)
+        cpy_mod = ariane.component_service.get_all(cpy_dev)
+        dev_mod = ariane.component_service.get_all(dev)
         cpy_plug = ariane.plugin_service.get_all(cpy_dev)
         dev_plug = ariane.plugin_service.get_all(dev)
         for m in cpy_mod:
@@ -330,7 +333,7 @@ class DatabaseManager(object):
             if newdev == 1:
                 return 1  # "Server can not find the actual DEV Distribution"
             elif newdev in [2, 3]:
-                return 2  # "A module of the actual DEV Distribution is already in a '-SNAPSHOT' version"
+                return 2  # "A component of the actual DEV Distribution is already in a '-SNAPSHOT' version"
         LOGGER.info("DEV Distribution created in database. Now removing the copy...")
         DatabaseManager.remove_genuine_distrib()
         LOGGER.info("Old Distribution copy was removed. Start copying the new DEV distribution...")
@@ -358,8 +361,8 @@ class DatabaseManager(object):
             return 1, fpath  # "Error while importing '"+fpath+"', file was not found "
 
 class GitManager(object):
-    MODULES_TO_TAG = []
-    MODULES_EXCEPTIONS = []
+    COMPONENTS_TO_TAG = []
+    COMPONENTS_EXCEPTIONS = []
     PLUGINS_TO_TAG = []
     commit_comment = ""
 
@@ -425,8 +428,8 @@ class GitManager(object):
         comment = args["comment"]
 
         # git commit -m "task comment" ./
-        # git tag version_module
-        # git push origin  version_module
+        # git tag version_component
+        # git push origin  version_component
 
         dist = ariane.distribution_service.get_dev_distrib()
         if not isinstance(dist, ariane_delivery.Distribution):
@@ -449,15 +452,15 @@ class GitManager(object):
             if isplugin:
                 mod_plugs = ariane.plugin_service.get_all(dist)
             else:
-                mod_plugs = ariane.module_service.get_all(dist)
+                mod_plugs = ariane.component_service.get_all(dist)
             for m in mod_plugs:
                 if isplugin:
                     if m.name not in GitManager.PLUGINS_TO_TAG:
                         LOGGER.warn(m.name+"("+m.version+") not in plugins to tag")
                         continue
                 else:
-                    if m.name not in GitManager.MODULES_TO_TAG:
-                        LOGGER.warn(m.name+"("+m.version+") not in modules to tag")
+                    if m.name not in GitManager.COMPONENTS_TO_TAG:
+                        LOGGER.warn(m.name+"("+m.version+") not in components to tag")
                         continue
                     mpath = os.path.join(project_path, m.get_directory_name())
                     rets = GitManager.commit_element(m, mpath, commit, task, comment, mode)
@@ -474,11 +477,11 @@ class GitManager(object):
             return 2, message, warns  # Error with message
         else:
             if isdistrib:
-                message = "'distrib' module from" + mode + "Distribution ("+dist.version+") Commit-Tag-Push done"
+                message = "'distrib' component from" + mode + "Distribution ("+dist.version+") Commit-Tag-Push done"
             elif isplugin:
                 message = "Plugins from  " + mode + " Distribution ("+dist.version+") Commit-Tag-Push done"
             else:
-                message = "Modules from  " + mode + " Distribution ("+dist.version+") Commit-Tag-Push done"
+                message = "Components from  " + mode + " Distribution ("+dist.version+") Commit-Tag-Push done"
         LOGGER.info(message)
         return 0, message, warns
 
@@ -494,14 +497,14 @@ class GitManager(object):
         subprocess.call("git clean -f", shell=True, cwd=dirpath)
         subprocess.call("git checkout .", shell=True, cwd=dirpath)
         LOGGER.info("distrib clean and checkout")
-        # Second, Checkout all other Modules/Plugins files. There are 2 verisoned files (.plan et .json build)
+        # Second, Checkout all other components/Plugins files. There are 2 verisoned files (.plan et .json build)
         # so we remove them. For the not versioned files we use 'git checkout'. Plugin checkout is optionnal
-        modules = ariane.module_service.get_all(dist)
+        components = ariane.component_service.get_all(dist)
         if isplugin:
             plugins = ariane.plugin_service.get_all(dist)
-            modules.extend(plugins)
+            components.extend(plugins)
 
-        for m in modules:
+        for m in components:
             dirpath = os.path.join(project_path, m.get_directory_name() + '/')
             subprocess.call("git clean -f", shell=True, cwd=dirpath)
             subprocess.call("git checkout .", shell=True, cwd=dirpath)
@@ -512,9 +515,9 @@ class GitManager(object):
     def pull_checkout_distrib(dist, isplugin=False):
         LOGGER.info("Start repositories git checkout and git pull")
         paths = [ReleaseTools.get_distrib_path(dist)]
-        modules = ariane.module_service.get_all(dist)
+        components = ariane.component_service.get_all(dist)
         plugins = ariane.plugin_service.get_all(dist)
-        paths.extend([os.path.join(project_path, m.get_directory_name()) for m in modules])
+        paths.extend([os.path.join(project_path, m.get_directory_name()) for m in components])
         if isplugin:
             paths.extend([os.path.join(project_path, p.get_directory_name()) for p in plugins])
         errs = ""
@@ -532,8 +535,8 @@ class GitManager(object):
 
     @staticmethod
     def checkout_tags(isdistrib=False, isplugin=False):
-        # git tag -d version_module
-        # git push origin :refs/tags/version_module
+        # git tag -d version_component
+        # git push origin :refs/tags/version_component
         # if git log -1 --pretty=%B | grep "last commit ticket + last commit comment" == 0
         #    git reset --hard HEAD~1
         backpath = os.getcwd()
@@ -545,10 +548,10 @@ class GitManager(object):
         if isplugin:
             mod_plugs = ariane.plugin_service.get_all(dist)
         else:
-            mod_plugs = ariane.module_service.get_all(dist)
+            mod_plugs = ariane.component_service.get_all(dist)
         errs = ""
         path_errs = []
-        # Handle 'distrib' module
+        # Handle 'distrib' component
         if isdistrib:
             dpath = os.path.join(project_path, ReleaseTools.get_distrib_path(dist))
             if os.path.exists(dpath):
@@ -576,7 +579,7 @@ class GitManager(object):
                 if m.name not in GitManager.PLUGINS_TO_TAG:
                     continue
             else:
-                if m.name not in GitManager.MODULES_TO_TAG:
+                if m.name not in GitManager.COMPONENTS_TO_TAG:
                     continue
                 mpath = os.path.join(project_path, m.get_directory_name())
                 if os.path.exists(mpath):
@@ -719,13 +722,13 @@ class FileGenManager(object):
 
     @staticmethod
     def generate_files(cmd_str, version, name):
-        GitManager.MODULES_EXCEPTIONS = []
-        GitManager.MODULES_TO_TAG = []
-        if ReleaseTools.make_modules_to_tag_list() == -1:
+        GitManager.COMPONENTS_EXCEPTIONS = []
+        GitManager.COMPONENTS_TO_TAG = []
+        if ReleaseTools.make_components_to_tag_list() == -1:
             return 1, None  # "There is no copy of the master SNAPSHOT Distribution"
 
         cmd = command.Command(dao_ariane=ariane, project_path=project_path)
-        cmd.gen.set_release_module_exceptions(GitManager.MODULES_EXCEPTIONS)
+        cmd.gen.set_release_component_exceptions(GitManager.COMPONENTS_EXCEPTIONS)
         try:
             cmd.execute(cmd_str, version, name)
             return 0, None

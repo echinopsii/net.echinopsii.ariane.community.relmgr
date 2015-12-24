@@ -257,9 +257,9 @@ class RestPlugin(Resource):
             return make_response(json.dumps({"plugin": p.get_properties(gettype=True)}), 200, headers_json)
         else:
             if unique_key2 is None:
-                abort_error("BAD_REQUEST", "No Module found with given parameters {}".format(unique_key))
+                abort_error("BAD_REQUEST", "No component found with given parameters {}".format(unique_key))
             else:
-                abort_error("BAD_REQUEST", "No Module found with given parameters {} {}".format(unique_key, unique_key2))
+                abort_error("BAD_REQUEST", "No component found with given parameters {} {}".format(unique_key, unique_key2))
 
     def delete(self, unique_key, unique_key2=None):
         p = self.__get_plugin(unique_key, unique_key2)
@@ -370,7 +370,7 @@ class RestSubModule(Resource):
                 args = self.reqparse.parse_args()
                 if args["parent"] is not None:
                     args["parent"] = json.loads(args["parent"])
-                    par = ariane.module_service.get_unique(args["parent"])
+                    par = ariane.component_service.get_unique(args["parent"])
                     if par is None:
                         par = ariane.plugin_service.get_unique(args["parent"])
                     if par is None:
@@ -416,7 +416,7 @@ class RestSubModuleList(Resource):
         args = self.reqparse.parse_args()
         if args["parent"] is not None:
             args["parent"] = json.loads(args["parent"])
-            par = ariane.module_service.get_unique(args["parent"])
+            par = ariane.component_service.get_unique(args["parent"])
             if par is None:
                 par = ariane.plugin_service.get_unique(args["parent"])
             if par is None:
@@ -518,63 +518,63 @@ class RestSubModuleList(Resource):
                 s["issubparent"] = False
             return make_response(json.dumps({"submodule": s}), 201, headers_json)
 
-class RestModule(Resource):
+class RestComponent(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('version', type=str, help='Distribution version')
         self.reqparse.add_argument('nID', type=int, help='Distribution database ID named "nID"')
-        super(RestModule, self).__init__()
+        super(RestComponent, self).__init__()
 
-    def __get_module(self, unique_key, unique_key2):
+    def __get_component(self, unique_key, unique_key2):
         m = None
         if unique_key2 is None:
             if isinstance(unique_key, int):
-                m = ariane.module_service.get_unique({"nID": unique_key})
+                m = ariane.component_service.get_unique({"nID": unique_key})
         else:
             if isinstance(unique_key, str) and isinstance(unique_key2, str):
-                m = ariane.module_service.get_unique({"name": unique_key, "version": unique_key2})
+                m = ariane.component_service.get_unique({"name": unique_key, "version": unique_key2})
         return m
 
     def get(self, unique_key, unique_key2=None):
-        m = self.__get_module(unique_key, unique_key2)
+        m = self.__get_component(unique_key, unique_key2)
         if m is not None:
-            return make_response(json.dumps({"module": m.get_properties(gettype=True)}), 200, headers_json)
+            return make_response(json.dumps({"component": m.get_properties(gettype=True)}), 200, headers_json)
         else:
             if unique_key2 is None:
-                abort_error("BAD_REQUEST", "No Module found with given parameters {}".format(unique_key))
+                abort_error("BAD_REQUEST", "No component found with given parameters {}".format(unique_key))
             else:
-                abort_error("BAD_REQUEST", "No Module found with given parameters {} {}".format(unique_key, unique_key2))
+                abort_error("BAD_REQUEST", "No component found with given parameters {} {}".format(unique_key, unique_key2))
 
     def delete(self, unique_key, unique_key2=None):
-        m = self.__get_module(unique_key, unique_key2)
+        m = self.__get_component(unique_key, unique_key2)
         if m is not None:
             m.delete()
             return {}, 200
         else:
             abort_error("NOT_FOUND", "Error, Wrong URL")
 
-class RestModuleList(Resource):
+class RestComponentList(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         # self.reqparse.add_argument('name', type=str)
-        self.reqparse.add_argument('name', type=str, help='Module name')
-        self.reqparse.add_argument('version', type=str, help='Module version')
-        self.reqparse.add_argument('type', type=str, help='Module version')
-        self.reqparse.add_argument('order', type=int, help="Module order for Installer .vsh file")
-        self.reqparse.add_argument('nID', type=int, help='Module database ID named "nID"')
+        self.reqparse.add_argument('name', type=str, help='component name')
+        self.reqparse.add_argument('version', type=str, help='component version')
+        self.reqparse.add_argument('type', type=str, help='component version')
+        self.reqparse.add_argument('order', type=int, help="component order for Installer .vsh file")
+        self.reqparse.add_argument('nID', type=int, help='component database ID named "nID"')
         self.reqparse.add_argument('dist_version')
-        self.reqparse.add_argument('module')
+        self.reqparse.add_argument('component')
         # self.reqparse.add_argument('version', type=str)
-        super(RestModuleList, self).__init__()
+        super(RestComponentList, self).__init__()
 
     def get(self):
         args = self.reqparse.parse_args()
         if args["version"] is not None:
             d = ariane.distribution_service.get_unique({"version": args["version"]})
             if d is not None:
-                mlist = ariane.module_service.get_all(d)
+                mlist = ariane.component_service.get_all(d)
                 m = [m.get_properties(gettype=True) for m in mlist]
-                return make_response(json.dumps({"modules": m}), 200, headers_json)
+                return make_response(json.dumps({"components": m}), 200, headers_json)
             else:
                 abort_error("BAD_REQUST", "Given parameter {} does not match any Distribution version".format(
                             args["version"]))
@@ -584,55 +584,55 @@ class RestModuleList(Resource):
     def post(self):
         args = self.reqparse.parse_args()
         if args["nID"] is not None and args["nID"] > 0:
-            m = ariane.module_service.get_unique({"nID": args["nID"]})
+            m = ariane.component_service.get_unique({"nID": args["nID"]})
             if ariane.is_dev_version(m):
-                if isinstance(m, ariane_delivery.Module):
+                if isinstance(m, ariane_delivery.Component):
                     clear_args(args)
                     if m.update(args):
                         m.save()
                         m = m.get_properties(gettype=True)
-                        return make_response(json.dumps({"module": m}), 200, headers_json)
+                        return make_response(json.dumps({"component": m}), 200, headers_json)
                     else:
-                        abort_error("BAD_REQUEST", "Module {} already exists".format(args))
+                        abort_error("BAD_REQUEST", "component {} already exists".format(args))
                 else:
-                    abort_error("BAD_REQUEST", "Given parameters {} does not match any Module in database".format(args))
+                    abort_error("BAD_REQUEST", "Given parameters {} does not match any component in database".format(args))
             else:
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
-        elif args["module"] is not None:
-            arg_m = json.loads(args["module"])
-            m = ariane.module_service.get_unique(arg_m)
+        elif args["component"] is not None:
+            arg_m = json.loads(args["component"])
+            m = ariane.component_service.get_unique(arg_m)
             if ariane.is_dev_version(m):
-                if isinstance(m, ariane_delivery.Module):
+                if isinstance(m, ariane_delivery.Component):
                     if m.update(arg_m):
                         m.save()
-                        return make_response(json.dumps({"module": m.get_properties(gettype=True)}), 200, headers_json)
+                        return make_response(json.dumps({"component": m.get_properties(gettype=True)}), 200, headers_json)
             else:
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         else:
-            m = ariane_delivery.Module("", "", "")
+            m = ariane_delivery.Component("", "", "")
             for key in args.keys():
-                if key not in ["module", "nID"] and args[key] is None:
+                if key not in ["component", "nID"] and args[key] is None:
                     abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
                         m.get_properties().keys()))
-            mod_exists = ariane.module_service.get_unique({"name": args["name"], "version": args["version"], "type": args["type"]})
+            mod_exists = ariane.component_service.get_unique({"name": args["name"], "version": args["version"], "type": args["type"]})
             if mod_exists is None:
                 dist = ariane.distribution_service.get_unique({"version": args["dist_version"]})
                 if isinstance(dist, ariane_delivery.Distribution):
                     primary_key = ['name', 'version']
                     if ariane.check_args_init(primary_key, args.copy()):
                         args["nID"] = 0
-                        m = ariane_delivery.ArianeNode.create_subclass("Module", args)
-                        dist.add_module(m)
+                        m = ariane_delivery.ArianeNode.create_subclass("Component", args)
+                        dist.add_component(m)
                         dist.save()
                         m = m.get_properties(gettype=True)
-                        return make_response(json.dumps({"module": m}), 201, headers_json)
+                        return make_response(json.dumps({"component": m}), 201, headers_json)
                     else:
                         abort_error("BAD_REQUEST", "Parameters are missing or incorrect. You must provide: {}".format(
                                     m.get_properties().keys()))
                 else:
                     abort_error("BAD_REQUEST", "Given parameter 'version' does not match any Distribution versions")
             else:
-                abort_error("BAD_REQUEST", "Module {} already exists".format(args))
+                abort_error("BAD_REQUEST", "component {} already exists".format(args))
 
 class RestDistribution(Resource):
     def __init__(self):
@@ -796,7 +796,7 @@ class RestDistributionManager(Resource):
             if newdevcp == 1:
                 abort_error("INTERNAL_ERROR", "Server can not find the actual DEV Distribution")
             elif newdevcp == 2:
-                abort_error("BAD_REQUEST", "A module of the actual DEV Distribution is already in a '-SNAPSHOT' version")
+                abort_error("BAD_REQUEST", "A component of the actual DEV Distribution is already in a '-SNAPSHOT' version")
             elif newdevcp == 3:
                 abort_error("INTERNAL_ERROR", "Error occured while copying the New DEV Distribution into the "
                                               "database: A copy already exists.")
@@ -1069,7 +1069,6 @@ class RestBuildZip(Resource):
                 return make_response(json.dumps({"message": "mvn clean install succeeded"}), 200, headers_json)
 
 class RestGeneration(Resource):
-    MODULES_EXCEPTIONS = []
 
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
@@ -1108,8 +1107,8 @@ class RestGeneration(Resource):
 
 api.add_resource(RestDistributionList, '/rest/distrib')
 api.add_resource(RestDistribution, '/rest/distrib/<int:unique_key>', '/rest/distrib/<unique_key>')
-api.add_resource(RestModuleList, '/rest/module')
-api.add_resource(RestModule, '/rest/module/<int:unique_key>', '/rest/module/<unique_key>/<unique_key2>')
+api.add_resource(RestComponentList, '/rest/component')
+api.add_resource(RestComponent, '/rest/component/<int:unique_key>', '/rest/component/<unique_key>/<unique_key2>')
 api.add_resource(RestPlugin, '/rest/plugin/<int:unique_key>', '/rest/plugin/<unique_key>/<unique_key2>')
 api.add_resource(RestPluginList, '/rest/plugin')
 api.add_resource(RestSubModuleList, '/rest/submodule')

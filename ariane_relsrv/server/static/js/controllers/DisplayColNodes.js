@@ -26,19 +26,19 @@
 
 angular.module('ArianeUI')
     .controller('DisplayColNodesCtrl', function ($scope, serviceAjax, serviceUI) {
-        $scope.modules = [];
-        $scope.subSet = {parent: null, modules: []};
+        $scope.components = [];
+        $scope.subSet = {parent: null, components: []};
         $scope.fileSet = {parent: null, filenodes: []};
         $scope.isPlugin = false;
         $scope.curNodeSelected = 0;
-        $scope.togMod = true;
+        $scope.togComp = true;
         $scope.togSub = true;
         $scope.togFile = true;
         $scope.limitLetterNum = 50;
         $scope.enableEdit = false; // User can start to edit
         $scope.activeEdit = false;
         $scope.page = 'view';
-        var tmp_subSet = {parent: {}, modules: []};
+        var tmp_subSet = {parent: {}, components: []};
         var curBaseObj = {};
 
         function DistSelected(baseObj){
@@ -46,7 +46,7 @@ angular.module('ArianeUI')
                 loadComponents(baseObj["node"]);
             }
             tmp_subSet = $scope.subSet;
-            $scope.subSet = {parent: null, modules: []};
+            $scope.subSet = {parent: null, components: []};
             $scope.togSub = false;
             $scope.curNodeSelected["selected"] = false;
             $scope.isPlugin = false;
@@ -65,17 +65,17 @@ angular.module('ArianeUI')
             else{
                 $scope.subSet = tmp_subSet;
             }
-            $scope.modules = [baseObj["node"]];
+            $scope.components = [baseObj["node"]];
             $scope.togSub = true;
-            $scope.togMod = true;
+            $scope.togComp = true;
             $scope.curNodeSelected["selected"] = false;
             $scope.isPlugin = true;
         }
         function loadComponents(dist){
-            serviceAjax.module(dist).success(function(data){
-                data.modules.sort(sortOrder);
-                $scope.modules = data.modules;
-                $scope.togMod = true;
+            serviceAjax.component(dist).success(function(data){
+                data.components.sort(sortOrder);
+                $scope.components = data.components;
+                $scope.togComp = true;
                 curBaseObj = dist;
             });
         }
@@ -141,8 +141,8 @@ angular.module('ArianeUI')
 
         $scope.$on('deleteNode', function(){
             var delObj = serviceUI.getAddDelObj();
-            if(delObj.obj == "module" || delObj.obj == "plugin")
-                $scope.modules = $scope.modules.filter(function(e){ return e != delObj.node});
+            if(delObj.obj == "component" || delObj.obj == "plugin")
+                $scope.components = $scope.components.filter(function(e){ return e != delObj.node});
 
             else if(delObj.obj == "submodule"){
                 serviceAjax.submodule($scope.subSet.parent).success(function(data){
@@ -160,8 +160,8 @@ angular.module('ArianeUI')
 
         $scope.$on('addNode', function(){
             var addObj = serviceUI.getAddDelObj();
-            if(addObj.obj == "module")
-                $scope.modules.push(addObj.node);
+            if(addObj.obj == "component")
+                $scope.components.push(addObj.node);
 
             else if(addObj.obj == "submodule"){
                 serviceAjax.submodule($scope.subSet.parent).success(function(data){
@@ -179,31 +179,31 @@ angular.module('ArianeUI')
             loadFiles(selObj.node);
         });
 
-        $scope.clickMod = function(module){
+        $scope.clickComponent = function(component){
             var nodeObj = serviceUI.getNodeObj();
-            if((nodeObj["obj"] != module.node_type)
-                ||((nodeObj["obj"] == module.node_type) && (nodeObj["node"] != module))) {
-                if(serviceUI.setState({obj: module.node_type, status: "newMod"})) {
-                    if (typeof module.selected != "undefined")
-                        delete module.selected;
-                    serviceUI.setNodeObj({obj: module.node_type, node: module});
+            if((nodeObj["obj"] != component.node_type)
+                ||((nodeObj["obj"] == component.node_type) && (nodeObj["node"] != component))) {
+                if(serviceUI.setState({obj: component.node_type, status: "newComp"})) {
+                    if (typeof component.selected != "undefined")
+                        delete component.selected;
+                    serviceUI.setNodeObj({obj: component.node_type, node: component});
                     if ($scope.curNodeSelected != 0)
                         $scope.curNodeSelected["selected"] = false;
-                    module.selected = true;
-                    $scope.curNodeSelected = module;
-                    var idx = $scope.modules.indexOf(module);
+                    component.selected = true;
+                    $scope.curNodeSelected = component;
+                    var idx = $scope.components.indexOf(component);
                     if(idx > -1){
-                        var m = $scope.modules[idx];
+                        var m = $scope.components[idx];
                         m['togModSub'] = false;
                         serviceAjax.submodule(m).success(function(data){
                             data.submodules.sort(sortOrder);
-                            $scope.subSet.parent = module;
+                            $scope.subSet.parent = component;
                             $scope.subSet.modules = data.submodules;
                             loadSubmodParent($scope.subSet.modules);
                             $scope.togSub = true;
                         });
                     }
-                    loadFiles(module);
+                    loadFiles(component);
                     serviceUI.actionBroadcast();
                 }
             }
@@ -247,7 +247,7 @@ angular.module('ArianeUI')
             if(serviceUI.setState({obj: type, status: 'addEdit'})){
                 var element = serviceAjax.createEmptyNode(type);
                 var parentAdd = {obj: "", node: {}};
-                if(type == 'module')
+                if(type == 'component')
                     parentAdd = serviceUI.getBaseObj();
                 else if (type == 'submodule')
                 {
@@ -266,11 +266,11 @@ angular.module('ArianeUI')
                 serviceUI.actionBroadcast();
             }
         };
-        $scope.toggleModList = function(){
-            $scope.togMod = !$scope.togMod;
+        $scope.toggleCompList = function(){
+            $scope.togComp = !$scope.togComp;
         };
-        $scope.isModToggle = function(){
-            return $scope.togMod;
+        $scope.isCompToggle = function(){
+            return $scope.togComp;
         };
         $scope.toggleModSub = function(mod){
             mod.togModSub = !mod.togModSub;

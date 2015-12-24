@@ -97,18 +97,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			        </div>
 			        <div class="colBody" ng-controller="DisplayColNodesCtrl">
 			        <span class="listRoot">Components <!-- ****************** Components ****************** -->
-			            <button class="btn btn-sm btnExtend" ng-click="toggleModList()">+/-</button>
-			            <button class="btn btn-sm btnAction" ng-if="page=='releaseA' && !isPlugin && enableEdit" ng-disabled="activeEdit" ng-click="addElement('module')">Add</button>
+			            <button class="btn btn-sm btnExtend" ng-click="toggleCompList()">+/-</button>
+			            <button class="btn btn-sm btnAction" ng-if="page=='releaseA' && !isPlugin && enableEdit" ng-disabled="activeEdit" ng-click="addElement('component')">Add</button>
 			        </span>
-			        <div class="ModList" ng-show="isModToggle()">
+			        <div class="ModList" ng-show="isCompToggle()">
 			            <ul class="blockList" >
 			                {% raw %}
-			                <li ng-repeat="module in modules" ng-class="module.selected ? 'active' : ''" ng-click="clickMod(module)">
+			                <li ng-repeat="component in components" ng-class="component.selected ? 'active' : ''" ng-click="clickComponent(component)">
 			                    <span>
-			                        <label >{{ module.name }} {{module.version}}</label><span ng-if="module.order"> ({{ module.order }})</span>
-			                        <span ng-if="page=='releaseA' && module.selected && enableEdit">
+			                        <label >{{ component.name }} {{component.version}}</label><span ng-if="component.order"> ({{ component.order }})</span>
+			                        <span ng-if="page=='releaseA' && component.selected && enableEdit">
 			                            <!--<button class="btn btnAction" ng-click="addElement('submodule')">Add</button>-->
-			                            <!--<button class="btn btn-sm btnAction" ng-disabled="activeEdit" ng-click="delElement(module)">Delete</button>-->
+			                            <!--<button class="btn btn-sm btnAction" ng-disabled="activeEdit" ng-click="delElement(component)">Delete</button>-->
 			                        </span>
 			                    </span>
 			                {% endraw %}

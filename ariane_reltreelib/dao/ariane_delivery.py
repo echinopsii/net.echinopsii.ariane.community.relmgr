@@ -796,7 +796,7 @@ class ArianeRelation(object):
     Dist_component = "composedBy"
     component_component = "dependency"
     component_Plugin = component_component
-    component_SubModule = "component"
+    component_SubModule = "module"
     Plugin_Dist = "compatibleWith"
     Plugin_component = component_component
     Plugin_SubModule = component_SubModule
@@ -917,7 +917,7 @@ class ArianeNode(object):
 
         if node_type == "Distribution":
             node = Distribution(args["name"], args["version"], args["nID"], editable=args["editable"], url_repos=args["url_repos"])
-        elif node_type == "component":
+        elif node_type == "Component":
             node = Component(args["name"], args["version"], args["type"], args["nID"], order=args["order"])
         elif node_type == "Plugin":
             node = Plugin(args["name"], args["version"], args["nID"], git_repos=args["git_repos"])

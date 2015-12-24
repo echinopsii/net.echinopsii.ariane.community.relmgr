@@ -25,6 +25,27 @@ from os import walk
 import shutil
 __author__ = 'stanrenia'
 
+project_path = __file__
+project_path = project_path[: str(project_path).find("ariane.community.relmgr")]
+
+class TestMakeDir(unittest.TestCase):
+
+    def test_mk_dir(self):
+        mkdir = MakeDir()
+        mkdir.ariane.delete_all()
+        create_db_from_file.create_db_file('inputs/create_0.6.2.txt')
+        mkdir.make()
+        mkdir.make_distrib_directory()
+
+    def test_copy(self):
+        cpy = CopyModels(project_path, os.path.join(os.getcwd(), 'templates'))
+        cpy.copy()
+
+    def test_rename(self):
+        renaming = RenameTemplates(project_path)
+        renaming.rename()
+
+
 class MakeDir(object):
     def __init__(self):
         self.ariane = ariane_delivery.DeliveryTree({"login": "neo4j", "password": "admin", "type": "neo4j"})
@@ -65,19 +86,6 @@ class MakeDir(object):
         for name in dir_list:
             os.mkdir('models/ariane.community.distrib/resources/' + name)
 
-class TestMakeDir(unittest.TestCase):
-
-    def test_mk_dir(self):
-        mkdir = MakeDir()
-        mkdir.ariane.delete_all()
-        create_db_from_file.create_db_file('inputs/create_0.6.2.txt')
-        mkdir.make()
-        mkdir.make_distrib_directory()
-
-    def test_copy(self):
-        cpy = CopyModels("/ECHINOPSII/srenia", os.path.join(os.getcwd(), 'templates'))
-        cpy.copy()
-
 class CopyModels(object):
     def __init__(self, rootpath, dst_path):
         self.rootpath = rootpath
@@ -114,11 +122,19 @@ class CopyModels(object):
                     #     print(dest_path)
 
                     for tpl in filenames:
-                        if str(tpl).endswith(".yml"):
-                            tpl_path = os.path.join(dirpath+tpl)
-                            test_path = '/templates' + dirpath[len(self.rootpath):]
-                            print("from ", tpl_path, " ->  ", os.getcwd() + test_path)
-                            shutil.copy(tpl_path, os.getcwd() + test_path)
+                        if str(tpl).endswith(".jnj"):
+                            if "environment" not in dirpath:
+                                tpl_path = os.path.join(dirpath+tpl)
+                                test_path = os.path.join("templates", dirpath[len(self.rootpath):])
+                                test_path = os.path.join(os.getcwd(), test_path)
+                                print("from ", tpl_path, " ->  ", test_path)
+                                shutil.copy(tpl_path, test_path)
+                            else:  # Copy directly into templates/ariane.community.environment to simplify access
+                                tpl_path = os.path.join(dirpath+tpl)
+                                test_path = os.path.join("templates", "ariane.community.environment")
+                                test_path = os.path.join(os.getcwd(), test_path)
+                                print("from ", tpl_path, " ->  ", test_path)
+                                shutil.copy(tpl_path, test_path)
 
                     # for json in filenames:
                     #     if str(json).startswith("ariane.community"):
@@ -130,5 +146,47 @@ class CopyModels(object):
                         copy_rec(os.path.join(dirpath, d+'/'), dest_path)
 
                 copy_rec(path, self.dst_path)
+
+        print("Copying achieved")
+
+class RenameTemplates(object):
+    def __init__(self, rootpath):
+        self.rootpath = rootpath
+
+    def rename(self):
+        f = []
+        p = None
+        print("Start Renaming")
+        for (dirpath, dirnames, filenames) in walk(self.rootpath):
+            f.extend(dirnames)
+            p = dirpath
+            break
+
+        for dir in f:
+            if str(dir).startswith('ariane.') and 'relmgr' not in dir and "plugin" not in dir:
+                path = os.path.join(p, dir+'/')
+
+                def rename_rec(path):
+                    dirpath = None
+                    filenames = []
+                    dirnames = []
+                    for (dp, dn, fn) in walk(path):
+                        dirpath = dp
+                        dirnames = dn
+                        filenames = fn
+                        break
+
+                    for tpl in filenames:
+                        if str(tpl).endswith("pom.yml") or str(tpl).endswith("template.yml") or str(tpl).endswith("plan.tpl.yml"):
+                            tpl_path = os.path.join(dirpath, tpl)
+                            tpl = tpl[:-len("yml")] + "jnj"
+                            new_name = os.path.join(dirpath, tpl)
+                            print("from ", tpl_path, " ->  ", new_name)
+                            shutil.move(tpl_path, new_name)
+
+                    for d in dirnames:
+                        rename_rec(os.path.join(dirpath, d+'/'))
+
+                rename_rec(path)
 
         print("Copying achieved")

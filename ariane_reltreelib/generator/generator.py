@@ -88,7 +88,7 @@ class Generator(object):
         self.env = Environment(loader=MyLoader(templates_directory))
         Generator.ariane = ariane_delivery_service
         Generator.dir_output = output_directory
-        self.modules_dict = {}
+        self.components_dict = {}
         self.plugin_dict = {}
         self.distrib_dict = {}
         self.exception_release_mod = []
@@ -106,17 +106,17 @@ class Generator(object):
         self.distrib_dict[version] = self.ariane.distribution_service.get_unique({"version": version})
         return self.distrib_dict[version]
 
-    def get_modules_list(self, version):
-        if version not in self.modules_dict.keys():
-            self.modules_dict[version] = self.ariane.module_service.get_all(self.get_distrib(version))
-        return [m for m in self.modules_dict[version]]
+    def get_components_list(self, version):
+        if version not in self.components_dict.keys():
+            self.components_dict[version] = self.ariane.component_service.get_all(self.get_distrib(version))
+        return [m for m in self.components_dict[version]]
 
     def get_plugins_list(self, version):
         if version not in self.plugin_dict.keys():
             self.plugin_dict[version] = self.ariane.plugin_service.get_all(self.get_distrib(version))
         return [p for p in self.plugin_dict[version]]
 
-    def set_release_module_exceptions(self, exce_list):
+    def set_release_component_exceptions(self, exce_list):
         self.exception_release_mod = [e for e in exce_list]
 
     def set_release_plugin_exceptions(self, exce_list):
@@ -140,27 +140,27 @@ class Generator(object):
                 self.exception_sub_plan = json.load(data_file)
         return self.exception_sub_plan
 
-    def get_module_pom_gen_exceptions(self):
+    def get_component_pom_gen_exceptions(self):
         if self.exception_pom_file_gen.__len__() == 0:
             with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/pom_file_gen_exceptions.json', 'r') as data_file:
                 self.exception_pom_file_gen = json.load(data_file)
         return self.exception_pom_file_gen
 
-    def get_module_file_gen_exceptions(self):
+    def get_component_file_gen_exceptions(self):
         if self.exception_mod_file_gen.__len__() == 0:
-            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/module_file_gen_exceptions.json', 'r') as data_file:
+            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/component_file_gen_exceptions.json', 'r') as data_file:
                 self.exception_mod_file_gen = json.load(data_file)
         return self.exception_mod_file_gen
 
-    def get_module_on_dev_only(self):
+    def get_component_on_dev_only(self):
         if self.exception_mod_on_dev_only.__len__() == 0:
-            with open(Generator.ariane_deliverytool_module_path + "/resources/exceptions/module_gen_on_dev_only_exceptions.json", 'r') as data_file:
+            with open(Generator.ariane_deliverytool_module_path + "/resources/exceptions/component_gen_on_dev_only_exceptions.json", 'r') as data_file:
                 self.exception_mod_file_gen = json.load(data_file)
         return self.exception_mod_on_dev_only
 
     def get_vsh_exceptions(self):
         if self.exception_vsh.__len__() == 0:
-            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/module_vsh_exceptions.json', 'r') as data_file:
+            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/component_vsh_exceptions.json', 'r') as data_file:
                 self.exception_vsh = json.load(data_file)
         return self.exception_vsh
 
@@ -179,12 +179,12 @@ class Generator(object):
 
     def generate_all_distribution(self, version):
         self.generate_distribution_files(version, with_plugins=True)
-        self.generate_module_files(version)
+        self.generate_component_files(version)
         self.generate_plugin_files(version)
 
     def generate_core_files(self, version):
         self.generate_distribution_files(version)
-        self.generate_module_files(version)
+        self.generate_component_files(version)
 
     def generate_distribution_files(self, version, with_plugins=False):
         distrib = self.get_distrib(version)
@@ -209,14 +209,14 @@ class Generator(object):
             elif df.type == "json_plugin_dist":
                 self.generate_json_plugin_dist(version, df)
 
-    def generate_module_files(self, version):
-        modules = self.get_modules_list(version)
-        file_gen_exception = self.get_module_file_gen_exceptions()
-        mod_on_dev_only = self.get_module_on_dev_only()
+    def generate_component_files(self, version):
+        components = self.get_components_list(version)
+        file_gen_exception = self.get_component_file_gen_exceptions()
+        mod_on_dev_only = self.get_component_on_dev_only()
         isSNAPSHOT = "SNAPSHOT" in version
         flag_clean_env = True
 
-        for mod in modules:
+        for mod in components:
             if mod.name in file_gen_exception:  # Currently no exception since 'environment' files are generated
                 continue
             if mod.name in self.exception_release_mod:
@@ -226,7 +226,7 @@ class Generator(object):
                     continue
                 if mod.name in mod_on_dev_only:
                     continue
-            self.ariane.module_service.update_arianenode_lists(mod)
+            self.ariane.component_service.update_arianenode_lists(mod)
             mod_files = self.ariane.get_files(mod)
             for f in mod_files:
                 if f.type == "plan":
@@ -234,7 +234,7 @@ class Generator(object):
                 elif f.type == "json_build":
                     self.generate_lib_json(mod, f)
                 elif f.type == "vsh":
-                    self.generate_vsh_installer(version, modules, f)
+                    self.generate_vsh_installer(version, components, f)
                 elif f.type == "plantpl":
                     if isSNAPSHOT:
                         if flag_clean_env:
@@ -280,17 +280,17 @@ class Generator(object):
                             self.__generate_pom_subparent(sub, s_grId, s_artId)
 
     def generate_pom(self, mod_plug):
-        """ Generate all poms (parent and children) for a given module or plugin.
-        :param mod_plug: ariane_delivery.Module or ariane_delivery.Plugin object stored in database
+        """ Generate all poms (parent and children) for a given component or plugin.
+        :param mod_plug: ariane_delivery.component or ariane_delivery.Plugin object stored in database
         :return: Nothing
         """
-        pom_gen_exception = self.get_module_pom_gen_exceptions()
+        pom_gen_exception = self.get_component_pom_gen_exceptions()
 
         if mod_plug.name not in pom_gen_exception:
             if GitTagHandler.is_git_tagged(mod_plug.version, path=self.dir_output+mod_plug.get_directory_name()):
                 return
-            if type(mod_plug) is ariane_delivery.Module:
-                self.ariane.module_service.get_relations(mod_plug)
+            if type(mod_plug) is ariane_delivery.Component:
+                self.ariane.component_service.get_relations(mod_plug)
             elif type(mod_plug) is ariane_delivery.Plugin:
                 self.ariane.plugin_service.get_relations(mod_plug)
 
@@ -307,7 +307,7 @@ class Generator(object):
 
     def __generate_pom_submodule(self, sub, grId, artId):
         fpom = self.ariane.get_one_file(sub, 'pom')
-        template = self.env.get_template(fpom.path + 'pom.yml')
+        template = self.env.get_template(fpom.path + 'pom.jnj')
 
         args = {"version": sub.version, "groupId": grId, "artifactId": artId, "name": sub.name}
 
@@ -328,7 +328,7 @@ class Generator(object):
                 self.__generate_pom_subparent(s, s_grId, s_artId)
 
     def __generate_pom_mod_plug(self, mod_plug, fpom):
-        template = self.env.get_template(fpom.path + 'pom.yml')
+        template = self.env.get_template(fpom.path + 'pom.jnj')
 
         groupId = mod_plug.pom_attr + mod_plug.get_directory_name()
         groupId = str(groupId).replace('.'+mod_plug.name, '')
@@ -337,8 +337,8 @@ class Generator(object):
         packaging = "pom"
         mod_plug.list_submod = sorted(mod_plug.list_submod, key=lambda submod: submod.order)
         args = {"groupId": groupId, "artifactId": artifactId, "version": version,
-                "packaging": packaging, "modules": mod_plug.list_submod,
-                "dependencies": mod_plug.list_module_dependency}
+                "packaging": packaging, "components": mod_plug.list_submod,
+                "dependencies": mod_plug.list_component_dependency}
 
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
             target.write(template.render(args))
@@ -348,14 +348,14 @@ class Generator(object):
     def generate_pom_dist(self, version, fpom):
         if GitTagHandler.is_git_tagged(version, path=self.dir_output+fpom.path):
             return
-        modules = self.get_modules_list(version)
-        mod_exception = self.get_module_pom_gen_exceptions()
-        for m in modules.copy():
+        components = self.get_components_list(version)
+        mod_exception = self.get_component_pom_gen_exceptions()
+        for m in components.copy():
             if m.name in mod_exception:
-                modules.remove(m)
-        modules = sorted(modules, key=lambda mod: mod.order)
-        template = self.env.get_template(fpom.path + 'pom_distrib.yml')
-        args = {"modules": modules, "version": version}
+                components.remove(m)
+        components = sorted(components, key=lambda mod: mod.order)
+        template = self.env.get_template(fpom.path + 'pom_distrib.jnj')
+        args = {"components": components, "version": version}
 
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
             target.write(template.render(args))
@@ -368,11 +368,11 @@ class Generator(object):
         if "SNAPSHOT" in mod_plug.version:
             snapshot = True
 
-        template = self.env.get_template(fplan.path+"plan_"+mod_plug.name+"_template.yml")
+        template = self.env.get_template(fplan.path+"plan_"+mod_plug.name+"_template.jnj")
         submodules = [s for s in mod_plug.list_submod]
         # Remove each submodule which is in exceptions list.
         # Note that if submodule is a SubModuleParent which has a SubModule to be excluded,
-        # this is done in the module template.
+        # this is done in the component template.
         for s in submodules.copy():
             if s.name in sub_exceptions:
                 submodules.remove(s)
@@ -386,10 +386,10 @@ class Generator(object):
             m_version = str(m_version).replace("-", ".")
         else:
             m_version = mod_plug.version
-        args = {"version": m_version, "module": mod_plug, "vmin": vmin, "vmax": vmax, "submodules": submodules}
+        args = {"version": m_version, "component": mod_plug, "vmin": vmin, "vmax": vmax, "submodules": submodules}
 
         with open(self.dir_output+fplan.path+fplan.name, 'w') as target:
-            target.write(template.render(args))
+                target.write(template.render(args))
 
     def generate_json_plugin_dist(self, version, fjson):
         if GitTagHandler.is_git_tagged(version, path=self.dir_output+fjson.path):
@@ -413,7 +413,7 @@ class Generator(object):
     def generate_json_dist(self, version, fjson):
         if GitTagHandler.is_git_tagged(version, path=self.dir_output+fjson.path):
             return
-        elements = self.get_modules_list(version)
+        elements = self.get_components_list(version)
         print(elements)
         dictio = {}
         snapshot = False
@@ -422,7 +422,7 @@ class Generator(object):
 
         for e in elements:
             key = e.get_directory_name()
-            if type(e) is ariane_delivery.Module:
+            if type(e) is ariane_delivery.Component:
                 if snapshot:
                     dictio[key] = "master.SNAPSHOT"
                 else:
@@ -513,11 +513,11 @@ class Generator(object):
             return
 
         dist = self.get_distrib(version)
-        modules = self.get_modules_list(version)
+        components = self.get_components_list(version)
         plugins = self.get_plugins_list(version)
         dictio = {}
         url = dist.url_repos
-        for m in modules:
+        for m in components:
             key = m.get_directory_name()
             if m.type == "none":
                 typ = "core"
@@ -558,13 +558,13 @@ class Generator(object):
             with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
                 json.dump(list_lib, target, indent=4)
 
-    def generate_vsh_installer(self, version, modules, fvsh):
+    def generate_vsh_installer(self, version, components, fvsh):
         if GitTagHandler.is_git_tagged(version, path=self.dir_output+fvsh.path):
             return
         vsh_exceptions = self.get_vsh_exceptions()
-        modules = sorted(modules, key=lambda mod: mod.order)
+        components = sorted(components, key=lambda mod: mod.order)
         modlist = []
-        for mod in modules:
+        for mod in components:
             v = mod.version
             if "-SNAPSHOT" in v:
                 v = str(v).replace('-', '.')
@@ -574,8 +574,8 @@ class Generator(object):
             if mod["name"] in vsh_exceptions:
                 modlist.remove(mod)
 
-        template = self.env.get_template(fvsh.path+'installer_vsh.yml')
-        args = {"modules": modlist}
+        template = self.env.get_template(fvsh.path+'installer_vsh.jnj')
+        args = {"components": modlist}
 
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
             target.write(template.render(args))
@@ -586,7 +586,7 @@ class Generator(object):
         v = p.version
         if "-SNAPSHOT" in p.version:
             v = str(v).replace('-', '.')
-        template = self.env.get_template(fvsh.path+'plugin_vsh.yml')
+        template = self.env.get_template(fvsh.path+'plugin_vsh.jnj')
         args = {"plugin": {"name": p.name, "version": v}}
 
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
@@ -596,24 +596,24 @@ class Generator(object):
         # Only for DEV generation
         if "-SNAPSHOT" not in version:
             return
-        modules = self.get_modules_list(version)
-        module = None
-        for m in modules:
+        components = self.get_components_list(version)
+        component = None
+        for m in components:
             if m.name in fplantpl.name:
-                module = m
+                component = m
                 break
-        if module is None:
+        if component is None:
             return
-        if "-SNAPSHOT" not in module.version:
+        if "-SNAPSHOT" not in component.version:
             return
-        version_tag = module.version[:-len("-SNAPSHOT")]
-        if GitTagHandler.is_git_tagged(version_tag, path=self.dir_output+module.get_directory_name()):
+        version_tag = component.version[:-len("-SNAPSHOT")]
+        if GitTagHandler.is_git_tagged(version_tag, path=self.dir_output+component.get_directory_name()):
             return
         # net.echinopsii.ariane.community.core.directory_0.7.2-SNAPSHOT.plan.tpl
         tplname = fplantpl.name.split("_")
-        tplname = tplname[0] + ".plan.tpl.yml"
+        tplname = tplname[0] + ".plan.tpl.jnj"
         template = self.env.get_template(fplantpl.path+tplname)
-        m_version = module.version
+        m_version = component.version
         version_point = str(m_version).replace("-", ".")
         args = {"version": m_version, "version_point": version_point}
 

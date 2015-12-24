@@ -46,6 +46,7 @@ def setup_logging(default_path='misc/relsrv_logging_conf.json', default_level=lo
 
     logging.getLogger("py2neo").setLevel(logging.WARNING)
     logging.getLogger("httpstream").setLevel(logging.WARNING)
+    logging.getLogger("passlib").setLevel(logging.WARNING)
 
 
 config_path = "/etc/ariane_relmgr/confsrv.json"

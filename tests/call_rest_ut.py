@@ -22,15 +22,49 @@ import json
 import os
 import requests
 
-from ariane_relsrv.server.__main__ import ariane_delivery, relmgr_path
 from tests.create_db_from_file import create_db_file
-
+from ariane_reltreelib.dao import ariane_delivery
+from ariane_relsrv.server.config import Config
+from ariane_relsrv.server import restful
+import logging
 
 __author__ = 'stanrenia'
 
+relmgr_path = __file__
+relmgr_path = relmgr_path[:-len("/tests/call_rest_ut.py")]
+project_path = relmgr_path[:-len("/ariane.community.relmgr")]
+
+
 class TestREST(unittest.TestCase):
 
+    # @classmethod
+    # def setUpClass(cls):
+    #     config_path = "/etc/ariane_relmgr/confsrv.json"
+    #     RELMGR_CONFIG = Config()
+    #     RELMGR_CONFIG.parse(config_path)
+    #     # Init variables:
+    #     ariane = ariane_delivery.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login,
+    #                                                 "password": RELMGR_CONFIG.neo4j_password,
+    #                                                 "host": RELMGR_CONFIG.neo4j_host,
+    #                                                 "port": RELMGR_CONFIG.neo4j_port,
+    #                                                 "type": "neo4j"})
+    #
+    #     Config.setup_logging()
+    #     LOGGER = logging.getLogger(__name__)
+    #     myglobals = {"conf": RELMGR_CONFIG, "delivery_tree": ariane, "logger": LOGGER,
+    #                  "project_path": project_path, "relmgr_path": relmgr_path}
+    #     restful.start_relmgr(myglobals)
+
     def setUp(self):
+        config_path = "/etc/ariane_relmgr/confsrv.json"
+        RELMGR_CONFIG = Config()
+        RELMGR_CONFIG.parse(config_path)
+        # Init variables:
+        ariane = ariane_delivery.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login,
+                                                    "password": RELMGR_CONFIG.neo4j_password,
+                                                    "host": RELMGR_CONFIG.neo4j_host,
+                                                    "port": RELMGR_CONFIG.neo4j_port,
+                                                    "type": "neo4j"})
         ariane_delivery.DeliveryTree.graph_dao.delete_all()
         # create_db_file('/Users/stanrenia/py_neo4j_db/tests/inputs/create_0.6.4-SNAPSHOT.txt')
         create_db_file(os.path.join(relmgr_path, "tests/inputs/create_0.6.3.txt"))
@@ -83,58 +117,58 @@ class TestREST(unittest.TestCase):
         r = requests.get("http://localhost:5000/rest/distrib")
         print(r.json())
 
-    def test_get_module(self):
-        module = ariane_delivery.Module("", "", "")
-        directory = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'directory'})
-        r = requests.get("http://localhost:5000/rest/module", params={"version": "0.6.3"})
+    def test_get_component(self):
+        component = ariane_delivery.Component("", "", "")
+        directory = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'directory'})
+        r = requests.get("http://localhost:5000/rest/component", params={"version": "0.6.3"})
         print(r.json())
-        r = requests.get('http://localhost:5000/rest/module/directory/0.6.3')
+        r = requests.get('http://localhost:5000/rest/component/directory/0.6.3')
         mr = r.json()
-        mod = module.from_json(r.json())
+        mod = component.from_json(r.json())
         self.assertEqual(directory, mod)
-        r = requests.get("http://localhost:5000/rest/module/"+str(mod.id))
+        r = requests.get("http://localhost:5000/rest/component/"+str(mod.id))
         print(r.json())
-        mod = module.from_json(r.json())
+        mod = component.from_json(r.json())
         self.assertEqual(directory, mod)
-        r = requests.get("http://localhost:5000/rest/module/idm/0.6.4")
+        r = requests.get("http://localhost:5000/rest/component/idm/0.6.4")
         print(r.json())
         self.assertEqual(r.status_code, 400)
-        r = requests.get("http://localhost:5000/rest/module/mama/0.6.3")
+        r = requests.get("http://localhost:5000/rest/component/mama/0.6.3")
         print(r.json())
         self.assertEqual(r.status_code, 400)
 
-    def test_post_module(self):
-        module = ariane_delivery.Module("", "", "")
+    def test_post_component(self):
+        component = ariane_delivery.Component("", "", "")
         count = ariane_delivery.DeliveryTree.graph_dao.count("nID")
-        mymod = ariane_delivery.Module("tango", "0.6.0", "core")
+        mymod = ariane_delivery.Component("tango", "0.6.0", "core")
         mymod =mymod.get_properties()
         mymod["dist_version"] = "0.6.3"
-        r = requests.post("http://localhost:5000/rest/module", params=mymod)
-        print(r.status_code, r.reason, r.json())
+        r = requests.post("http://localhost:5000/rest/component", params=mymod)
+        # print(r.status_code, r.reason, r.json())
         count_after = ariane_delivery.DeliveryTree.graph_dao.count("nID")
         self.assertEqual(count+1, count_after)
-        tango = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'tango'})
-        mod_res = module.from_json(r.json())
+        tango = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'tango'})
+        mod_res = component.from_json(r.json())
         self.assertEqual(tango, mod_res)
 
-        mod2 = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'injector', "version": "0.6.3"})
+        mod2 = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'injector', "version": "0.6.3"})
         mod2.version = "0.6.0"
-        r = requests.post("http://localhost:5000/rest/module", params={"module": json.dumps(mod2.get_properties())})
+        r = requests.post("http://localhost:5000/rest/component", params={"component": json.dumps(mod2.get_properties())})
         print(r.status_code, r.reason, r.json())
-        self.assertEqual(mod2, module.from_json(r.json()))
-        # mod2 = ariane_delivery.DeliveryTree.module_service.get_unique({"name": "injector", "version": "0.6.0"})
-        # self.assertEqual(mod2, module.from_json(r.json()))
-        r = requests.post("http://localhost:5000/rest/module", params={"name": "Kazuwa", "nID": mod_res.id})
+        self.assertEqual(mod2, component.from_json(r.json()))
+        # mod2 = ariane_delivery.DeliveryTree.component_service.get_unique({"name": "injector", "version": "0.6.0"})
+        # self.assertEqual(mod2, component.from_json(r.json()))
+        r = requests.post("http://localhost:5000/rest/component", params={"name": "Kazuwa", "nID": mod_res.id})
         print(r.status_code, r.reason, r.json())
-        mod_res = module.from_json(r.json())
-        # mod2 = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'Kazuwa'})
+        mod_res = component.from_json(r.json())
+        # mod2 = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'Kazuwa'})
         self.assertEqual(mod_res.name, "Kazuwa")
         mod_res.version = "0.6.1"
         mod_res.order = 19
-        r = requests.post("http://localhost:5000/rest/module", params=mod_res.get_properties())
+        r = requests.post("http://localhost:5000/rest/component", params=mod_res.get_properties())
         print(r.status_code, r.reason, r.json())
-        self.assertEqual(mod_res, module.from_json(r.json()))
-        # mod2 = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'Kazuwa', "version": "0.6.1"})
+        self.assertEqual(mod_res, component.from_json(r.json()))
+        # mod2 = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'Kazuwa', "version": "0.6.1"})
 
     def test_get_plugin(self):
         plug_model = ariane_delivery.Plugin("model", "model")
@@ -192,7 +226,7 @@ class TestREST(unittest.TestCase):
 
     def test_get_submodule(self):
         submodel = ariane_delivery.SubModule("model", "model")
-        parent = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'directory'})
+        parent = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'directory'})
         r = requests.get("http://localhost:5000/rest/submodule", params={"parent": json.dumps(parent.get_properties())})
         print(r.status_code, r.reason, r.json())
         sublist = r.json()
@@ -224,7 +258,7 @@ class TestREST(unittest.TestCase):
         rsub = submodel.from_json(r.json())
         self.assertIsInstance(rsub, ariane_delivery.SubModule)
         subparmodel = ariane_delivery.SubModuleParent("model", "model")
-        parent = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'mapping'})
+        parent = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'mapping'})
         sublist = ariane_delivery.DeliveryTree.submodule_parent_service.get_all(parent)
         subpar = [s for s in sublist if s.name == "ds"][0]
         subpar.set_groupid_artifact(parent)
@@ -241,7 +275,7 @@ class TestREST(unittest.TestCase):
         submodel = ariane_delivery.SubModule("model", "model")
         sparmodel = ariane_delivery.SubModuleParent("model", "model")
         count = ariane_delivery.DeliveryTree.graph_dao.count("nID")
-        parent = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'idm'})
+        parent = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'idm'})
         r = requests.post("http://localhost:5000/rest/submodule", params={"name": "Soubou",
                                                                           "parent": json.dumps(parent.get_properties()),
                                                                           "isSubModuleParent": "no"})
@@ -273,19 +307,19 @@ class TestREST(unittest.TestCase):
         self.assertEqual(rsub.name, "ParrainCorleon")
 
     def test_get_filenode(self):
-        parent = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'directory'})
+        parent = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'directory'})
         r = requests.get('http://localhost:5000/rest/filenode', params={"parent": json.dumps(parent.get_properties())})
         print(r.status_code, r.reason, r.json())
         fnode = r.json()
         fnode = fnode["filenodes"][0]
         r = requests.get('http://localhost:5000/rest/filenode/'+str(fnode["nID"]))
         print(r.status_code, r.reason, r.json())
-        parent = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'portal'})
+        parent = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'portal'})
         r = requests.get('http://localhost:5000/rest/filenode/plan', params={"parent": json.dumps(parent.get_properties())})
         print(r.status_code, r.reason, r.json())
 
     def test_post_filenode(self):
-        parent = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'directory'})
+        parent = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'directory'})
         myfnode = ariane_delivery.FileNode("myfile", "custom", "ez", "/cute/path")
         myfnode = myfnode.get_properties()
         myfnode["parent"] = json.dumps(parent.get_properties())
@@ -304,12 +338,12 @@ class TestREST(unittest.TestCase):
 
     def test_update_dev_version(self):
         create_db_file(os.path.join(relmgr_path, 'tests/inputs/create_0.6.4-SNAPSHOT.txt'))
-        m = ariane_delivery.DeliveryTree.module_service.get_unique({"name": "portal", "version": "0.6.4-SNAPSHOT"})
-        m2 = ariane_delivery.DeliveryTree.module_service.get_unique({"name": "portal", "version": "0.6.3"})
+        m = ariane_delivery.DeliveryTree.component_service.get_unique({"name": "portal", "version": "0.6.4-SNAPSHOT"})
+        m2 = ariane_delivery.DeliveryTree.component_service.get_unique({"name": "portal", "version": "0.6.3"})
         m.name = "ogal"
         m2.name = "ddodal"
-        r = requests.post('http://localhost:5000/rest/module', params={"module": m.to_json()})
-        r2 = requests.post('http://localhost:5000/rest/module', params={"module": m2.to_json()})
+        r = requests.post('http://localhost:5000/rest/component', params={"component": m.to_json()})
+        r2 = requests.post('http://localhost:5000/rest/component', params={"component": m2.to_json()})
         mr = m.from_json(r.json())
         print(r.status_code, r.reason, r.json())
         print(r2.status_code, r2.reason, r2.json())
@@ -343,9 +377,9 @@ class TestREST(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r2.status_code, 400)
 
-        mod = ariane_delivery.DeliveryTree.module_service.get_unique({"name": "injector", "version": "0.6.4-SNAPSHOT"})
+        mod = ariane_delivery.DeliveryTree.component_service.get_unique({"name": "injector", "version": "0.6.4-SNAPSHOT"})
         m = ariane_delivery.DeliveryTree.get_one_file(mod, 'pom')
-        mod = ariane_delivery.DeliveryTree.module_service.get_unique({"name": "injector", "version": "0.6.3"})
+        mod = ariane_delivery.DeliveryTree.component_service.get_unique({"name": "injector", "version": "0.6.3"})
         m2 = ariane_delivery.DeliveryTree.get_one_file(mod, 'pom')
         m.name = "ogal"
         m2.name = "ddodal"
