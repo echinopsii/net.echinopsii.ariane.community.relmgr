@@ -224,85 +224,85 @@ class TestREST(unittest.TestCase):
         self.assertIsInstance(rplug, ariane_delivery.Plugin)
         self.assertEqual(rplug.version, "0.0.7")
 
-    def test_get_submodule(self):
-        submodel = ariane_delivery.SubModule("model", "model")
+    def test_get_module(self):
+        mod_model = ariane_delivery.Module("model", "model")
         parent = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'directory'})
-        r = requests.get("http://localhost:5000/rest/submodule", params={"parent": json.dumps(parent.get_properties())})
+        r = requests.get("http://localhost:5000/rest/module", params={"parent": json.dumps(parent.get_properties())})
         print(r.status_code, r.reason, r.json())
         sublist = r.json()
-        sublist = sublist["submodules"]
-        dirsubs = ariane_delivery.DeliveryTree.submodule_service.get_all(parent)
+        sublist = sublist["modules"]
+        dirsubs = ariane_delivery.DeliveryTree.module_service.get_all(parent)
         cpt = 0
         for sub in sublist:
-            rsub = submodel.create_subclass(submodel.node_type, sub)
-            self.assertIsInstance(rsub, ariane_delivery.SubModule)
+            rsub = mod_model.create_subclass(mod_model.node_type, sub)
+            self.assertIsInstance(rsub, ariane_delivery.Module)
             self.assertEqual(len(sublist), len(dirsubs))
             for ds in dirsubs:
                 if rsub == ds:
                     cpt += 1
         self.assertEqual(cpt, len(sublist))
-        r = requests.get("http://localhost:5000/rest/submodule", params={"parent": json.dumps({"name": 'idm'})})
+        r = requests.get("http://localhost:5000/rest/module", params={"parent": json.dumps({"name": 'idm'})})
         print(r.status_code, r.reason, r.json())
         sublist = r.json()
-        sublist = sublist["submodules"]
-        sublist = [submodel.create_subclass(submodel.node_type, s) for s in sublist]
+        sublist = sublist["modules"]
+        sublist = [mod_model.create_subclass(mod_model.node_type, s) for s in sublist]
         for s in sublist:
-            self.assertIsInstance(s, ariane_delivery.SubModule)
-        sublist = ariane_delivery.DeliveryTree.submodule_service.get_all(parent)
-        r = requests.get("http://localhost:5000/rest/submodule/"+str(sublist[1].id))
+            self.assertIsInstance(s, ariane_delivery.Module)
+        sublist = ariane_delivery.DeliveryTree.module_service.get_all(parent)
+        r = requests.get("http://localhost:5000/rest/module/"+str(sublist[1].id))
         print(r.status_code, r.reason, r.json())
-        rsub = submodel.from_json(r.json())
-        self.assertIsInstance(rsub, ariane_delivery.SubModule)
-        r = requests.get("http://localhost:5000/rest/submodule/"+sublist[0].artifactId)
+        rsub = mod_model.from_json(r.json())
+        self.assertIsInstance(rsub, ariane_delivery.Module)
+        r = requests.get("http://localhost:5000/rest/module/"+sublist[0].artifactId)
         print(r.status_code, r.reason, r.json())
-        rsub = submodel.from_json(r.json())
-        self.assertIsInstance(rsub, ariane_delivery.SubModule)
-        subparmodel = ariane_delivery.SubModuleParent("model", "model")
+        rsub = mod_model.from_json(r.json())
+        self.assertIsInstance(rsub, ariane_delivery.Module)
+        subparmodel = ariane_delivery.ModuleParent("model", "model")
         parent = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'mapping'})
-        sublist = ariane_delivery.DeliveryTree.submodule_parent_service.get_all(parent)
+        sublist = ariane_delivery.DeliveryTree.module_parent_service.get_all(parent)
         subpar = [s for s in sublist if s.name == "ds"][0]
         subpar.set_groupid_artifact(parent)
-        r = requests.get("http://localhost:5000/rest/submodule/"+str(subpar.id))
+        r = requests.get("http://localhost:5000/rest/module/"+str(subpar.id))
         print(r.status_code, r.reason, r.json())
         rsub = subparmodel.from_json(r.json())
-        self.assertIsInstance(rsub, ariane_delivery.SubModuleParent)
-        r = requests.get("http://localhost:5000/rest/submodule/"+subpar.artifactId)
+        self.assertIsInstance(rsub, ariane_delivery.ModuleParent)
+        r = requests.get("http://localhost:5000/rest/module/"+subpar.artifactId)
         print(r.status_code, r.reason, r.json())
         rsub = subparmodel.from_json(r.json())
         self.assertEqual(rsub, subpar)
 
-    def test_post_submodule(self):
-        submodel = ariane_delivery.SubModule("model", "model")
-        sparmodel = ariane_delivery.SubModuleParent("model", "model")
+    def test_post_module(self):
+        mod_model = ariane_delivery.Module("model", "model")
+        sparmodel = ariane_delivery.ModuleParent("model", "model")
         count = ariane_delivery.DeliveryTree.graph_dao.count("nID")
         parent = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'idm'})
-        r = requests.post("http://localhost:5000/rest/submodule", params={"name": "Soubou",
+        r = requests.post("http://localhost:5000/rest/module", params={"name": "Soubou",
                                                                           "parent": json.dumps(parent.get_properties()),
-                                                                          "isSubModuleParent": "no"})
+                                                                          "isModuleParent": "no"})
         print(r.status_code, r.reason, r.json())
-        sub_res = submodel.from_json(r.json())
+        sub_res = mod_model.from_json(r.json())
         countafter = ariane_delivery.DeliveryTree.graph_dao.count("nID")
         self.assertEqual(count+1, countafter)
-        r = requests.post("http://localhost:5000/rest/submodule", params={"name": "PadreBoubino",
+        r = requests.post("http://localhost:5000/rest/module", params={"name": "PadreBoubino",
                                                                           "parent": json.dumps(parent.get_properties()),
-                                                                          "isSubModuleParent": "yes"})
+                                                                          "isModuleParent": "yes"})
         print(r.status_code, r.reason, r.json())
         countafter = ariane_delivery.DeliveryTree.graph_dao.count("nID")
         self.assertEqual(count+2, countafter)
         rsub = sparmodel.from_json(r.json())
-        self.assertIsInstance(rsub, ariane_delivery.SubModuleParent)
-        sub = ariane_delivery.DeliveryTree.submodule_service.get_unique({"name": 'wab'})
+        self.assertIsInstance(rsub, ariane_delivery.ModuleParent)
+        sub = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'wab'})
         sub.groupId = "roro.lolo.gato"
         sub.order = 7
-        r = requests.post("http://localhost:5000/rest/submodule", params={"submodule":
+        r = requests.post("http://localhost:5000/rest/module", params={"module":
                                                                           json.dumps(sub.get_properties())})
         print(r.status_code, r.reason, r.json())
-        rsub = submodel.from_json(r.json())
+        rsub = mod_model.from_json(r.json())
         self.assertEqual(rsub, sub)
-        r = requests.post("http://localhost:5000/rest/submodule", params={"name": "ParrainCorleon", "nID": sub_res.id})
+        r = requests.post("http://localhost:5000/rest/module", params={"name": "ParrainCorleon", "nID": sub_res.id})
         print(r.status_code, r.reason, r.json())
-        rsub = submodel.from_json(r.json())
-        nosub = ariane_delivery.DeliveryTree.submodule_service.find({"name": "Soubou"})
+        rsub = mod_model.from_json(r.json())
+        nosub = ariane_delivery.DeliveryTree.module_service.find({"name": "Soubou"})
         self.assertIsNone(nosub)
         self.assertEqual(rsub.name, "ParrainCorleon")
 
@@ -364,12 +364,12 @@ class TestREST(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r2.status_code, 400)
 
-        m = ariane_delivery.DeliveryTree.submodule_service.get_unique({"name": "wab", "version": "0.6.4-SNAPSHOT"})
-        m2 = ariane_delivery.DeliveryTree.submodule_service.get_unique({"name": "wab", "version": "0.6.3"})
+        m = ariane_delivery.DeliveryTree.module_service.get_unique({"name": "wab", "version": "0.6.4-SNAPSHOT"})
+        m2 = ariane_delivery.DeliveryTree.module_service.get_unique({"name": "wab", "version": "0.6.3"})
         m.name = "ogal"
         m2.name = "ddodal"
-        r = requests.post('http://localhost:5000/rest/submodule', params={"submodule": m.to_json()})
-        r2 = requests.post('http://localhost:5000/rest/submodule', params={"submodule": m2.to_json()})
+        r = requests.post('http://localhost:5000/rest/module', params={"module": m.to_json()})
+        r2 = requests.post('http://localhost:5000/rest/module', params={"module": m2.to_json()})
         mr = m.from_json(r.json())
         print(r.status_code, r.reason, r.json())
         print(r2.status_code, r2.reason, r2.json())

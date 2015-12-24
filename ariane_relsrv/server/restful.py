@@ -349,23 +349,23 @@ class RestPluginList(Resource):
             else:
                 abort_error("BAD_REQUEST", "Plugin {} already exists".format(args))
 
-class RestSubModule(Resource):
+class RestModule(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
-        self.reqparse.add_argument('parent', type=str, help='Submodule parent')
-        super(RestSubModule, self).__init__()
+        self.reqparse.add_argument('parent', type=str, help='Module parent')
+        super(RestModule, self).__init__()
 
-    def __get_submodule(self, unique_key):
+    def __get_module(self, unique_key):
         s = None
         if isinstance(unique_key, int):
-            s = ariane.submodule_service.get_unique({"nID": unique_key})
+            s = ariane.module_service.get_unique({"nID": unique_key})
             if s is None:
-                s = ariane.submodule_parent_service.get_unique({"nID": unique_key})
+                s = ariane.module_parent_service.get_unique({"nID": unique_key})
         elif isinstance(unique_key, str):
             if unique_key.count('.') > 0:
-                s = ariane.submodule_service.get_unique({"artifactId": unique_key})
+                s = ariane.module_service.get_unique({"artifactId": unique_key})
                 if s is None:
-                    s = ariane.submodule_parent_service.get_unique({"artifactId": unique_key})
+                    s = ariane.module_parent_service.get_unique({"artifactId": unique_key})
             else:
                 args = self.reqparse.parse_args()
                 if args["parent"] is not None:
@@ -374,43 +374,43 @@ class RestSubModule(Resource):
                     if par is None:
                         par = ariane.plugin_service.get_unique(args["parent"])
                     if par is None:
-                        par = ariane.submodule_parent_service.get_unique(args["parent"])
+                        par = ariane.module_parent_service.get_unique(args["parent"])
                     if par is not None:
-                        slists = ariane.submodule_service.get_all(par)
-                        slists.extend(ariane.submodule_parent_service.get_all(par))
+                        slists = ariane.module_service.get_all(par)
+                        slists.extend(ariane.module_parent_service.get_all(par))
                         for sub in slists:
                             if sub.name == unique_key:
                                 s = sub
         return s
 
     def get(self, unique_key):
-        s = self.__get_submodule(unique_key)
+        s = self.__get_module(unique_key)
         if s is not None:
-            return make_response(json.dumps({"submodule": s.get_properties(gettype=True)}), 200, headers_json)
+            return make_response(json.dumps({"module": s.get_properties(gettype=True)}), 200, headers_json)
         else:
             abort_error("NOT_FOUND", "Error, Wrong URL")
 
     def delete(self, unique_key):
-        s = self.__get_submodule(unique_key)
+        s = self.__get_module(unique_key)
         if s is not None:
             s.delete()
             return make_response(json.dumps({}), 200, headers_json)
         else:
             abort_error("NOT_FOUND", "Error, Wrong URL")
 
-class RestSubModuleList(Resource):
+class RestModuleList(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
-        self.reqparse.add_argument('name', type=str, help='Submodule name')
-        self.reqparse.add_argument('version', type=str, help='Submodule version')
+        self.reqparse.add_argument('name', type=str, help='Module name')
+        self.reqparse.add_argument('version', type=str, help='Module version')
         self.reqparse.add_argument('groupId', type=str)
         self.reqparse.add_argument('artifactId', type=str)
-        self.reqparse.add_argument('nID', type=int, help='Submodule database ID named "nID"')
+        self.reqparse.add_argument('nID', type=int, help='Module database ID named "nID"')
         self.reqparse.add_argument('order', type=int)
-        self.reqparse.add_argument('submodule')
+        self.reqparse.add_argument('module')
         self.reqparse.add_argument('parent')
-        self.reqparse.add_argument('isSubModuleParent')
-        super(RestSubModuleList, self).__init__()
+        self.reqparse.add_argument('isModuleParent')
+        super(RestModuleList, self).__init__()
 
     def get(self):
         args = self.reqparse.parse_args()
@@ -420,72 +420,72 @@ class RestSubModuleList(Resource):
             if par is None:
                 par = ariane.plugin_service.get_unique(args["parent"])
             if par is None:
-                par = ariane.submodule_parent_service.get_unique(args["parent"])
+                par = ariane.module_parent_service.get_unique(args["parent"])
             if par is not None:
-                slist = ariane.submodule_service.get_all(par)
-                slist.extend(ariane.submodule_parent_service.get_all(par))
+                slist = ariane.module_service.get_all(par)
+                slist.extend(ariane.module_parent_service.get_all(par))
                 slist_ret = []
                 for s in slist:
                     sp = s.get_properties(gettype=True)
-                    if isinstance(s, ariane_delivery.SubModuleParent):
+                    if isinstance(s, ariane_delivery.ModuleParent):
                         sp["issubparent"] = True
                     else:
                         sp["issubparent"] = False
                     slist_ret.append(sp)
-                return make_response(json.dumps({"submodules": slist_ret}), 200, headers_json)
-            abort_error("BAD_REQUEST", "Given parameter 'parent' {} does not match any Submodule's parent".format(
+                return make_response(json.dumps({"modules": slist_ret}), 200, headers_json)
+            abort_error("BAD_REQUEST", "Given parameter 'parent' {} does not match any Module's parent".format(
                         args["parent"]))
         abort_error("BAD_REQUEST", "Missing parameter 'parent'")
 
     def post(self):
         args = self.reqparse.parse_args()
         if args["nID"] is not None and args["nID"] > 0:
-            s = ariane.submodule_service.get_unique({"nID": args["nID"]})
+            s = ariane.module_service.get_unique({"nID": args["nID"]})
             if s is None:
-                s = ariane.submodule_parent_service.get_unique({"nID": args["nID"]})
+                s = ariane.module_parent_service.get_unique({"nID": args["nID"]})
             if ariane.is_dev_version(s):
-                if isinstance(s, ariane_delivery.SubModule) or isinstance(s, ariane_delivery.SubModuleParent):
+                if isinstance(s, ariane_delivery.Module) or isinstance(s, ariane_delivery.ModuleParent):
                     clear_args(args)
                     if s.update(args):
                         s.save()
                         sp = s.get_properties(gettype=True)
-                        if isinstance(s, ariane_delivery.SubModuleParent):
+                        if isinstance(s, ariane_delivery.ModuleParent):
                             sp["issubparent"] = True
                         else:
                             sp["issubparent"] = False
-                        return make_response(json.dumps({"submodule": sp}), 200, headers_json)
+                        return make_response(json.dumps({"module": sp}), 200, headers_json)
                     else:
-                        abort_error("BAD_REQUEST", "Submodule {} already exists".format(args))
+                        abort_error("BAD_REQUEST", "Module {} already exists".format(args))
                 else:
-                    abort_error("BAD_REQUEST", "Given parameters {} does not match any Submodule in database".format(args))
+                    abort_error("BAD_REQUEST", "Given parameters {} does not match any Module in database".format(args))
             else:
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
-        elif args["submodule"] is not None:
-            arg_s = json.loads(args["submodule"])
-            s = ariane.submodule_service.get_unique(arg_s)
+        elif args["module"] is not None:
+            arg_s = json.loads(args["module"])
+            s = ariane.module_service.get_unique(arg_s)
             if s is None:
-                s = ariane.submodule_parent_service.get_unique(arg_s)
+                s = ariane.module_parent_service.get_unique(arg_s)
             if ariane.is_dev_version(s):
-                if isinstance(s, ariane_delivery.SubModule) or isinstance(s, ariane_delivery.SubModuleParent):
+                if isinstance(s, ariane_delivery.Module) or isinstance(s, ariane_delivery.ModuleParent):
                     if s.update(arg_s):
                         s.save()
                         sp = s.get_properties(gettype=True)
-                        if isinstance(s, ariane_delivery.SubModuleParent):
+                        if isinstance(s, ariane_delivery.ModuleParent):
                             sp["issubparent"] = True
                         else:
                             sp["issubparent"] = False
-                        return json.dumps({"submodule": sp}), 200
+                        return json.dumps({"module": sp}), 200
                     else:
                         abort_error("BAD_REQUEST", "Nothing to update, values are the same")
                 else:
-                    abort_error("BAD_REQUEST", "Given parameter {} does not match any submodule".format(arg_s))
+                    abort_error("BAD_REQUEST", "Given parameter {} does not match any module".format(arg_s))
             else:
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         else:
             for key in args.keys():
-                if key in ["isSubModuleParent", "name", "parent"] and args[key] is None:
+                if key in ["isModuleParent", "name", "parent"] and args[key] is None:
                     abort_error("BAD_REQUEST", "Parameters are missing. "
-                                               "You must provide: 'isSubModuleParent', 'name', 'parent'")
+                                               "You must provide: 'isModuleParent', 'name', 'parent'")
             args["parent"] = json.loads(args["parent"])
             par = ariane.find_without_label({"nID": args["parent"]["nID"]})
             if par is None:
@@ -493,30 +493,30 @@ class RestSubModuleList(Resource):
             if isinstance(par, list):
                 abort_error("BAD_REQUEST", "Given parent {} does not match a unique Parent in database".format(
                             args["parent"]))
-            slist = ariane.submodule_service.get_all(par)
-            slist.extend(ariane.submodule_parent_service.get_all(par))
+            slist = ariane.module_service.get_all(par)
+            slist.extend(ariane.module_parent_service.get_all(par))
             for s in slist:
                 if args["name"] == s.name:
-                    abort_error("BAD_REQUEST", "Given Submodule named '{}' already exists in parent '{}'".format(
+                    abort_error("BAD_REQUEST", "Given Module named '{}' already exists in parent '{}'".format(
                                 args["name"], args["parent"]))
-            if str(args["isSubModuleParent"]).lower() == "yes":
-                sub = ariane_delivery.SubModuleParent(args["name"], par.version, order=args["order"])
+            if str(args["isModuleParent"]).lower() == "yes":
+                sub = ariane_delivery.ModuleParent(args["name"], par.version, order=args["order"])
                 sub.set_groupid_artifact(par)
             else:
-                sub = ariane_delivery.SubModule(args["name"], par.version, order=args["order"])
-                if not isinstance(par, ariane_delivery.SubModuleParent):
+                sub = ariane_delivery.Module(args["name"], par.version, order=args["order"])
+                if not isinstance(par, ariane_delivery.ModuleParent):
                     sub.set_groupid_artifact(par)
                 else:
-                    parpar = ariane.submodule_parent_service.get_parent(par)
+                    parpar = ariane.module_parent_service.get_parent(par)
                     sub.set_groupid_artifact(parpar, par)
             sub.save()
-            par.add_submodule(sub)
+            par.add_module(sub)
             s = sub.get_properties(gettype=True)
-            if isinstance(sub, ariane_delivery.SubModuleParent):
+            if isinstance(sub, ariane_delivery.ModuleParent):
                 s["issubparent"] = True
             else:
                 s["issubparent"] = False
-            return make_response(json.dumps({"submodule": s}), 201, headers_json)
+            return make_response(json.dumps({"module": s}), 201, headers_json)
 
 class RestComponent(Resource):
     def __init__(self):
@@ -1111,8 +1111,8 @@ api.add_resource(RestComponentList, '/rest/component')
 api.add_resource(RestComponent, '/rest/component/<int:unique_key>', '/rest/component/<unique_key>/<unique_key2>')
 api.add_resource(RestPlugin, '/rest/plugin/<int:unique_key>', '/rest/plugin/<unique_key>/<unique_key2>')
 api.add_resource(RestPluginList, '/rest/plugin')
-api.add_resource(RestSubModuleList, '/rest/submodule')
-api.add_resource(RestSubModule, '/rest/submodule/<int:unique_key>', '/rest/submodule/<unique_key>')
+api.add_resource(RestModuleList, '/rest/module')
+api.add_resource(RestModule, '/rest/module/<int:unique_key>', '/rest/module/<unique_key>')
 api.add_resource(RestFileNodeList, '/rest/filenode')
 api.add_resource(RestFileNode, '/rest/filenode/<int:unique_key>', '/rest/filenode/<unique_key>')
 api.add_resource(RestGeneration, '/rest/generation')

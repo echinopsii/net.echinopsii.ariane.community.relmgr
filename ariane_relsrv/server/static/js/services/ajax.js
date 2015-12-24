@@ -49,8 +49,8 @@ angular.module('ArianeUI')
                 else if(type == "component"){
                     return {name: "", version: "", git_repos: "", type: "", order: "", node_type:"component", nID:0};
                 }
-                else if(type == "submodule")
-                    return {name: "", version: "", groupId: "", artifactId: "", order: "", node_type:"submodule", issubparent:"no", nID:0};
+                else if(type == "module")
+                    return {name: "", version: "", groupId: "", artifactId: "", order: "", node_type:"module", issubparent:"no", nID:0};
                 else if(type == "filenode")
                     return {name: "", version: "", type: "", path: "",node_type:"filenode", nID:0};
             },
@@ -73,11 +73,11 @@ angular.module('ArianeUI')
                 if (version != "")
                     return $http.get("http://" + url + ":" + port + "/rest/plugin?version="+version);
             },
-            submodule: function(modplug){
+            module: function(modplug){
                 var element = cleanElementAttr(modplug);
                 var data = {"parent": element};
                 var config = {params: data};
-                return $http.get("http://" + url + ":" + port + "/rest/submodule", config);
+                return $http.get("http://" + url + ":" + port + "/rest/module", config);
             },
             file: function(element){
                 var c_element = cleanElementAttr(element);
@@ -101,8 +101,8 @@ angular.module('ArianeUI')
                 for (var key in c_element){
                     data[key] = c_element[key];
                 }
-                if(type == "submodule"){
-                    if(typeof element.issubparent != "undefined") { data["isSubModuleParent"] = element.issubparent ? 'yes' : 'no';}
+                if(type == "module"){
+                    if(typeof element.issubparent != "undefined") { data["isModuleParent"] = element.issubparent ? 'yes' : 'no';}
                     var c_parent = cleanElementAttr(parent);
                     data["parent"] = JSON.stringify(c_parent);
                     return $http.post("http://" + url + ":" + port + "/rest/"+type, data);

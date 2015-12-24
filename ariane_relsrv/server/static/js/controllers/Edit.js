@@ -40,14 +40,14 @@ angular.module('ArianeUI')
         var editablesView = {
             component: ['name', 'version', 'type'],
             plugin: ["name", "version"],
-            submodule: ['name', 'version', 'groupId', 'artifactId', 'order'],
+            module: ['name', 'version', 'groupId', 'artifactId', 'order'],
             filenode: ["name", "type", "path"],
             distrib: ["name", "version", "url_repos"]
         };
         var editablesForNewNode = {
             component: ['name', 'version', 'order', 'type'],
             plugin: ["name", "version"],
-            submodule: ["name", "order"],
+            module: ["name", "order"],
             filenode: ["name", "version", "type", "path"],
             distrib: ["name", "version", "url_repos"]
         };
@@ -154,7 +154,7 @@ angular.module('ArianeUI')
         $scope.save = function(){
             if($scope.activeEdit){
                 if($scope.isNewNode){ // CREATING
-                    if($scope.selectedObj.obj == "submodule"){
+                    if($scope.selectedObj.obj == "module"){
                             $scope.selectedObj.node.issubparent = ($scope.choice.isNewSubParent=="yes");
                     }
                     serviceAjax.create($scope.selectedObj.node, $scope.selectedObj.obj, $scope.parent).success(function(data){

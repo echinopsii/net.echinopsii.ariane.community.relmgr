@@ -53,11 +53,11 @@ angular.module('ArianeUI')
         }
         function PlugSelected(baseObj){
             if(baseObj["node"] != curBaseObj){
-                serviceAjax.submodule(baseObj["node"]).success(function(data){
-                    data.submodules.sort(sortOrder);
+                serviceAjax.module(baseObj["node"]).success(function(data){
+                    data.modules.sort(sortOrder);
                     $scope.subSet.parent = baseObj["node"];
-                    $scope.subSet.modules = data.submodules;
-                    loadSubmodParent($scope.subSet.modules);
+                    $scope.subSet.modules = data.modules;
+                    loadModuleParent($scope.subSet.modules);
                     $scope.curNodeSelected["selected"] = false;
                     curBaseObj = baseObj["node"];
                 });
@@ -87,17 +87,17 @@ angular.module('ArianeUI')
                 $scope.togFile = true;
             });
         }
-        function loadSubmodParent(submodList){
-            var len = submodList.length;
+        function loadModuleParent(moduleList){
+            var len = moduleList.length;
             for(var i=0; i<len; i++){
-                var m = submodList[i];
+                var m = moduleList[i];
                 (function(mod){
                     if(mod.issubparent){
-                        serviceAjax.submodule(mod).success(function(data){
-                            data.submodules.sort(sortOrder);
-                            mod.sublist = data.submodules;
+                        serviceAjax.module(mod).success(function(data){
+                            data.modules.sort(sortOrder);
+                            mod.sublist = data.modules;
                             mod.togModSub = false;
-                            loadSubmodParent(mod.sublist);
+                            loadModuleParent(mod.sublist);
                         });
                     }
                 })(m)
@@ -144,11 +144,11 @@ angular.module('ArianeUI')
             if(delObj.obj == "component" || delObj.obj == "plugin")
                 $scope.components = $scope.components.filter(function(e){ return e != delObj.node});
 
-            else if(delObj.obj == "submodule"){
-                serviceAjax.submodule($scope.subSet.parent).success(function(data){
-                    data.submodules.sort(sortOrder);
-                    $scope.subSet.modules = data.submodules;
-                    loadSubmodParent($scope.subSet.modules);
+            else if(delObj.obj == "module"){
+                serviceAjax.module($scope.subSet.parent).success(function(data){
+                    data.modules.sort(sortOrder);
+                    $scope.subSet.modules = data.modules;
+                    loadModuleParent($scope.subSet.modules);
                 });
             }
 
@@ -163,11 +163,11 @@ angular.module('ArianeUI')
             if(addObj.obj == "component")
                 $scope.components.push(addObj.node);
 
-            else if(addObj.obj == "submodule"){
-                serviceAjax.submodule($scope.subSet.parent).success(function(data){
-                    data.submodules.sort(sortOrder);
-                    $scope.subSet.modules = data.submodules;
-                    loadSubmodParent($scope.subSet.modules);
+            else if(addObj.obj == "module"){
+                serviceAjax.module($scope.subSet.parent).success(function(data){
+                    data.modules.sort(sortOrder);
+                    $scope.subSet.modules = data.modules;
+                    loadModuleParent($scope.subSet.modules);
                 });
             }
 
@@ -195,11 +195,11 @@ angular.module('ArianeUI')
                     if(idx > -1){
                         var m = $scope.components[idx];
                         m['togModSub'] = false;
-                        serviceAjax.submodule(m).success(function(data){
-                            data.submodules.sort(sortOrder);
+                        serviceAjax.module(m).success(function(data){
+                            data.modules.sort(sortOrder);
                             $scope.subSet.parent = component;
-                            $scope.subSet.modules = data.submodules;
-                            loadSubmodParent($scope.subSet.modules);
+                            $scope.subSet.modules = data.modules;
+                            loadModuleParent($scope.subSet.modules);
                             $scope.togSub = true;
                         });
                     }
@@ -208,19 +208,19 @@ angular.module('ArianeUI')
                 }
             }
         };
-        $scope.clickSub = function(submodule){
+        $scope.clickSub = function(module){
             var nodeObj = serviceUI.getNodeObj();
-            if((nodeObj["obj"] != submodule.node_type)
-                ||((nodeObj["obj"] == submodule.node_type) && (nodeObj["node"] != submodule))) {
-                if(serviceUI.setState({obj: submodule.node_type, status: "new"})) {
-                    if (typeof submodule.selected != "undefined")
-                        delete submodule.selected;
-                    serviceUI.setNodeObj({obj: submodule.node_type, node: submodule});
+            if((nodeObj["obj"] != module.node_type)
+                ||((nodeObj["obj"] == module.node_type) && (nodeObj["node"] != module))) {
+                if(serviceUI.setState({obj: module.node_type, status: "new"})) {
+                    if (typeof module.selected != "undefined")
+                        delete module.selected;
+                    serviceUI.setNodeObj({obj: module.node_type, node: module});
                     if ($scope.curNodeSelected != 0)
                         $scope.curNodeSelected["selected"] = false;
-                    submodule.selected = true;
-                    $scope.curNodeSelected = submodule;
-                    loadFiles(submodule);
+                    module.selected = true;
+                    $scope.curNodeSelected = module;
+                    loadFiles(module);
                     serviceUI.actionBroadcast();
                 }
             }
@@ -249,7 +249,7 @@ angular.module('ArianeUI')
                 var parentAdd = {obj: "", node: {}};
                 if(type == 'component')
                     parentAdd = serviceUI.getBaseObj();
-                else if (type == 'submodule')
+                else if (type == 'module')
                 {
                     parentAdd.node = parentBtn;
                     parentAdd.obj = parentBtn.node_type;

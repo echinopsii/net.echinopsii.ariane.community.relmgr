@@ -122,21 +122,21 @@ class Generator(object):
     def set_release_plugin_exceptions(self, exce_list):
         self.exception_release_plug = [e for e in exce_list]
 
-    def get_submodule_lib_extensions(self):
+    def get_module_lib_extensions(self):
         if self.extension_sub_lib.__len__() == 0:
-            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/submodule_lib_extensions.json', 'r') as data_file:
+            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/module_lib_extensions.json', 'r') as data_file:
                 self.extension_sub_lib = json.load(data_file)
         return self.extension_sub_lib
 
-    def get_submodule_lib_exceptions(self):
+    def get_module_lib_exceptions(self):
         if self.exception_sub_lib.__len__() == 0:
-            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/submodule_lib_exceptions.json', 'r') as data_file:
+            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/module_lib_exceptions.json', 'r') as data_file:
                 self.exception_sub_lib = json.load(data_file)
         return self.exception_sub_lib
 
-    def get_submodule_plan_exceptions(self):
+    def get_module_plan_exceptions(self):
         if self.exception_sub_plan.__len__() == 0:
-            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/submodule_plan_exceptions.json', 'r') as data_file:
+            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/module_plan_exceptions.json', 'r') as data_file:
                 self.exception_sub_plan = json.load(data_file)
         return self.exception_sub_plan
 
@@ -244,9 +244,9 @@ class Generator(object):
                 elif f.type == "pom":
                     grId, artId = self.__generate_pom_mod_plug(mod, f)
 
-                    for sub in mod.list_submod:
-                        s_grId, s_artId = self.__generate_pom_submodule(sub, grId, artId)
-                        if type(sub) is ariane_delivery.SubModuleParent:
+                    for sub in mod.list_module:
+                        s_grId, s_artId = self.__generate_pom_module(sub, grId, artId)
+                        if type(sub) is ariane_delivery.ModuleParent:
                             self.__generate_pom_subparent(sub, s_grId, s_artId)
 
     def generate_plugin_files(self, version):
@@ -274,9 +274,9 @@ class Generator(object):
                     self.generate_vsh_plugin(plug, f)
                 elif f.type == "pom":
                     grId, artId  = self.__generate_pom_mod_plug(plug, f)
-                    for sub in plug.list_submod:
-                        s_grId, s_artId = self.__generate_pom_submodule(sub, grId, artId)
-                        if type(sub) is ariane_delivery.SubModuleParent:
+                    for sub in plug.list_module:
+                        s_grId, s_artId = self.__generate_pom_module(sub, grId, artId)
+                        if type(sub) is ariane_delivery.ModuleParent:
                             self.__generate_pom_subparent(sub, s_grId, s_artId)
 
     def generate_pom(self, mod_plug):
@@ -300,12 +300,12 @@ class Generator(object):
             if mf.type == "pom":
                 grId, artId = self.__generate_pom_mod_plug(mod_plug, mf)
 
-                for sub in mod_plug.list_submod:
-                    s_grId, s_artId = self.__generate_pom_submodule(sub, grId, artId)
-                    if type(sub) is ariane_delivery.SubModuleParent:
+                for sub in mod_plug.list_module:
+                    s_grId, s_artId = self.__generate_pom_module(sub, grId, artId)
+                    if type(sub) is ariane_delivery.ModuleParent:
                         self.__generate_pom_subparent(sub, s_grId, s_artId)
 
-    def __generate_pom_submodule(self, sub, grId, artId):
+    def __generate_pom_module(self, sub, grId, artId):
         fpom = self.ariane.get_one_file(sub, 'pom')
         template = self.env.get_template(fpom.path + 'pom.jnj')
 
@@ -320,11 +320,11 @@ class Generator(object):
         return groupId, artifactId
 
     def __generate_pom_subparent(self, sub, grId, artId):
-        sub.list_submod = self.ariane.submodule_service.get_all(sub)
-        sub.list_submod.extend(self.ariane.submodule_parent_service.get_all(sub))
-        for s in sub.list_submod:
-            s_grId, s_artId = self.__generate_pom_submodule(s, grId, artId)
-            if type(s) is ariane_delivery.SubModuleParent:
+        sub.list_module = self.ariane.module_service.get_all(sub)
+        sub.list_module.extend(self.ariane.module_parent_service.get_all(sub))
+        for s in sub.list_module:
+            s_grId, s_artId = self.__generate_pom_module(s, grId, artId)
+            if type(s) is ariane_delivery.ModuleParent:
                 self.__generate_pom_subparent(s, s_grId, s_artId)
 
     def __generate_pom_mod_plug(self, mod_plug, fpom):
@@ -335,9 +335,9 @@ class Generator(object):
         artifactId = groupId + "." + mod_plug.name
         version = mod_plug.version
         packaging = "pom"
-        mod_plug.list_submod = sorted(mod_plug.list_submod, key=lambda submod: submod.order)
+        mod_plug.list_module = sorted(mod_plug.list_module, key=lambda module: module.order)
         args = {"groupId": groupId, "artifactId": artifactId, "version": version,
-                "packaging": packaging, "components": mod_plug.list_submod,
+                "packaging": packaging, "components": mod_plug.list_module,
                 "dependencies": mod_plug.list_component_dependency}
 
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
@@ -363,30 +363,30 @@ class Generator(object):
     def generate_plan(self, mod_plug, fplan):
         if GitTagHandler.is_git_tagged(mod_plug.version, path=self.dir_output+fplan.path):
             return
-        sub_exceptions = self.get_submodule_plan_exceptions()
+        sub_exceptions = self.get_module_plan_exceptions()
         snapshot = False
         if "SNAPSHOT" in mod_plug.version:
             snapshot = True
 
         template = self.env.get_template(fplan.path+"plan_"+mod_plug.name+"_template.jnj")
-        submodules = [s for s in mod_plug.list_submod]
-        # Remove each submodule which is in exceptions list.
-        # Note that if submodule is a SubModuleParent which has a SubModule to be excluded,
+        modules = [s for s in mod_plug.list_module]
+        # Remove each module which is in exceptions list.
+        # Note that if module is a ModuleParent which has a Module to be excluded,
         # this is done in the component template.
-        for s in submodules.copy():
+        for s in modules.copy():
             if s.name in sub_exceptions:
-                submodules.remove(s)
-            if isinstance(s, ariane_delivery.SubModuleParent):
-                submodules.extend(s.list_submod)
-                submodules.remove(s)
-        submodules = sorted(submodules, key=lambda submod: submod.order)
+                modules.remove(s)
+            if isinstance(s, ariane_delivery.ModuleParent):
+                modules.extend(s.list_module)
+                modules.remove(s)
+        modules = sorted(modules, key=lambda module: module.order)
         vmin, vmax = ariane_delivery.ArianeRelation.make_vmin_vmax(mod_plug.version)
         if snapshot:
             m_version = mod_plug.version
             m_version = str(m_version).replace("-", ".")
         else:
             m_version = mod_plug.version
-        args = {"version": m_version, "component": mod_plug, "vmin": vmin, "vmax": vmax, "submodules": submodules}
+        args = {"version": m_version, "component": mod_plug, "vmin": vmin, "vmax": vmax, "modules": modules}
 
         with open(self.dir_output+fplan.path+fplan.name, 'w') as target:
                 target.write(template.render(args))
@@ -535,17 +535,17 @@ class Generator(object):
     def generate_lib_json(self, mod_plug, fjson):
         if GitTagHandler.is_git_tagged(mod_plug.version, path=self.dir_output+fjson.path):
             return
-        extension_dict = self.get_submodule_lib_extensions()
-        exception_list = self.get_submodule_lib_exceptions()
+        extension_dict = self.get_module_lib_extensions()
+        exception_list = self.get_module_lib_exceptions()
         list_lib = []
-        for s in mod_plug.list_submod:
+        for s in mod_plug.list_module:
             ext = ".jar"
             if s.name not in exception_list:
                 if s.name in extension_dict.keys():
                     ext = extension_dict[s.name]
 
-                if type(s) is ariane_delivery.SubModuleParent:
-                    for s_sub in s.list_submod:
+                if type(s) is ariane_delivery.ModuleParent:
+                    for s_sub in s.list_module:
                         ext = ".jar"
                         url = "net/echinopsii/" + str(mod_plug.get_directory_name()).replace('.', '/') + "/"+s.name+"/"
                         url += "net.echinopsii."+mod_plug.get_directory_name()+"."+s.name+"."+s_sub.name+"/"+mod_plug.version+"/net.echinopsii."+mod_plug.get_directory_name()+"."+s.name+"."+s_sub.name+"-"+mod_plug.version + ext

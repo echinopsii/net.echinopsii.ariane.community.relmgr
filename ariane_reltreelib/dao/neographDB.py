@@ -52,6 +52,11 @@ class NeoGraph(object):
             break
         return label
 
+    # Edit node label with cypher:
+    # MATCH (n:SubModule)
+    # REMOVE n:SubModule
+    # SET n:Module
+
     def get_relation_data(self, relation):
         start = relation.start_node
         end = relation.end_node
@@ -110,7 +115,7 @@ class NeoGraph(object):
     def save_node(self, args):
         """
         Save node in Database. If node doesn't exist, a new one is created. If it does already exist, it is updated.
-        :param node: The node to save. node is an ArianeNode subclass (Distribution, Component, SubModule, Plugin)
+        :param node: The node to save. node is an ArianeNode subclass (Distribution, Component, Module, Plugin)
         :return: "created" or "updated" or None.
         """
         node = args["node"]

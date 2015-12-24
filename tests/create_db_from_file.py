@@ -55,31 +55,31 @@ def create_db_file(filename):
                         mod.order = mod_order
                         mod_order += 1
                         if len(list_param) > 3:
-                            list_submod = list_param[3:]
+                            list_module = list_param[3:]
                             sub_order = 1
-                            for submod in list_submod:
-                                if ":" in submod:
-                                    sub_list = submod.split(':')
+                            for module in list_module:
+                                if ":" in module:
+                                    sub_list = module.split(':')
                                     sub_parent = [n for n in sub_list if not n.startswith('_')][0]
                                     sub_list.remove(sub_parent)
                                     sub_list = sub_list[0].split('_')
                                     sub_list = [s for s in sub_list if s != '']
-                                    sub_parent = ariane_delivery.SubModuleParent(sub_parent, mod.version)
+                                    sub_parent = ariane_delivery.ModuleParent(sub_parent, mod.version)
                                     for s in sub_list:
-                                        sub_sub = ariane_delivery.SubModule(s, mod.version)
+                                        sub_sub = ariane_delivery.Module(s, mod.version)
                                         sub_sub.order = sub_order
                                         sub_order += 1
                                         sub_sub.set_groupid_artifact(mod, sub_parent)
-                                        sub_parent.add_submodule(sub_sub)
+                                        sub_parent.add_module(sub_sub)
                                     sub_parent.order = sub_order
                                     sub_order += 1
-                                    mod.add_submodule(sub_parent)
+                                    mod.add_module(sub_parent)
                                 else:
-                                    sub = ariane_delivery.SubModule(submod, mod.version)
+                                    sub = ariane_delivery.Module(module, mod.version)
                                     sub.order = sub_order
                                     sub_order += 1
                                     sub.set_groupid_artifact(mod)
-                                    mod.add_submodule(sub)
+                                    mod.add_module(sub)
                         list_component.append(mod)
 
                     elif state == "component" and "plugin" in list_param:
@@ -94,14 +94,14 @@ def create_db_file(filename):
                         plugin_version = list_param[2]
                         plug = ariane_delivery.Plugin(plugin_name, plugin_version)
 
-                        list_submod = list_param[index_sub:]
+                        list_module = list_param[index_sub:]
                         sub_order = 1
-                        for submod in list_submod:
-                            sub = ariane_delivery.SubModule(submod, plug.version)
+                        for module in list_module:
+                            sub = ariane_delivery.Module(module, plug.version)
                             sub.order = sub_order
                             sub_order += 1
                             sub.set_groupid_artifact(plug)
-                            plug.add_submodule(sub)
+                            plug.add_module(sub)
                         list_plugin.append({"plugin": plug, "version_min": vmin, "version_max": vmax})
                     elif state == "dependency":
                         # print("HERE")

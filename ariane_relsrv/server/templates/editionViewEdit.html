@@ -32,8 +32,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         {% raw %}
         <div ng-if="isNewNode">
             <span>Edit the new {{ selectedObj.obj }} object</span>
-            <p ng-if="selectedObj.obj == 'submodule'">
-                Submodule parent ? <select ng-model="choice.isNewSubParent"><option value="yes">yes</option><option value="no">no</option></select>
+            <p ng-if="selectedObj.obj == 'module'">
+                Module parent ? <select ng-model="choice.isNewSubParent"><option value="yes">yes</option><option value="no">no</option></select>
             </p>
         </div>
         <div ng-if="isDeleting">

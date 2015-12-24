@@ -86,7 +86,7 @@ class GeneratorTest(unittest.TestCase):
             self.g.generate_pom(plug)
             self.g.compare_files('xml', self.dir_output+plug.get_directory_name()+'/pom.xml',
                                'models/'+plug.get_directory_name()+'/pom.xml')
-            for psub in plug.list_submod:
+            for psub in plug.list_module:
                 self.g.compare_files('xml', self.dir_output+plug.get_directory_name()+'/'+psub.name+'/pom.xml',
                                    'models/'+plug.get_directory_name()+'/'+psub.name+'/pom.xml')
 
@@ -97,11 +97,11 @@ class GeneratorTest(unittest.TestCase):
             self.g.generate_pom(mod)
             self.g.compare_files('xml', self.dir_output+mod.get_directory_name()+'/pom.xml',
                                'models/'+mod.get_directory_name()+'/pom.xml')
-            for sub in mod.list_submod:
+            for sub in mod.list_module:
                 self.g.compare_files('xml', self.dir_output+mod.get_directory_name()+'/'+sub.name+'/pom.xml',
                                    'models/'+mod.get_directory_name()+'/'+sub.name+'/pom.xml')
-                if type(sub) is ariane_delivery.SubModuleParent:
-                    for s in sub.list_submod:
+                if type(sub) is ariane_delivery.ModuleParent:
+                    for s in sub.list_module:
                         self.g.compare_files('xml', self.dir_output+mod.get_directory_name()+'/'+sub.name+'/'+s.name+'/pom.xml',
                                            'models/'+mod.get_directory_name()+'/'+sub.name+'/'+s.name+'/pom.xml')
 
