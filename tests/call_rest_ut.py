@@ -257,15 +257,15 @@ class TestREST(unittest.TestCase):
         print(r.status_code, r.reason, r.json())
         rsub = mod_model.from_json(r.json())
         self.assertIsInstance(rsub, ariane_delivery.Module)
-        subparmodel = ariane_delivery.ModuleParent("model", "model")
+        subparmodel = ariane_delivery.Module("model", "model")
         parent = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'mapping'})
-        sublist = ariane_delivery.DeliveryTree.module_parent_service.get_all(parent)
+        sublist = ariane_delivery.DeliveryTree.module_service.get_all(parent)
         subpar = [s for s in sublist if s.name == "ds"][0]
         subpar.set_groupid_artifact(parent)
         r = requests.get("http://localhost:5000/rest/module/"+str(subpar.id))
         print(r.status_code, r.reason, r.json())
         rsub = subparmodel.from_json(r.json())
-        self.assertIsInstance(rsub, ariane_delivery.ModuleParent)
+        self.assertIsInstance(rsub, ariane_delivery.Module)
         r = requests.get("http://localhost:5000/rest/module/"+subpar.artifactId)
         print(r.status_code, r.reason, r.json())
         rsub = subparmodel.from_json(r.json())
@@ -273,24 +273,22 @@ class TestREST(unittest.TestCase):
 
     def test_post_module(self):
         mod_model = ariane_delivery.Module("model", "model")
-        sparmodel = ariane_delivery.ModuleParent("model", "model")
+        sparmodel = ariane_delivery.Module("model", "model")
         count = ariane_delivery.DeliveryTree.graph_dao.count("nID")
         parent = ariane_delivery.DeliveryTree.component_service.get_unique({"name": 'idm'})
         r = requests.post("http://localhost:5000/rest/module", params={"name": "Soubou",
-                                                                          "parent": json.dumps(parent.get_properties()),
-                                                                          "isModuleParent": "no"})
+                                                                       "parent": json.dumps(parent.get_properties())})
         print(r.status_code, r.reason, r.json())
         sub_res = mod_model.from_json(r.json())
         countafter = ariane_delivery.DeliveryTree.graph_dao.count("nID")
         self.assertEqual(count+1, countafter)
         r = requests.post("http://localhost:5000/rest/module", params={"name": "PadreBoubino",
-                                                                          "parent": json.dumps(parent.get_properties()),
-                                                                          "isModuleParent": "yes"})
+                                                                       "parent": json.dumps(parent.get_properties())})
         print(r.status_code, r.reason, r.json())
         countafter = ariane_delivery.DeliveryTree.graph_dao.count("nID")
         self.assertEqual(count+2, countafter)
         rsub = sparmodel.from_json(r.json())
-        self.assertIsInstance(rsub, ariane_delivery.ModuleParent)
+        self.assertIsInstance(rsub, ariane_delivery.Module)
         sub = ariane_delivery.DeliveryTree.module_service.get_unique({"name": 'wab'})
         sub.groupId = "roro.lolo.gato"
         sub.order = 7

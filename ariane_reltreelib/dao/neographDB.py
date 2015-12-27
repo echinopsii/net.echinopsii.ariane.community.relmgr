@@ -169,8 +169,14 @@ class NeoGraph(object):
         # print(relation)
         # self.graph.create(Relationship.cast(node, (relation, properties), linked_node))
 
-    def get_relation_between(self, start_id, end_id):
-        match = "MATCH (n {nID:"+str(start_id)+"})-[r]->(m {nID:"+str(end_id)+"}) RETURN r"
+    def get_relation_between(self, start_id, end_id=0, label=""):
+        if end_id != 0:
+            match = "MATCH (n {nID:"+str(start_id)+"})-[r]->(m {nID:"+str(end_id)+"}) RETURN r"
+        elif label != "":
+            match = "MATCH (n {nID:"+str(start_id)+"})-[r]->(m:"+str(label)+") RETURN r"
+        else:
+            return None
+
         listrecord = self.graph.cypher.execute(match)
         rel = None
         for record in listrecord:
@@ -317,7 +323,7 @@ class NeoGraph(object):
                                             "p = shortestPath((s)-[*..10]-(e)) RETURN p")
         elif label != "":
             listrecord = self.graph.cypher.execute("MATCH (s {nID:"+str(start_id)+"}), (e:"+str(label)+"),"
-                                                    "p = shortestPath((s)-[*..10]-(e)) RETURN p")
+                                                   "p = shortestPath((s)-[*..10]-(e)) RETURN p")
         path = None
         for rec in listrecord:
             path = rec.p

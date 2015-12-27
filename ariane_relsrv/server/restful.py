@@ -359,13 +359,9 @@ class RestModule(Resource):
         s = None
         if isinstance(unique_key, int):
             s = ariane.module_service.get_unique({"nID": unique_key})
-            if s is None:
-                s = ariane.module_parent_service.get_unique({"nID": unique_key})
         elif isinstance(unique_key, str):
             if unique_key.count('.') > 0:
                 s = ariane.module_service.get_unique({"artifactId": unique_key})
-                if s is None:
-                    s = ariane.module_parent_service.get_unique({"artifactId": unique_key})
             else:
                 args = self.reqparse.parse_args()
                 if args["parent"] is not None:
@@ -374,10 +370,9 @@ class RestModule(Resource):
                     if par is None:
                         par = ariane.plugin_service.get_unique(args["parent"])
                     if par is None:
-                        par = ariane.module_parent_service.get_unique(args["parent"])
+                        par = ariane.module_service.get_unique(args["parent"])
                     if par is not None:
                         slists = ariane.module_service.get_all(par)
-                        slists.extend(ariane.module_parent_service.get_all(par))
                         for sub in slists:
                             if sub.name == unique_key:
                                 s = sub
@@ -409,7 +404,6 @@ class RestModuleList(Resource):
         self.reqparse.add_argument('order', type=int)
         self.reqparse.add_argument('module')
         self.reqparse.add_argument('parent')
-        self.reqparse.add_argument('isModuleParent')
         super(RestModuleList, self).__init__()
 
     def get(self):
@@ -420,17 +414,12 @@ class RestModuleList(Resource):
             if par is None:
                 par = ariane.plugin_service.get_unique(args["parent"])
             if par is None:
-                par = ariane.module_parent_service.get_unique(args["parent"])
+                par = ariane.module_service.get_unique(args["parent"])
             if par is not None:
                 slist = ariane.module_service.get_all(par)
-                slist.extend(ariane.module_parent_service.get_all(par))
                 slist_ret = []
                 for s in slist:
                     sp = s.get_properties(gettype=True)
-                    if isinstance(s, ariane_delivery.ModuleParent):
-                        sp["issubparent"] = True
-                    else:
-                        sp["issubparent"] = False
                     slist_ret.append(sp)
                 return make_response(json.dumps({"modules": slist_ret}), 200, headers_json)
             abort_error("BAD_REQUEST", "Given parameter 'parent' {} does not match any Module's parent".format(
@@ -441,18 +430,12 @@ class RestModuleList(Resource):
         args = self.reqparse.parse_args()
         if args["nID"] is not None and args["nID"] > 0:
             s = ariane.module_service.get_unique({"nID": args["nID"]})
-            if s is None:
-                s = ariane.module_parent_service.get_unique({"nID": args["nID"]})
             if ariane.is_dev_version(s):
-                if isinstance(s, ariane_delivery.Module) or isinstance(s, ariane_delivery.ModuleParent):
+                if isinstance(s, ariane_delivery.Module):
                     clear_args(args)
                     if s.update(args):
                         s.save()
                         sp = s.get_properties(gettype=True)
-                        if isinstance(s, ariane_delivery.ModuleParent):
-                            sp["issubparent"] = True
-                        else:
-                            sp["issubparent"] = False
                         return make_response(json.dumps({"module": sp}), 200, headers_json)
                     else:
                         abort_error("BAD_REQUEST", "Module {} already exists".format(args))
@@ -463,17 +446,11 @@ class RestModuleList(Resource):
         elif args["module"] is not None:
             arg_s = json.loads(args["module"])
             s = ariane.module_service.get_unique(arg_s)
-            if s is None:
-                s = ariane.module_parent_service.get_unique(arg_s)
             if ariane.is_dev_version(s):
-                if isinstance(s, ariane_delivery.Module) or isinstance(s, ariane_delivery.ModuleParent):
+                if isinstance(s, ariane_delivery.Module):
                     if s.update(arg_s):
                         s.save()
                         sp = s.get_properties(gettype=True)
-                        if isinstance(s, ariane_delivery.ModuleParent):
-                            sp["issubparent"] = True
-                        else:
-                            sp["issubparent"] = False
                         return json.dumps({"module": sp}), 200
                     else:
                         abort_error("BAD_REQUEST", "Nothing to update, values are the same")
@@ -483,9 +460,9 @@ class RestModuleList(Resource):
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         else:
             for key in args.keys():
-                if key in ["isModuleParent", "name", "parent"] and args[key] is None:
+                if key in ["name", "parent"] and args[key] is None:
                     abort_error("BAD_REQUEST", "Parameters are missing. "
-                                               "You must provide: 'isModuleParent', 'name', 'parent'")
+                                               "You must provide: 'name', 'parent'")
             args["parent"] = json.loads(args["parent"])
             par = ariane.find_without_label({"nID": args["parent"]["nID"]})
             if par is None:
@@ -494,28 +471,30 @@ class RestModuleList(Resource):
                 abort_error("BAD_REQUEST", "Given parent {} does not match a unique Parent in database".format(
                             args["parent"]))
             slist = ariane.module_service.get_all(par)
-            slist.extend(ariane.module_parent_service.get_all(par))
             for s in slist:
                 if args["name"] == s.name:
                     abort_error("BAD_REQUEST", "Given Module named '{}' already exists in parent '{}'".format(
                                 args["name"], args["parent"]))
-            if str(args["isModuleParent"]).lower() == "yes":
-                sub = ariane_delivery.ModuleParent(args["name"], par.version, order=args["order"])
-                sub.set_groupid_artifact(par)
-            else:
-                sub = ariane_delivery.Module(args["name"], par.version, order=args["order"])
-                if not isinstance(par, ariane_delivery.ModuleParent):
-                    sub.set_groupid_artifact(par)
-                else:
-                    parpar = ariane.module_parent_service.get_parent(par)
-                    sub.set_groupid_artifact(parpar, par)
+
+            sub = ariane_delivery.Module(args["name"], par.version, order=args["order"])
+            sub.set_groupid_artifact(par)
+            # if str(args["isModuleParent"]).lower() == "yes":
+            #     sub = ariane_delivery.ModuleParent(args["name"], par.version, order=args["order"])
+            #     sub.set_groupid_artifact(par)
+            # else:
+            #     sub = ariane_delivery.Module(args["name"], par.version, order=args["order"])
+            #     if not isinstance(par, ariane_delivery.ModuleParent):
+            #         sub.set_groupid_artifact(par)
+            #     else:
+            #         parpar = ariane.module_parent_service.get_parent(par)
+            #         sub.set_groupid_artifact(parpar, par)
             sub.save()
             par.add_module(sub)
             s = sub.get_properties(gettype=True)
-            if isinstance(sub, ariane_delivery.ModuleParent):
-                s["issubparent"] = True
-            else:
-                s["issubparent"] = False
+            # if isinstance(sub, ariane_delivery.ModuleParent):
+            #     s["issubparent"] = True
+            # else:
+            #     s["issubparent"] = False
             return make_response(json.dumps({"module": s}), 201, headers_json)
 
 class RestComponent(Resource):

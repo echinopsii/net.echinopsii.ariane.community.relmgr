@@ -665,18 +665,23 @@ class ModuleService(DeliveryTree):
         module.list_files = DeliveryTree.get_files(module)
         DeliveryTree.module_service.get_relations(module)
 
-    def get_all(self, component):
+    def get_all(self, comp_plug_mod):
         """
-        get all modules from a given component or plugin
-        :param component: component/Plugin object
-        :return: a list of all Module object related to the component
+        get all modules from a given component or plugin or module.
+        Note: ArianeRelation.component_Module = "module". It is the relation name for Component->Module,
+        or Plugin->Module or Module->Module
+        :param comp_plug_mod: Component/Plugin/Module object
+        :return: a list of all Module objects related to comp_plug_mod
         """
         list_module = []
-        args = {"reverse": False, "node": component.node, "label": self._ariane_node.__class__.__name__, "relation": ArianeRelation.component_Module}
-        list_node = DeliveryTree.graph_dao.get_all(args)
-        for node in list_node:
-            sub = self._create_ariane_node(node)
-            list_module.append(sub)
+        if isinstance(comp_plug_mod, Component) or isinstance(comp_plug_mod, Plugin) or isinstance(comp_plug_mod, Module):
+            args = {"reverse": False, "node": comp_plug_mod.node,
+                    "label": self._ariane_node.__class__.__name__,
+                    "relation": ArianeRelation.component_Module}
+            list_node = DeliveryTree.graph_dao.get_all(args)
+            for node in list_node:
+                sub = self._create_ariane_node(node)
+                list_module.append(sub)
         return list_module
 
     def get_relations(self, args):
@@ -1354,17 +1359,29 @@ class Module(ArianeNode):
             module.id = nid
 
     def isParent(self):
-        children = DeliveryTree.graph_dao.shortest_path(self.id, label="Module")
+        children = DeliveryTree.graph_dao.get_relation_between(self.id, label="Module")
         return children is not None
 
     def set_groupid_artifact(self, mod_plug, sub_parent=None):
-        if sub_parent is not None:
-            sub_parent.set_groupid_artifact(mod_plug)
-            self.groupId = sub_parent.groupId + '.' + sub_parent.name
-            self.artifactId = self.groupId + '.' + self.name
+        grid_sufix = ""
+        if isinstance(mod_plug, Component) or isinstance(mod_plug, Plugin):
+            grid_sufix = self.pom_attr + mod_plug.get_directory_name()
+        elif isinstance(mod_plug, Module):
+            grid_sufix = mod_plug.artifactId
         else:
-            self.groupId = '' + self.pom_attr + mod_plug.get_directory_name()
-            self.artifactId = self.groupId + '.' + self.name
+            raise "Given argument 'mod_plug' is an incorrect type. " \
+                  "Expecting [Component, Plugin, Module], found " + type(mod_plug)
+
+        self.groupId = '' + grid_sufix
+        self.artifactId = self.groupId + '.' + self.name
+
+        # if sub_parent is not None:
+        #     sub_parent.set_groupid_artifact(mod_plug)
+        #     self.groupId = sub_parent.groupId + '.' + sub_parent.name
+        #     self.artifactId = self.groupId + '.' + self.name
+        # else:
+        #     self.groupId = '' + self.pom_attr + mod_plug.get_directory_name()
+        #     self.artifactId = self.groupId + '.' + self.name
 
     def get_rest_endpoint(self):
         return "module"

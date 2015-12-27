@@ -64,12 +64,13 @@ def create_db_file(filename):
                                     sub_list.remove(sub_parent)
                                     sub_list = sub_list[0].split('_')
                                     sub_list = [s for s in sub_list if s != '']
-                                    sub_parent = ariane_delivery.ModuleParent(sub_parent, mod.version)
+                                    sub_parent = ariane_delivery.Module(sub_parent, mod.version)
+                                    sub_parent.set_groupid_artifact(mod)
                                     for s in sub_list:
                                         sub_sub = ariane_delivery.Module(s, mod.version)
                                         sub_sub.order = sub_order
                                         sub_order += 1
-                                        sub_sub.set_groupid_artifact(mod, sub_parent)
+                                        sub_sub.set_groupid_artifact(sub_parent)
                                         sub_parent.add_module(sub_sub)
                                     sub_parent.order = sub_order
                                     sub_order += 1
