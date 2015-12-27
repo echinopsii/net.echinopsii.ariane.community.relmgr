@@ -662,8 +662,12 @@ class ModuleService(DeliveryTree):
         self.reinit_subclass()
 
     def update_arianenode_lists(self, module):
-        module.list_files = DeliveryTree.get_files(module)
-        DeliveryTree.module_service.get_relations(module)
+        if isinstance(module, Module):
+            module.list_files = DeliveryTree.get_files(module)
+            module.list_module = DeliveryTree.module_service.get_all(module)
+            if module.list_module is None:
+                module.list_module = []
+            DeliveryTree.module_service.get_relations(module)
 
     def get_all(self, comp_plug_mod):
         """
@@ -1756,6 +1760,7 @@ class FileNode(object):
         return None
 
     def udpdate_name(self, version):
+        self.version = version
         if self.type not in ["plantpl"]:
             if "SNAPSHOT" in version:
                 version = "master.SNAPSHOT"

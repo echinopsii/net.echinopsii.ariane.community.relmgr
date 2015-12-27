@@ -242,11 +242,11 @@ class Generator(object):
                             flag_clean_env = False
                         self.generate_plan_tpl(version, f)
                 elif f.type == "pom":
-                    grId, artId = self.__generate_pom_mod_plug(mod, f)
+                    grId, artId = self.__generate_pom_comp_plug(mod, f)
 
                     for sub in mod.list_module:
                         s_grId, s_artId = self.__generate_pom_module(sub, grId, artId)
-                        if type(sub) is ariane_delivery.ModuleParent:
+                        if sub.isParent():
                             self.__generate_pom_subparent(sub, s_grId, s_artId)
 
     def generate_plugin_files(self, version):
@@ -273,36 +273,36 @@ class Generator(object):
                 elif f.type == "vsh":
                     self.generate_vsh_plugin(plug, f)
                 elif f.type == "pom":
-                    grId, artId  = self.__generate_pom_mod_plug(plug, f)
+                    grId, artId  = self.__generate_pom_comp_plug(plug, f)
                     for sub in plug.list_module:
                         s_grId, s_artId = self.__generate_pom_module(sub, grId, artId)
-                        if type(sub) is ariane_delivery.ModuleParent:
+                        if sub.isParent():
                             self.__generate_pom_subparent(sub, s_grId, s_artId)
 
-    def generate_pom(self, mod_plug):
+    def generate_pom(self, comp_plug):
         """ Generate all poms (parent and children) for a given component or plugin.
-        :param mod_plug: ariane_delivery.component or ariane_delivery.Plugin object stored in database
+        :param comp_plug: ariane_delivery.component or ariane_delivery.Plugin object stored in database
         :return: Nothing
         """
         pom_gen_exception = self.get_component_pom_gen_exceptions()
 
-        if mod_plug.name not in pom_gen_exception:
-            if GitTagHandler.is_git_tagged(mod_plug.version, path=self.dir_output+mod_plug.get_directory_name()):
+        if comp_plug.name not in pom_gen_exception:
+            if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output+comp_plug.get_directory_name()):
                 return
-            if type(mod_plug) is ariane_delivery.Component:
-                self.ariane.component_service.get_relations(mod_plug)
-            elif type(mod_plug) is ariane_delivery.Plugin:
-                self.ariane.plugin_service.get_relations(mod_plug)
+            if type(comp_plug) is ariane_delivery.Component:
+                self.ariane.component_service.get_relations(comp_plug)
+            elif type(comp_plug) is ariane_delivery.Plugin:
+                self.ariane.plugin_service.get_relations(comp_plug)
 
-            mf = self.ariane.get_one_file(mod_plug, "pom")
+            mf = self.ariane.get_one_file(comp_plug, "pom")
             if not isinstance(mf, ariane_delivery.FileNode):
                 return
             if mf.type == "pom":
-                grId, artId = self.__generate_pom_mod_plug(mod_plug, mf)
+                grId, artId = self.__generate_pom_comp_plug(comp_plug, mf)
 
-                for sub in mod_plug.list_module:
+                for sub in comp_plug.list_module:
                     s_grId, s_artId = self.__generate_pom_module(sub, grId, artId)
-                    if type(sub) is ariane_delivery.ModuleParent:
+                    if sub.isParent():
                         self.__generate_pom_subparent(sub, s_grId, s_artId)
 
     def __generate_pom_module(self, sub, grId, artId):
@@ -321,24 +321,23 @@ class Generator(object):
 
     def __generate_pom_subparent(self, sub, grId, artId):
         sub.list_module = self.ariane.module_service.get_all(sub)
-        sub.list_module.extend(self.ariane.module_parent_service.get_all(sub))
         for s in sub.list_module:
             s_grId, s_artId = self.__generate_pom_module(s, grId, artId)
-            if type(s) is ariane_delivery.ModuleParent:
+            if s.isParent():
                 self.__generate_pom_subparent(s, s_grId, s_artId)
 
-    def __generate_pom_mod_plug(self, mod_plug, fpom):
+    def __generate_pom_comp_plug(self, comp_plug, fpom):
         template = self.env.get_template(fpom.path + 'pom.jnj')
 
-        groupId = mod_plug.pom_attr + mod_plug.get_directory_name()
-        groupId = str(groupId).replace('.'+mod_plug.name, '')
-        artifactId = groupId + "." + mod_plug.name
-        version = mod_plug.version
+        groupId = comp_plug.pom_attr + comp_plug.get_directory_name()
+        groupId = str(groupId).replace('.'+comp_plug.name, '')
+        artifactId = groupId + "." + comp_plug.name
+        version = comp_plug.version
         packaging = "pom"
-        mod_plug.list_module = sorted(mod_plug.list_module, key=lambda module: module.order)
+        comp_plug.list_module = sorted(comp_plug.list_module, key=lambda module: module.order)
         args = {"groupId": groupId, "artifactId": artifactId, "version": version,
-                "packaging": packaging, "components": mod_plug.list_module,
-                "dependencies": mod_plug.list_component_dependency}
+                "packaging": packaging, "components": comp_plug.list_module,
+                "dependencies": comp_plug.list_component_dependency}
 
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
             target.write(template.render(args))
@@ -360,33 +359,33 @@ class Generator(object):
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
             target.write(template.render(args))
 
-    def generate_plan(self, mod_plug, fplan):
-        if GitTagHandler.is_git_tagged(mod_plug.version, path=self.dir_output+fplan.path):
+    def generate_plan(self, comp_plug, fplan):
+        if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output+fplan.path):
             return
         sub_exceptions = self.get_module_plan_exceptions()
         snapshot = False
-        if "SNAPSHOT" in mod_plug.version:
+        if "SNAPSHOT" in comp_plug.version:
             snapshot = True
 
-        template = self.env.get_template(fplan.path+"plan_"+mod_plug.name+"_template.jnj")
-        modules = [s for s in mod_plug.list_module]
+        template = self.env.get_template(fplan.path+"plan_"+comp_plug.name+"_template.jnj")
+        modules = [s for s in comp_plug.list_module]
         # Remove each module which is in exceptions list.
-        # Note that if module is a ModuleParent which has a Module to be excluded,
+        # Note that if module is a parent Module which has a Module to be excluded,
         # this is done in the component template.
         for s in modules.copy():
             if s.name in sub_exceptions:
                 modules.remove(s)
-            if isinstance(s, ariane_delivery.ModuleParent):
+            if s.isParent():
                 modules.extend(s.list_module)
                 modules.remove(s)
         modules = sorted(modules, key=lambda module: module.order)
-        vmin, vmax = ariane_delivery.ArianeRelation.make_vmin_vmax(mod_plug.version)
+        vmin, vmax = ariane_delivery.ArianeRelation.make_vmin_vmax(comp_plug.version)
         if snapshot:
-            m_version = mod_plug.version
+            m_version = comp_plug.version
             m_version = str(m_version).replace("-", ".")
         else:
-            m_version = mod_plug.version
-        args = {"version": m_version, "component": mod_plug, "vmin": vmin, "vmax": vmax, "modules": modules}
+            m_version = comp_plug.version
+        args = {"version": m_version, "component": comp_plug, "vmin": vmin, "vmax": vmax, "modules": modules}
 
         with open(self.dir_output+fplan.path+fplan.name, 'w') as target:
                 target.write(template.render(args))
@@ -532,27 +531,27 @@ class Generator(object):
         with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
             json.dump(dictio, target, indent=4)
 
-    def generate_lib_json(self, mod_plug, fjson):
-        if GitTagHandler.is_git_tagged(mod_plug.version, path=self.dir_output+fjson.path):
+    def generate_lib_json(self, comp_plug, fjson):
+        if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output+fjson.path):
             return
         extension_dict = self.get_module_lib_extensions()
         exception_list = self.get_module_lib_exceptions()
         list_lib = []
-        for s in mod_plug.list_module:
+        for s in comp_plug.list_module:
             ext = ".jar"
             if s.name not in exception_list:
                 if s.name in extension_dict.keys():
                     ext = extension_dict[s.name]
 
-                if type(s) is ariane_delivery.ModuleParent:
+                if s.isParent():
                     for s_sub in s.list_module:
                         ext = ".jar"
-                        url = "net/echinopsii/" + str(mod_plug.get_directory_name()).replace('.', '/') + "/"+s.name+"/"
-                        url += "net.echinopsii."+mod_plug.get_directory_name()+"."+s.name+"."+s_sub.name+"/"+mod_plug.version+"/net.echinopsii."+mod_plug.get_directory_name()+"."+s.name+"."+s_sub.name+"-"+mod_plug.version + ext
+                        url = "net/echinopsii/" + str(comp_plug.get_directory_name()).replace('.', '/') + "/"+s.name+"/"
+                        url += "net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"."+s_sub.name+"/"+comp_plug.version+"/net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"."+s_sub.name+"-"+comp_plug.version + ext
                         list_lib.append(url)
                 else:
-                    url = "net/echinopsii/" + str(mod_plug.get_directory_name()).replace('.', '/') + "/"
-                    url += "net.echinopsii."+mod_plug.get_directory_name()+"."+s.name+"/"+mod_plug.version+"/net.echinopsii."+mod_plug.get_directory_name()+"."+s.name+"-"+mod_plug.version + ext
+                    url = "net/echinopsii/" + str(comp_plug.get_directory_name()).replace('.', '/') + "/"
+                    url += "net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"/"+comp_plug.version+"/net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"-"+comp_plug.version + ext
                     list_lib.append(url)
 
             with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
