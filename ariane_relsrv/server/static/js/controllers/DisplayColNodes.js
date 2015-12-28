@@ -92,16 +92,21 @@ angular.module('ArianeUI')
             for(var i=0; i<len; i++){
                 var m = moduleList[i];
                 (function(mod){
-                    if(mod.issubparent){
+                    if($scope.isModuleParent(mod)){
                         serviceAjax.module(mod).success(function(data){
                             data.modules.sort(sortOrder);
-                            mod.sublist = data.modules;
+                            mod.list_module = data.modules;
                             mod.togModSub = false;
-                            loadModuleParent(mod.sublist);
+                            loadModuleParent(mod.list_module);
                         });
                     }
                 })(m)
             }
+        }
+
+        $scope.isModuleParent = function(module){
+            // return true if module has children
+            return module.list_module.length > 0;
         }
 
         $scope.$on('newBaseSelected', function(){
@@ -208,7 +213,7 @@ angular.module('ArianeUI')
                 }
             }
         };
-        $scope.clickSub = function(module){
+        $scope.clickMod = function(module){
             var nodeObj = serviceUI.getNodeObj();
             if((nodeObj["obj"] != module.node_type)
                 ||((nodeObj["obj"] == module.node_type) && (nodeObj["node"] != module))) {
@@ -278,10 +283,10 @@ angular.module('ArianeUI')
         $scope.isModSubToggle = function(mod){
             return mod.togModSub;
         };
-        $scope.toggleSubList = function(){
+        $scope.toggleModList = function(){
             $scope.togSub = !$scope.togSub;
         };
-        $scope.isSubToggle = function(){
+        $scope.isModToggle = function(){
             return $scope.togSub;
         };
         $scope.toggleFileList = function(){

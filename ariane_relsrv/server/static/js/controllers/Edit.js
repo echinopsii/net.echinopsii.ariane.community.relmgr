@@ -31,7 +31,7 @@ angular.module('ArianeUI')
         $scope.isDeleting = false;
         $scope.isNewNode = false;
         $scope.isDiff = false;
-        $scope.choice = {isNewSubParent: "no", deleting: "no"};
+        $scope.choice = {deleting: "no"};
         $scope.parent = {};
         $scope.page = 'view';
         var editionTemplates = [{name: 'view', url:'editionViewEdit.html'}, {name:'releaseA', url:'editionViewEdit.html'}, {name:'releaseB', url:'editionDiff.html'}];
@@ -154,9 +154,6 @@ angular.module('ArianeUI')
         $scope.save = function(){
             if($scope.activeEdit){
                 if($scope.isNewNode){ // CREATING
-                    if($scope.selectedObj.obj == "module"){
-                            $scope.selectedObj.node.issubparent = ($scope.choice.isNewSubParent=="yes");
-                    }
                     serviceAjax.create($scope.selectedObj.node, $scope.selectedObj.obj, $scope.parent).success(function(data){
                         $scope.selectedObj.node = data[$scope.selectedObj.obj];
                         updateJSON(backupObj.node, $scope.selectedObj.node); // also updates serviceUI's addDelObj

@@ -1390,6 +1390,27 @@ class Module(ArianeNode):
     def get_rest_endpoint(self):
         return "module"
 
+    def get_properties(self, gettype=False):
+        """
+        @Overriding
+        Get properties from self, calling recursively get_properties for each module in the "list_module" attribute.
+        This method is made to be called by a REST Server.
+        :param gettype: Boolean saying if it returns "node_type" and "list_module" properties
+        :return: "prop": Dict containing database properties + "node_type" (used by UserInterface on client-side) +
+                         "list_module" (empty or not)
+        """
+        prop = self._get_dir()
+        if gettype:
+            prop["node_type"] = self.get_rest_endpoint()
+            mod_list_prop = []
+            mod_list = DeliveryTree.module_service.get_all(self)
+            if isinstance(mod_list, list) and len(mod_list) > 0:
+                for m in mod_list:
+                    mod_list_prop.append(m.get_properties(gettype=True))
+
+            prop["list_module"] = mod_list_prop
+        return prop
+
     def __repr__(self):
         out = "Module(name = "+self.name+", version = "+self.version+", groupId = "+self.groupId+", " \
               "artifactId = "+self.artifactId+", nID = "+str(self.id)+")"

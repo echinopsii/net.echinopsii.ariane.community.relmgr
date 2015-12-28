@@ -109,11 +109,11 @@ ul.blockList li.active {
     color: #333;
 }
 
-.ModList ul li{
+.CompList ul li{
     background-color: #484745;
 }
 
-.SubList ul li {
+.ModList ul li {
     background-color: #484745;
 }
 
