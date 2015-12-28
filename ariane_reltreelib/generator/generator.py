@@ -385,7 +385,7 @@ class Generator(object):
             m_version = str(m_version).replace("-", ".")
         else:
             m_version = comp_plug.version
-        args = {"version": m_version, "component": comp_plug, "vmin": vmin, "vmax": vmax, "modules": modules}
+        args = {"version": m_version, "component": comp_plug, "vmin": vmin, "vmax": vmax, "submodules": modules}
 
         with open(self.dir_output+fplan.path+fplan.name, 'w') as target:
                 target.write(template.render(args))
