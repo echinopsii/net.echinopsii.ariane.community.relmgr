@@ -109,6 +109,11 @@ ul.blockList li.active {
     color: #333;
 }
 
+ul.blockList div.active {
+    background-color: #ef4806;
+    color: #333;
+}
+
 .CompList ul li{
     background-color: #484745;
 }
@@ -149,6 +154,7 @@ ul.blockList li.active {
     max-width: 300px;
     width: 70%;
 }
+
 .divFileDiff{
     height: 60vh;
     overflow-y: scroll;

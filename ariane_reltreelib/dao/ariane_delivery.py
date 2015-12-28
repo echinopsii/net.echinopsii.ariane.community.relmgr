@@ -177,6 +177,8 @@ class DeliveryTree(object):
         return count_nid == count_node
 
     def is_dev_version(self, arnode):
+        if not issubclass(type(arnode), ArianeNode):
+            return False
         dev = self.distribution_service.get_dev_distrib()
         rel = self.graph_dao.shortest_path(arnode.id, dev.id)
         if rel is None:

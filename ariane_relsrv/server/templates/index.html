@@ -127,18 +127,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			            <ul class="blockList">
 			                {% raw %}
 			                <li ng-repeat="module in subSet.modules" ng-class="module.selected ? 'active' : ''">
-								<div ng-click="clickMod(module)">
+								<div ng-click="clickMod(module)" ng-class="sub.selected ? 'active' : ''">
 									<span>
 			                        <label>{{ module.name }} ({{ module.order }})</label>
 			                        <button class="btn btnExtend" ng-if="isModuleParent(module)" ng-click="toggleModSub(module)">+/-</button>
-			                        <span ng-if="page=='releaseA' && isModuleParent(module) && module.selected && enableEdit">
+									<!-- Commented because button position not fixed. The following code displays 'Add' and 'Delete' buttons. Allowing user to add/delete modules.-->
+			                        <!--<span ng-if="page=='releaseA' && isModuleParent(module) && module.selected && enableEdit">
 			                            <button class="btn btnAction" ng-disabled="activeEdit" ng-click="addElement('module', module)">Add</button>
-			                        </span>
+			                        </span>-->
 			                        <!--<button class="btn btnAction" ng-if="page=='releaseA' && module.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(module)">Delete</button>-->
 									</span>
 								</div>
 								<ul class="ModSubList" ng-if="isModuleParent(module)" ng-show="isModSubToggle(module)">
-									<li ng-class="sub.selected ? 'active' : ''" ng-repeat="sub in module.list_module" ng-include="'field_renderer.html'"></li>
+									<li ng-repeat="sub in module.list_module" ng-include="'field_renderer.html'"></li>
 								</ul>
 			                </li>
 			                {% endraw %}
@@ -208,11 +209,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 <script type="text/javascript" src="../static/js/controllers/Log.js"></script>
 <script type="text/ng-template" id="field_renderer.html">
     {% raw %}
-	<div ng-click="clickMod(sub)">
+	<div ng-click="clickMod(sub)" ng-class="sub.selected ? 'active' : ''">
         <span>
             <label >{{ sub.name }} ({{ sub.order }})</label>
             <button class="btn btnExtend" ng-if="isModuleParent(sub)" ng-click="toggleModSub(sub)">+/-</button>
-            <span ng-if="page=='releaseA' && isModuleParent(sub) && sub.selected && enableEdit"><button class="btn btnAction" ng-disabled="activeEdit" ng-click="addElement('module', sub)">Add</button></span>
+			<!-- Commented because button position not fixed. The following code displays 'Add' and 'Delete' buttons. Allowing user to add/delete modules.-->
+            <!--<span ng-if="page=='releaseA' && sub.selected && enableEdit">
+				<button class="btn btnAction" ng-disabled="activeEdit" ng-click="addElement('module', sub)">Add</button>
+			</span>-->
             <!--<button class="btn btnAction" ng-if="page=='releaseA' && sub.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(sub)">Delete</button>-->
         </span>
 	</div>

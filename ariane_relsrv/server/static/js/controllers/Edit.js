@@ -158,6 +158,8 @@ angular.module('ArianeUI')
                         $scope.selectedObj.node = data[$scope.selectedObj.obj];
                         updateJSON(backupObj.node, $scope.selectedObj.node); // also updates serviceUI's addDelObj
                         serviceUI.actionBroadcast('addNode');
+                        serviceUI.setState({obj: backupObj.obj, status: "done"});
+                        setScopeAndNotify('activeEdit', false);
                         //TODO print success into UI
                     });
                     $scope.isNewNode = false;
@@ -169,6 +171,8 @@ angular.module('ArianeUI')
                             backupObj.obj = "default";
                             $scope.selectedObj = backupObj;
                             serviceUI.actionBroadcast('deleteNode');
+                            serviceUI.setState({obj: backupObj.obj, status: "done"});
+                            setScopeAndNotify('activeEdit', false);
                         });
                     }
                     $scope.isDeleting = false;

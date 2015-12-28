@@ -50,7 +50,7 @@ angular.module('ArianeUI')
                     return {name: "", version: "", git_repos: "", type: "", order: "", node_type:"component", nID:0};
                 }
                 else if(type == "module")
-                    return {name: "", version: "", groupId: "", artifactId: "", order: "", node_type:"module", issubparent:"no", nID:0};
+                    return {name: "", version: "", groupId: "", artifactId: "", order: "", node_type:"module", nID:0};
                 else if(type == "filenode")
                     return {name: "", version: "", type: "", path: "",node_type:"filenode", nID:0};
             },
@@ -102,7 +102,6 @@ angular.module('ArianeUI')
                     data[key] = c_element[key];
                 }
                 if(type == "module"){
-                    if(typeof element.issubparent != "undefined") { data["isModuleParent"] = element.issubparent ? 'yes' : 'no';}
                     var c_parent = cleanElementAttr(parent);
                     data["parent"] = JSON.stringify(c_parent);
                     return $http.post("http://" + url + ":" + port + "/rest/"+type, data);
