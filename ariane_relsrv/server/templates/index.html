@@ -132,10 +132,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			                        <label>{{ module.name }} ({{ module.order }})</label>
 			                        <button class="btn btnExtend" ng-if="isModuleParent(module)" ng-click="toggleModSub(module)">+/-</button>
 									<!-- Commented because button position not fixed. The following code displays 'Add' and 'Delete' buttons. Allowing user to add/delete modules.-->
-			                        <!--<span ng-if="page=='releaseA' && isModuleParent(module) && module.selected && enableEdit">
+			                        <span ng-if="page=='releaseA' && module.selected && enableEdit">
 			                            <button class="btn btnAction" ng-disabled="activeEdit" ng-click="addElement('module', module)">Add</button>
-			                        </span>-->
-			                        <!--<button class="btn btnAction" ng-if="page=='releaseA' && module.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(module)">Delete</button>-->
+			                        </span>
+			                        <button class="btn btnAction" ng-if="page=='releaseA' && module.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(module)">Delete</button>
 									</span>
 								</div>
 								<ul class="ModSubList" ng-if="isModuleParent(module)" ng-show="isModSubToggle(module)">
@@ -214,10 +214,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <label >{{ sub.name }} ({{ sub.order }})</label>
             <button class="btn btnExtend" ng-if="isModuleParent(sub)" ng-click="toggleModSub(sub)">+/-</button>
 			<!-- Commented because button position not fixed. The following code displays 'Add' and 'Delete' buttons. Allowing user to add/delete modules.-->
-            <!--<span ng-if="page=='releaseA' && sub.selected && enableEdit">
+            <span ng-if="page=='releaseA' && sub.selected && enableEdit">
 				<button class="btn btnAction" ng-disabled="activeEdit" ng-click="addElement('module', sub)">Add</button>
-			</span>-->
-            <!--<button class="btn btnAction" ng-if="page=='releaseA' && sub.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(sub)">Delete</button>-->
+			</span>
+            <button class="btn btnAction" ng-if="page=='releaseA' && sub.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(sub)">Delete</button>
         </span>
 	</div>
 	<ul class="ModSubList" ng-if="isModuleParent(sub)" ng-show="isModSubToggle(sub)">

@@ -1,0 +1,17 @@
+{
+    "DB_EXPORT_PATH": "/home/ikito/ECHINOPSII/neo4j_cypher_exports",
+    "NEO4J_PATH": "/home/ikito/ECHINOPSII/srenia/neo4j-community-2.2.6",
+    "NEO4J_LOGIN": "neo4j",
+    "NEO4J_PASSWORD": "admin",
+    "NEO4J_HOST": "localhost",
+    "NEO4J_PORT": "7474",
+    "BUILD_TIMEOUT": {"LOCAL": 120, "REMOTE": 900},
+    "UI_RUNNING_MODE": "test",
+    "URL_SLACK": "",
+    "LOG_CONFIG_FILE_PATH": "/home/ikito/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/misc/relsrv_logging_conf.json",
+    "RELMGR_PASSWD_FILE_PATH": "/home/ikito/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/misc/relmgr_passwd",
+    "TESTING": true,
+    "RELMGR_HOST": "0.0.0.0",
+    "RELMGR_PORT": 5000,
+    "RELMGR_URL": "localhost"
+}

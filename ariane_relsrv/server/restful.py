@@ -36,8 +36,9 @@ LOGGER = None
 project_path = None
 relmgr_path = None
 
-def start_relmgr(myglobals):
+def start_relmgr(myglobals, test=False):
     global RELMGR_CONFIG, ariane, LOGGER, project_path, relmgr_path
+
     RELMGR_CONFIG = myglobals["conf"]
     ariane = myglobals["delivery_tree"]
     LOGGER = myglobals["logger"]
@@ -46,9 +47,11 @@ def start_relmgr(myglobals):
     User.users_file = RELMGR_CONFIG.users_file
     InitReleaseTools.set_globals(myglobals)
     if RELMGR_CONFIG.testing:
+        # app.config["TESTING"] = True
         app.run(host=RELMGR_CONFIG.relmgr_host, port=RELMGR_CONFIG.relmgr_port, debug=True)
     else:
         app.run(host=RELMGR_CONFIG.relmgr_host, port=RELMGR_CONFIG.relmgr_port)
+
 
 # import this after config declarations
 from ariane_relsrv.server import auth as relmgrAuth

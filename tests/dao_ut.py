@@ -21,23 +21,81 @@ from ariane_relsrv.server.config import Config
 from ariane_reltreelib.dao import ariane_delivery
 import unittest, os
 from create_db_from_file import create_db_file
+from ariane_relsrv.server import restful
+from docker import Client
+import json
+import logging
 
 __author__ = 'stanrenia'
 
 class AppTest(unittest.TestCase):
     # TODO test Module
 
-    def setUp(self):
-        config_path = "/etc/ariane_relmgr/confsrv.json"
-        RELMGR_CONFIG = Config()
-        RELMGR_CONFIG.parse(config_path)
+    @classmethod
+    def setUpClass(cls):
+        cls.relmgr_path = __file__
+        cls.relmgr_path = cls.relmgr_path[:-len("/tests/dao_ut.py")]
+        cls.project_path = cls.relmgr_path[:-len("/ariane.community.relmgr")]
+
+        cls.config_path = cls.relmgr_path + "/tests/config/confsrv.json"
+        cls.RELMGR_CONFIG = Config()
+        cls.RELMGR_CONFIG.parse(cls.config_path)
+
         # Init variables:
-        self.ariane = ariane_delivery.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login,
-                                                    "password": RELMGR_CONFIG.neo4j_password,
-                                                    "host": RELMGR_CONFIG.neo4j_host,
-                                                    "port": RELMGR_CONFIG.neo4j_port,
+        cls.ariane = ariane_delivery.DeliveryTree({"login": cls.RELMGR_CONFIG.neo4j_login,
+                                                    "password": cls.RELMGR_CONFIG.neo4j_password,
+                                                    "host": cls.RELMGR_CONFIG.neo4j_host,
+                                                    "port": cls.RELMGR_CONFIG.neo4j_port,
                                                     "type": "neo4j"})
+
+        # Config.setup_logging(cls.RELMGR_CONFIG.log_file)
+        # LOGGER = logging.getLogger(__name__)
+        # myglobals = {"conf": cls.RELMGR_CONFIG,
+        #              "delivery_tree": cls.ariane,
+        #              "logger": LOGGER,
+        #              "project_path": cls.project_path,
+        #              "relmgr_path": cls.relmgr_path}
+        #
+        # restful.start_relmgr(myglobals, test=True)
+
+        # DOCKER NEO4J
+        # cls.dockerClient = Client(base_url="unix://var/run/docker.sock")
+        # # for line in dockerClient.pull("neo4j", stream=True):
+        # #     print((bytes(line).decode("utf-8")))
+        #
+        # containers = cls.dockerClient.containers()
+        # for c in containers:
+        #     if c.get("Image") == "neo4j":
+        #         cls.dockerClient.stop(c.get("Id"))
+        #
+        # print("Docker containers:", containers)
+        #
+        # cls.neo4j_container = cls.dockerClient.create_container(image="neo4j",
+        #                                                 detach=True,
+        #                                                 volumes="$HOME/neo4j/data:/data",
+        #                                                 ports=[7474],
+        #                                                 host_config=cls.dockerClient.create_host_config(port_bindings={
+        #                                                     7474: 7474
+        #                                                 }))
+        # print("NEO4J Container: ", cls.neo4j_container)
+        # res = cls.dockerClient.start(container=cls.neo4j_container.get("Id"))
+        # print("Container response: ", res)
+
+    def setUp(self):
         self.ariane.delete_all()
+        # cypher_file_path = self.relmgr_path + "/tests/inputs/dao_ut.cypher"
+        # os.system(self.RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -file " + cypher_file_path)
+
+        # cypher_file_path = relmgr_path + "/tests/inputs/dao_ut.cypher"
+        # neo4j_import_cmd = "-file " + cypher_file_path
+        # self.assertTrue(os.path.isfile(cypher_file_path))
+        # print("using the following cypher file: " + cypher_file_path)
+        # exec_dict = self.dockerClient.exec_create(container=self.neo4j_container.get("Id"),
+        #                                           cmd="bin/neo4j-shell")
+        # print("Starting neo4j import")
+        # for line in self.dockerClient.exec_start(exec_id=exec_dict.get("Id"), stream=True):
+        #     print((bytes(line).decode("utf-8")))
+
         self.sub = ariane_delivery.Module("arti", "0.2", "oyo", "oyo.arti")
         self.sub2 = ariane_delivery.Module("marti", "0.2", "aya", "aya.marti")
         self.sub2.add_file(ariane_delivery.FileNode("ael", "ald", "aeda", "/dad/ae"))
@@ -65,6 +123,9 @@ class AppTest(unittest.TestCase):
 
     def tearDown(self):
         self.assertTrue(self.ariane.check_uniqueness())
+
+    def test_neo4j_docker(self):
+        print("neo4j docker started")
 
     def test_save_file(self):
         fnode_dodo = ariane_delivery.FileNode("dodo.json", "json", "0.6.2", "/la/lala")
