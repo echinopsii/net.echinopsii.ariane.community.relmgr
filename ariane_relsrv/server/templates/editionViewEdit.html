@@ -22,9 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 <div class="colHeader">
             <span>
-            <h3>View / Edition</h3>
-                <button class="btn btn-sm  btnGreen" ng-click="save()" ng-disabled="!activeEdit">Save</button>
-                <button class="btn btn-sm  btnRed" ng-click="cancel()" ng-disabled="!activeEdit">Cancel</button>
+                <h3>Details</h3>
             </span>
 </div>
 <div class="colBody">
@@ -34,13 +32,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <span>Edit the new {{ selectedObj.obj }} object</span>
         </div>
         <div ng-if="isDeleting">
-            <span>Confirm to delete the following object: <select ng-model="choice.deleting"><option value="yes">yes</option><option value="no">no</option></select></span>
+            <span>Confirm to delete the following object:
+                <select ng-model="choice.deleting">
+                    <option value="yes">yes</option>
+                    <option value="no">no</option>
+                </select>
+            </span>
         </div>
         {% endraw %}
-        <ul class="editPropList" ng-repeat="(prop, value) in selectedObj.node">
+        <ul class="editPropList CommonList" ng-repeat="(prop, value) in selectedObj.node">
             <li class="editPropInput" ng-if="isPropEditable(prop)">
-                <label ng-bind="prop"></label><input type="text" ng-disabled="!enableEdit" ng-model="selectedObj.node[prop]" ng-change="setActiveEdit()">
+                <label ng-bind="prop"></label>
+                <input type="text" ng-disabled="!enableEdit" ng-model="selectedObj.node[prop]" ng-change="setActiveEdit()">
             </li>
         </ul>
+
+        <div ng-if="enableEdit" style="text-align: center;">
+            <button class="btn btn-sm  btnGreen" ng-click="save()" ng-disabled="!activeEdit">Save</button>
+            <button class="btn btn-sm  btnRed" ng-click="cancel()" ng-disabled="!activeEdit">Cancel</button>
+        </div>
+
     </div>
 </div>

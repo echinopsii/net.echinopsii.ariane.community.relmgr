@@ -105,13 +105,17 @@ ul.blockList li:hover {
 	cursor: pointer;
 }
 ul.blockList li.active {
-    background-color: #ef4806;
+    background-color: #de5e0b;
     color: #333;
 }
 
 ul.blockList div.active {
-    background-color: #ef4806;
+    background-color: #de5e0b;
     color: #333;
+}
+
+.CommonList {
+    margin-top: 10px;
 }
 
 .CompList ul li{
@@ -126,33 +130,33 @@ ul.blockList div.active {
     background-color: #484745;
 }
 .ModSelected{
-    background-color: red;
+    background-color: #de5e0b;
 }
 .ModNotSelected{
     background-color: #E0FFFF;
 }
 .SubSelected{
-    background-color: red;
+    background-color: #de5e0b;
 }
 .SubNotSelected{
     background-color: #E0FFFF;
 }
 .FileSelected{
-    background-color: red;
+    background-color: #de5e0b;
 }
 .FileNotSelected{
     background-color: #E0FFFF;
 }
 
 .editPropInput label{
-    min-width: 120px;
+    min-width: 70px;
     text-align: right;
     padding-right: 5px;
     color: #8b8b8b;
 }
 .editPropInput input[type="text"]{
-    max-width: 300px;
-    width: 70%;
+    max-width: 520px;
+    width: 100%;
 }
 
 .divFileDiff{
@@ -177,12 +181,14 @@ ul.blockList div.active {
 	margin: 0 0 0 4px;
 }
 .btnGreen {
-	background: #63d465;
-	color: #fff;
+    border: 1px solid #63d465;
+    background: #deffdf;
+	color: #63d465;
 }
 .btnRed {
-	background: #f23127;
-	color: #fff;
+    border: 1px solid #f23127;
+	background: #ffa1a1;
+	color: #f23127;
 }
 .btnValidate {
     background: #fc0505;
@@ -210,14 +216,20 @@ ul.blockList div.active {
     text-decoration: none;
 }
 .btnExtend {
-	border: 1px solid #ccc;
-	padding: 2px 4px;
-	margin: -4px 0 0 4px;
+	padding: 4px;
+	margin: 4px;
 	border-radius: 3px;
-	background: #fff;
-	color: #828282;
+    border: 1px solid #f19301;
+    background: #ffe1d8;
+	color: #333;
 	font-weight: bold;
-	font-size: 0.7rem;
+}
+
+.btnExtend.sectionTitle {
+    font-size: 20px;
+}
+.btnExtend.small {
+    font-size: 8px;
 }
 
 

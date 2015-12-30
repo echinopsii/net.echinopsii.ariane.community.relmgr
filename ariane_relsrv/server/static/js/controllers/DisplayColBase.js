@@ -40,11 +40,21 @@ angular.module('ArianeUI')
         $scope.mode = "Release";  // mode = "Release" | "DEV"
         $scope.pageStates = {relD: "tobuild"};
         var pageErrors = {relC: "", relD: ""};
-        $scope.modeTitle = {selected: "", Release:{ releaseA: "Edition - Validate to generate files", releaseB: "Check file differences - Validate to build zip",
-                            releaseC: "Download zip - Validate to commit+tag+push files", releaseD: "Validate to build zip from tags",
-                            releaseE: "Manage Plugins"},
-                            DEV:{releaseA: "Edition - Validate to generate files", releaseB: "Check file differences - Validate to execute 'mvn clean install'",
-                                releaseC: "Validate to commit+push master files"}};
+        $scope.modeTitle = {
+            selected: "",
+            Release:{
+                releaseA: "Release versioning : define distribution and module versions.",
+                releaseB: "Release versioning check : check generated files diff.",
+                releaseC: "Release pre build : download generated zip and test it.",
+                releaseD: "Release final build : download generated zip and test it.",
+                releaseE: "Manage Plugins"
+            },
+            DEV:{
+                releaseA: "Snapshot versioning : define distribution and module versions.",
+                releaseB: "Snapshot versioning check : check generated files diff.",
+                releaseC: "Snapshot final validation"
+            }
+        };
         // templates
         var baseTemplates = [{name: 'view', url:'baseEdition.html'}, {name:'releaseA', url:'baseRelA.html'}, {name:'releaseB', url:'baseRelB.html'},
                              {name:'releaseC', url:'baseRelC.html'}, {name:'releaseD', url:'baseRelD.html'}, {name:'releaseE', url:'baseRelE.html'},

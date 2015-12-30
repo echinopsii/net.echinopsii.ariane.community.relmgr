@@ -48,9 +48,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	<div class="container-fluid">
 		
 		<div class="row title">
-			<h1><img src="../static/img/avatar-ariane.png" width="50px" /> Ariane Release tool</h1>
+			<h1><img src="../static/img/avatar-ariane.png" style="width:50px; padding-bottom: 5px" /> Ariane Release tool</h1>
 		</div>
-		
+		<div class="row" ng-controller="DisplayColBaseCtrl">
+	        <span>
+				<button class="btn btn-sm btnAction pull-right" ng-click="toggleResetDB()">
+					<i class="fa fa-database"></i> Reset Graph DB
+				</button>
+				<button class="btn btn-sm btnAction pull-right" ng-click="clickRefresh()">
+					<i class="fa fa-refresh"></i> Refresh
+				</button>
+				<span ng-show="btnActive.reset.showConfirm">
+					Reset Database ?
+					<button ng-click="clickResetDB('YES')">Yes</button>
+					<button ng-click="clickResetDB('NO')">No</button>
+				</span>
+			</span>
+		</div>
+
 		<div class="row">
 			
 		    <!-- ****************************************************** COLUMN DISTRIBUTION ****************************************************** -->
@@ -58,26 +73,48 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			    <div class="colWrapper">   
 			        <div class="colHeader">
 			            <span>
-			            <h3>Distribution</h3>
-			                <button class="btn btn-sm btnGreen" ng-if="page=='view'" ng-disabled="!btnActive.release" ng-click="clickReleaseMod()"><i class="fa fa-magic"></i> Release</button>
-			                <button class="btn btn-sm btnGreen" ng-if="page=='view'" ng-disabled="!btnActive.dev" ng-click="clickDevEdit()">DEV</button>
-			                <button class="btn btn-sm btnGreen" ng-if="page=='view'" ng-show="btnActive.export" ng-disabled="!btnActive.export" ng-click="clickExport()">EXPORT</button>
+				            <h3>Distribution</h3>
 			            </span>
 			        </div>
 			        <div class="colBody">
-			            <span class="listRoot">Distributions<button class="btn btn-sm btnExtend" ng-click="toggleDistList()">+/-</button>
+			            <span class="listRoot">
+							<button class="btn btn-sm btnExtend sectionTitle" ng-click="toggleDistList()">
+								<i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i> Distributions
+							</button>
 			                <span ng-if="page=='view'">
-			                    <button class="btn btn-sm btnAction pull-right" ng-disabled="!btnActive.reset.active" ng-click="toggleResetDB()">Reset</button>
-			                    <button class="btn btn-sm btnAction pull-right" ng-disabled="!btnActive.refresh" ng-click="clickRefresh()"><i class="fa fa-refresh"></i> Refresh</button>
-			                    
-			                    
-			                    <span ng-show="btnActive.reset.showConfirm">Reset Database ? <button ng-click="clickResetDB('YES')">Yes</button> <button ng-click="clickResetDB('NO')">No</button></span>
+								<button class="btn btn-sm btnGreen" ng-if="page=='view'" ng-disabled="!btnActive.release" ng-click="clickReleaseMod()">
+									<i class="fa fa-magic"></i> New Release
+								</button>
+								<button class="btn btn-sm btnGreen" ng-if="page=='view'" ng-disabled="!btnActive.dev" ng-click="clickDevEdit()">
+									<i class="fa fa-magic"></i> New Snapshot
+								</button>
+								<button class="btn btn-sm btnGreen" ng-if="page=='view'" ng-show="btnActive.export"
+										ng-disabled="!btnActive.export" ng-click="clickExport()">
+									<i class="fa fa-arrow-circle-o-up"></i> Export
+								</button>
+								<!--
+			                    <button class="btn btn-sm btnAction pull-right" ng-disabled="!btnActive.reset.active" ng-click="toggleResetDB()">
+									<i class="fa fa-database"></i> Reset Graph DB
+								</button>
+			                    <button class="btn btn-sm btnAction pull-right" ng-disabled="!btnActive.refresh" ng-click="clickRefresh()">
+									<i class="fa fa-refresh"></i> Refresh
+								</button>
+
+
+			                    <span ng-show="btnActive.reset.showConfirm">
+									Reset Database ?
+									<button ng-click="clickResetDB('YES')">Yes</button>
+									<button ng-click="clickResetDB('NO')">No</button>
+								</span>
+								-->
 			                </span>
 			            </span>
 			            <div class="DistList" ng-show="isDistToggle()">
 			            <ul class="blockList">
 			                {% raw %}
-			                <li ng-repeat="dist in dists" ng-class="dist.selected ? 'active' : ''" ng-click="clickDist(dist)"><label>{{ dist.version }}</label></li>
+			                <li ng-repeat="dist in dists" ng-class="dist.selected ? 'active' : ''" ng-click="clickDist(dist)">
+								<label>{{ dist.version }}</label>
+							</li>
 			                {% endraw %}
 			            </ul>
 			            </div>
@@ -96,16 +133,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			            </span>
 			        </div>
 			        <div class="colBody" ng-controller="DisplayColNodesCtrl">
-			        <span class="listRoot">Components <!-- ****************** Components ****************** -->
-			            <button class="btn btn-sm btnExtend" ng-click="toggleCompList()">+/-</button>
-			            <button class="btn btn-sm btnAction" ng-if="page=='releaseA' && !isPlugin && enableEdit" ng-disabled="activeEdit" ng-click="addElement('component')">Add</button>
-			        </span>
-			        <div class="CompList" ng-show="isCompToggle()">
+						<!-- ****************** Components ****************** -->
+						<span class="listRoot">
+							<button class="btn btn-sm btnExtend sectionTitle" ng-click="toggleCompList()">
+								<i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i> Components
+							</button>
+			            	<button class="btn btn-sm btnAction" ng-if="page=='releaseA' && !isPlugin && enableEdit"
+									ng-disabled="activeEdit" ng-click="addElement('component')">
+								Add
+							</button>
+			        	</span>
+			        <div class="CompList CommonList" ng-show="isCompToggle()">
 			            <ul class="blockList" >
 			                {% raw %}
 			                <li ng-repeat="component in components" ng-class="component.selected ? 'active' : ''" ng-click="clickComponent(component)">
 			                    <span>
-			                        <label >{{ component.name }} {{component.version}}</label><span ng-if="component.order"> ({{ component.order }})</span>
+			                        <label >[{{component.version}}] {{ component.name }}</label><!--<span ng-if="component.order"> ({{ component.order }})</span>-->
 			                        <span ng-if="page=='releaseA' && component.selected && enableEdit">
 			                            <!--<button class="btn btnAction" ng-click="addElement('module')">Add</button>-->
 			                            <!--<button class="btn btn-sm btnAction" ng-disabled="activeEdit" ng-click="delElement(component)">Delete</button>-->
@@ -117,25 +160,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			        </div>
 			        <hr class="separateur"> <!-- ****************** Modules ****************** -->
 			            {% raw %}
-			        <div class="listRoot">Modules
-			            (<span ng-if="subSet.parent">{{subSet.parent.name}}</span>)
-			            <button class="btn btn-sm btnExtend" ng-click="toggleModList()">+/-</button>
-			            <button class="btn btn-sm btnAction" ng-if="page=='releaseA' && subSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('module', subSet.parent)">Add</button>
+			        <div class="listRoot">
+						<button class="btn btn-sm btnExtend sectionTitle" ng-click="toggleModList()">
+							<i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i> Modules
+						</button>
+						<span ng-if="subSet.parent"> [ from {{subSet.parent.name}} component ]</span>
+						<button class="btn btn-sm btnAction" ng-if="page=='releaseA' && subSet.parent && enableEdit"
+								ng-disabled="activeEdit" ng-click="addElement('module', subSet.parent)">
+							Add
+						</button>
 			        </div>
 			            {% endraw %}
-			        <div class="ModList" ng-show="isModToggle()">
+			        <div class="ModList CommonList" ng-show="isModToggle()">
 			            <ul class="blockList">
 			                {% raw %}
 			                <li ng-repeat="module in subSet.modules" ng-class="module.selected ? 'active' : ''">
 								<div ng-click="clickMod(module)" ng-class="sub.selected ? 'active' : ''">
 									<span>
-			                        <label>{{ module.name }} ({{ module.order }})</label>
-			                        <button class="btn btnExtend" ng-if="isModuleParent(module)" ng-click="toggleModSub(module)">+/-</button>
-									<!-- Commented because button position not fixed. The following code displays 'Add' and 'Delete' buttons. Allowing user to add/delete modules.-->
-			                        <span ng-if="page=='releaseA' && module.selected && enableEdit">
-			                            <button class="btn btnAction" ng-disabled="activeEdit" ng-click="addElement('module', module)">Add</button>
-			                        </span>
-			                        <button class="btn btnAction" ng-if="page=='releaseA' && module.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(module)">Delete</button>
+										<button class="btn btn-sm btnExtend small" ng-if="isModuleParent(module)" ng-click="toggleModSub(module)">
+											<i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i>
+										</button>
+			                        	<label>{{ module.name }}</label>
+										<!-- Commented because button position not fixed. The following code displays 'Add' and 'Delete' buttons. Allowing user to add/delete modules.-->
+										<!--<span ng-if="page=='releaseA' && isModuleParent(module) && module.selected && enableEdit">
+											<button class="btn btnAction" ng-disabled="activeEdit" ng-click="addElement('module', module)">Add</button>
+										</span>-->
+										<!--<button class="btn btnAction" ng-if="page=='releaseA' && module.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(module)">Delete</button>-->
 									</span>
 								</div>
 								<ul class="ModSubList" ng-if="isModuleParent(module)" ng-show="isModSubToggle(module)">
@@ -146,11 +196,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			            </ul>
 			        </div>
 			            <hr class="separateur">      <!--****************** Files ******************-->
-			        <div class="listRoot">Files
+			        <div class="listRoot">
+						<button class="btn btn-sm btnExtend sectionTitle" ng-click="toggleFileList()">
+							<i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i> Files
+						</button>
 			            {% raw %}
-			            (<span ng-if="fileSet.parent">{{fileSet.parent.name | prefix:'Distrib_':fileSet.parent:'node_type':'distrib' | sufix:'version':fileSet.parent:'node_type':'distrib'}}</span>)
+			            <span ng-if="fileSet.parent">
+							[ {{ 'from ' + fileSet.parent.name + ' ' |
+							prefix:fileSet.parent:'node_type':'distrib' |
+							sufix:'version':fileSet.parent:'node_type':'distrib' }} ]
+						</span>
 			            {% endraw %}
-			            <button class="btn btn-sm btnExtend" ng-disabled="0" ng-click="toggleFileList()">+/-</button>
 			            <button class="bt btn-smn btnAction" ng-if="page=='releaseA' && fileSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('filenode')">Add</button>
 			        </div>
 			        <div class="FileList" ng-show="isFileToggle()">
@@ -211,13 +267,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     {% raw %}
 	<div ng-click="clickMod(sub)" ng-class="sub.selected ? 'active' : ''">
         <span>
-            <label >{{ sub.name }} ({{ sub.order }})</label>
-            <button class="btn btnExtend" ng-if="isModuleParent(sub)" ng-click="toggleModSub(sub)">+/-</button>
+			<button class="btn btn-sm btnExtend small" ng-if="isModuleParent(sub)" ng-click="toggleModSub(module)">
+				<i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i>
+			</button>
+            <label >{{ sub.name }}</label>
 			<!-- Commented because button position not fixed. The following code displays 'Add' and 'Delete' buttons. Allowing user to add/delete modules.-->
-            <span ng-if="page=='releaseA' && sub.selected && enableEdit">
+            <!--<span ng-if="page=='releaseA' && sub.selected && enableEdit">
 				<button class="btn btnAction" ng-disabled="activeEdit" ng-click="addElement('module', sub)">Add</button>
-			</span>
-            <button class="btn btnAction" ng-if="page=='releaseA' && sub.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(sub)">Delete</button>
+			</span>-->
+            <!--<button class="btn btnAction" ng-if="page=='releaseA' && sub.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(sub)">Delete</button>-->
         </span>
 	</div>
 	<ul class="ModSubList" ng-if="isModuleParent(sub)" ng-show="isModSubToggle(sub)">
