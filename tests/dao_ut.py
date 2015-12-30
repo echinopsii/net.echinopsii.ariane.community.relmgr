@@ -16,6 +16,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from py2neo import env
 
 from ariane_relsrv.server.config import Config
 from ariane_reltreelib.dao import ariane_delivery
@@ -33,21 +34,6 @@ class AppTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.relmgr_path = __file__
-        cls.relmgr_path = cls.relmgr_path[:-len("/tests/dao_ut.py")]
-        cls.project_path = cls.relmgr_path[:-len("/ariane.community.relmgr")]
-
-        cls.config_path = cls.relmgr_path + "/tests/config/confsrv.json"
-        cls.RELMGR_CONFIG = Config()
-        cls.RELMGR_CONFIG.parse(cls.config_path)
-
-        # Init variables:
-        cls.ariane = ariane_delivery.DeliveryTree({"login": cls.RELMGR_CONFIG.neo4j_login,
-                                                    "password": cls.RELMGR_CONFIG.neo4j_password,
-                                                    "host": cls.RELMGR_CONFIG.neo4j_host,
-                                                    "port": cls.RELMGR_CONFIG.neo4j_port,
-                                                    "type": "neo4j"})
-
         # Config.setup_logging(cls.RELMGR_CONFIG.log_file)
         # LOGGER = logging.getLogger(__name__)
         # myglobals = {"conf": cls.RELMGR_CONFIG,
@@ -59,27 +45,45 @@ class AppTest(unittest.TestCase):
         # restful.start_relmgr(myglobals, test=True)
 
         # DOCKER NEO4J
-        # cls.dockerClient = Client(base_url="unix://var/run/docker.sock")
-        # # for line in dockerClient.pull("neo4j", stream=True):
-        # #     print((bytes(line).decode("utf-8")))
-        #
-        # containers = cls.dockerClient.containers()
-        # for c in containers:
-        #     if c.get("Image") == "neo4j":
-        #         cls.dockerClient.stop(c.get("Id"))
-        #
-        # print("Docker containers:", containers)
-        #
-        # cls.neo4j_container = cls.dockerClient.create_container(image="neo4j",
-        #                                                 detach=True,
-        #                                                 volumes="$HOME/neo4j/data:/data",
-        #                                                 ports=[7474],
-        #                                                 host_config=cls.dockerClient.create_host_config(port_bindings={
-        #                                                     7474: 7474
-        #                                                 }))
-        # print("NEO4J Container: ", cls.neo4j_container)
-        # res = cls.dockerClient.start(container=cls.neo4j_container.get("Id"))
-        # print("Container response: ", res)
+        cls.dockerClient = Client(base_url="unix://var/run/docker.sock")
+        # for line in dockerClient.pull("neo4j", stream=True):
+        #     print((bytes(line).decode("utf-8")))
+
+        # Get all existing containers (<=> 'docker ps') and stop the neo4j container if it's running
+        containers = cls.dockerClient.containers()
+        for c in containers:
+            if c.get("Image") == "neo4j":
+                cls.dockerClient.stop(c.get("Id"))
+
+        print("Docker containers:", containers)
+
+        cls.neo4j_container = cls.dockerClient.create_container(image="neo4j",
+                                                        detach=True,
+                                                        volumes="$HOME/neo4j/data:/data",
+                                                        ports=[7474],
+                                                        environment=["NEO4J_AUTH=neo4j/admin"],
+                                                        host_config=cls.dockerClient.create_host_config(port_bindings={
+                                                            7474: 7474
+                                                        }))
+        print("NEO4J Container: ", cls.neo4j_container)
+        res = cls.dockerClient.start(container=cls.neo4j_container.get("Id"))
+        print("Container response: ", res)
+
+        # Init variables:
+        cls.relmgr_path = __file__
+        cls.relmgr_path = cls.relmgr_path[:-len("/tests/dao_ut.py")]
+        cls.project_path = cls.relmgr_path[:-len("/ariane.community.relmgr")]
+
+        cls.config_path = cls.relmgr_path + "/tests/config/confsrv.json"
+        cls.RELMGR_CONFIG = Config()
+        cls.RELMGR_CONFIG.parse(cls.config_path)
+
+        # Connection to neo4j database
+        cls.ariane = ariane_delivery.DeliveryTree({"login": cls.RELMGR_CONFIG.neo4j_login,
+                                                   "password": cls.RELMGR_CONFIG.neo4j_password,
+                                                   "host": cls.RELMGR_CONFIG.neo4j_host,
+                                                   "port": cls.RELMGR_CONFIG.neo4j_port,
+                                                   "type": "neo4j"})
 
     def setUp(self):
         self.ariane.delete_all()

@@ -19,19 +19,41 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from py2neo import Node, Relationship, Graph
+import os
 
 __author__ = 'stanrenia'
 
 class NeoGraph(object):
 
+    neo4j_bin_path = None
+
     def __init__(self, graph):
         self.graph = graph
+
+    @staticmethod
+    def import_from_file(filepath):
+        if NeoGraph.neo4j_bin_path is not None:
+            if os.path.isfile(filepath):
+                os.system(NeoGraph.neo4j_bin_path+"/bin/neo4j-shell -file " + filepath)
+                return 0
+
+    @staticmethod
+    def set_db_bin_path(bin_path):
+        if os.path.exists(bin_path):
+            NeoGraph.neo4j_bin_path = bin_path
+            return 0
 
     def count(self, args):
         """
         Count number of occurences of args in graph database
         :param args: str object. args is a property (attribute) existing in at least one Node.
                args = "nID" allows you to check if no duplicate node exists. Exception : args = 'Node' count all nodes.
+               In order to update nIDs of a Distribution easily, you can run the following CYPHER command:
+                   'match n = (a)
+                   foreach(b IN nodes(n)|SET b.nID = b.nID+84)'
+                where '84'  is the value you want to increment. Basically, this value is high enough to assure that
+                there is no duplicated nIDs.
+
         :return: number of occurences. Returns 0 if nothing was found. Returns None if args is '' (empty string)
         """
         if args == "Node":
@@ -328,3 +350,4 @@ class NeoGraph(object):
         for rec in listrecord:
             path = rec.p
         return path
+

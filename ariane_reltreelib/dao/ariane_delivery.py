@@ -38,6 +38,12 @@ class DeliveryTree(object):
         DeliveryTree.component_service = ComponentService()
         DeliveryTree.plugin_service = PluginService()
 
+    def import_db_from_file(self, fpath):
+        return self.graph_dao.import_from_file(fpath)
+
+    def set_db_bin_path(self, db_bin_path):
+        return DeliveryTree.graph_dao.set_db_bin_path(db_bin_path)
+
     def reinit_subclass(self):
         self.distribution_service = None
         self.component_service = None
@@ -711,6 +717,8 @@ class ModuleService(DeliveryTree):
 
     def make_files(self, module, parent_path):
         self.__make_file_pom(module, parent_path)
+        for sub in module.list_module:
+            DeliveryTree.module_service.make_files(sub, parent_path+module.name+'/')
 
     def __make_file_pom(self, module, parent_path):
         fname = "pom.xml"

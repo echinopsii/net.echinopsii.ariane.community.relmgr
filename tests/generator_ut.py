@@ -17,23 +17,49 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from ariane_relsrv.server.config import Config
 from ariane_reltreelib.dao import ariane_delivery
 from ariane_reltreelib.generator import generator
 from tests import create_db_from_file
 import unittest, os
+import wget
 
 __author__ = 'stanrenia'
-# TODO Corriger warnings
+# TODO remake every test functions following the model of test_generate_pom_maven()
 
 class GeneratorTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        args = {"login": "neo4j", "password": "admin", "type": "neo4j"}
-        cls.ariane = ariane_delivery.DeliveryTree(args)
-        cls.ariane.delete_all()
+        cls.relmgr_path = __file__
+        cls.relmgr_path = cls.relmgr_path[:-len("/tests/generator_ut.py")]
+        cls.project_path = cls.relmgr_path[:-len("/ariane.community.relmgr")]
+
+        cls.config_path = cls.relmgr_path + "/tests/config/confsrv.json"
+        cls.RELMGR_CONFIG = Config()
+        cls.RELMGR_CONFIG.parse(cls.config_path)
+
+        # Connection to neo4j database
+        cls.ariane = ariane_delivery.DeliveryTree({"login": cls.RELMGR_CONFIG.neo4j_login,
+                                                   "password": cls.RELMGR_CONFIG.neo4j_password,
+                                                   "host": cls.RELMGR_CONFIG.neo4j_host,
+                                                   "port": cls.RELMGR_CONFIG.neo4j_port,
+                                                   "type": "neo4j"})
+        # It's better to import database from cypher file, because it's 7 times faster than reading .txt files
+        # So it's necessary to set the database (neo4j) bin path
+        cls.ariane.set_db_bin_path(cls.RELMGR_CONFIG.neo4j_path)
+
         cls.dir_output = "outputs/"
-        cls.g = generator.Generator(cls.ariane, {"outputs": '/ECHINOPSII/srenia/ariane.community.relmgr/tests/outputs',
-                                                 "templates": '/ECHINOPSII/srenia/ariane.community.relmgr/tests/templates'})
+        cls.output_path = cls.relmgr_path + "/tests/outputs"
+        cls.templates_path = cls.relmgr_path+'/tests/templates'
+        cls.g = generator.Generator(cls.ariane, {"outputs": cls.output_path,
+                                                 "templates": cls.templates_path})
+
+        cls.model_path = cls.relmgr_path + "/tests/models"
+        cls.model_remote_path = "https://raw.githubusercontent.com/echinopsii/net.echinopsii."
+        cls.inputs_path = cls.relmgr_path + "/tests/inputs/"
+        for (dp, dir, flist) in os.walk(cls.inputs_path):
+            cls.inputs_files = flist
+            break
 
     def setUp(self):
         self.ariane.delete_all()
@@ -48,35 +74,68 @@ class GeneratorTest(unittest.TestCase):
     #     print(os.path.exists('/Users/stanrenia/py_neo4j_db/ariane_deliverytool/generator/exception_extension/component_vsh_exceptions.json'))
     #     print(os.listdir('./'))
 
+    def get_input_file(self, version, type="cypher"):
+        infile = None
+        for f in self.inputs_files:
+            if version in f and str(f).endswith(type):
+                infile = f
+                break
+        if infile is not None:
+            infile = os.path.join(self.inputs_path, infile)
+        return infile
+
+    def get_model_file(self, filepath, version=None, remote=False):
+        if not remote:
+            return os.path.join(self.model_path, filepath)
+        else:
+            sublist = str(filepath).split("/")
+            github_path = sublist[0] + "/" + version + "/"
+            sublist.remove(sublist[0])
+            github_path = self.model_remote_path + github_path + "/".join(sublist)
+            fname = wget.download(github_path, out=self.model_path)
+            return fname
+
     def test_import(self):
-        # os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "
-        #        "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/distrib_0.6.4-SNAPSHOT.cypher")
-        os.system("/ECHINOPSII/srenia/neo4j-community-2.2.3/bin/neo4j-shell -file "
-                  "/ECHINOPSII/srenia/ariane.community.relmgr/bootstrap/dependency_db/alldistrib.cypher")
-        # create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
         # create_db_from_file.create_db_file('inputs/create_0.6.3.txt')
-        # create_db_from_file.create_db_file('inputs/create_0.6.2.txt')
-        # create_db_from_file.create_db_file('inputs/create_0.6.1.txt')
-        # create_db_from_file.create_db_file('inputs/create_0.6.0.txt')
-        # create_db_from_file.create_db_file('inputs/create_0.5.3.txt')
-        # create_db_from_file.create_db_file('inputs/create_0.5.2.txt')
-        # create_db_from_file.create_db_file('inputs/create_0.5.1.txt')
-        # create_db_from_file.create_db_file('inputs/create_0.5.0.txt')
+        # self.ariane.import_db_from_file(self.get_input_file("0.6.4-SNAPSHOT"))
+        # self.get_model_file('ariane.community.distrib/resources/maven/pom-ariane.community.distrib-0.6.3.xml', remote=True, version="0.6.3")
+        pass
 
     def test_generate_all(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        self.ariane.import_db_from_file('inputs/create_0.6.4-SNAPSHOT.cypher')
         self.g.generate_all_distribution("0.6.4-SNAPSHOT")
 
     def test_generate_pom_maven(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
-        distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
-        fpom = self.ariane.get_one_file(distrib, "pom_dist")
-        self.g.generate_pom_dist('0.6.4-SNAPSHOT', fpom)
-        self.g.compare_files('xml', self.dir_output + fpom.path + fpom.name,
-                           'models/pom-ariane.community.distrib-master.SNAPSHOT.xml')
+        for version in ["0.6.4-SNAPSHOT", "0.6.3"]:
+            fpath = self.get_input_file(version)
+            self.assertIsNotNone(fpath)
+            self.assertEqual(self.ariane.import_db_from_file(fpath), 0)
+            distrib = self.ariane.distribution_service.get_unique({"version": version})
+            self.assertTrue(isinstance(distrib, ariane_delivery.Distribution))
+            fpom = self.ariane.get_one_file(distrib, "pom_dist")
+            self.assertTrue(isinstance(fpom, ariane_delivery.FileNode))
+
+            # TODO get template file from github and place it into tests/templates/
+
+            self.g.generate_pom_dist(version, fpom)
+
+            remove_mfile = True
+            if version == "0.6.3":
+                mfile = self.get_model_file(fpom.path + fpom.name, version=version, remote=True)
+            else:
+                mfile = self.get_model_file(fpom.name)
+                remove_mfile = False
+
+            ofile = os.path.join(self.output_path, fpom.path, fpom.name)
+            err_compare = self.g.compare_files('xml', ofile, mfile)
+            self.assertTrue(err_compare)
+
+            os.remove(ofile)
+            if remove_mfile:
+                os.remove(mfile)
 
     def test_generate_pom_component(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        self.ariane.import_db_from_file('inputs/create_0.6.4-SNAPSHOT.cypher')
         distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
         components = self.ariane.component_service.get_all(distrib)
         plugins = self.ariane.plugin_service.get_all(distrib)
@@ -106,14 +165,14 @@ class GeneratorTest(unittest.TestCase):
                                            'models/'+mod.get_directory_name()+'/'+sub.name+'/'+s.name+'/pom.xml')
 
     def test_generate_distrib_json(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        self.ariane.import_db_from_file('inputs/create_0.6.4-SNAPSHOT.cypher')
         distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
         fjson = self.ariane.get_one_file(distrib, "json_dist")
         filename = self.g.generate_json_dist("0.6.4-SNAPSHOT", fjson)
         self.assertTrue(self.g.compare_files("json", filename, 'models/ariane.community.distrib-master.SNAPSHOT.json'))
 
     def test_generate_distrib_plugin_json(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        self.ariane.import_db_from_file('inputs/create_0.6.4-SNAPSHOT.cypher')
         distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
         fjson = self.ariane.get_one_file(distrib, "json_plugin_dist")
         filename = self.g.generate_json_plugin_dist("0.6.4-SNAPSHOT", fjson)
@@ -125,7 +184,7 @@ class GeneratorTest(unittest.TestCase):
         create_db_from_file.create_db_file('inputs/create_0.6.1.txt')
         create_db_from_file.create_db_file('inputs/create_0.6.2.txt')
         create_db_from_file.create_db_file('inputs/create_0.6.3.txt')
-        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        self.ariane.import_db_from_file('inputs/create_0.6.4-SNAPSHOT.cypher')
 
         distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
         fjson = self.ariane.get_one_file(distrib, "json_plugins")
@@ -141,7 +200,7 @@ class GeneratorTest(unittest.TestCase):
         self.assertTrue((self.g.compare_files("json", self.dir_output+fjson.path+fjson.name, "models/"+fjson.name)))
 
     def test_generate_component_lib(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        self.ariane.import_db_from_file('inputs/create_0.6.4-SNAPSHOT.cypher')
         distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
         components = self.ariane.component_service.get_all(distrib)
         plugins = self.ariane.plugin_service.get_all(distrib)
@@ -160,7 +219,7 @@ class GeneratorTest(unittest.TestCase):
                                                "models/"+fjson.name))
 
     def test_generate_plan(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        self.ariane.import_db_from_file('inputs/create_0.6.4-SNAPSHOT.cypher')
         distrib = self.ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
         components = self.ariane.component_service.get_all(distrib)
         plugins = self.ariane.plugin_service.get_all(distrib)
@@ -179,7 +238,7 @@ class GeneratorTest(unittest.TestCase):
                                                "models/"+fplan.name))
 
     def test_generate_installer_vsh(self):
-        create_db_from_file.create_db_file('inputs/create_0.6.4-SNAPSHOT.txt')
+        self.ariane.import_db_from_file('inputs/create_0.6.4-SNAPSHOT.cypher')
         distrib = self.ariane.distribution_service.get_unique({"version": '0.6.4-SNAPSHOT'})
         components = self.ariane.component_service.get_all(distrib)
         plugins = self.ariane.plugin_service.get_all(distrib)
