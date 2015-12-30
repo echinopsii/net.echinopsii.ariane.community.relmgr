@@ -21,16 +21,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
 {% raw %}
+
 <hr class="separateur">
 <div class="input_warning" ng-if="warnRelA.warning">{{ warnRelA.warning }}</div>
 <span>{{modeTitle.selected}}</span>
 <hr class="separateur">
+
 <div class="centerize">
     <select ng-if="CONFIG.mode == 'test'" ng-model="cmdGen.cmd" ng-options="key for (key, value) in commandsRelA"></select>
     <button class="btn btnGreen" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relA')">VALIDATE</button>
     <button class="btn btnRed" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('ROLLBACK', 'relA')">ROLLBACK</button>
     <div>
-        <span ng-if="confirmValRoll.active">Are you sure to {{ confirmValRoll.validRoll}} ? <button ng-click="clickConfirmValidRoll('YES')">YES</button> <button ng-click="clickConfirmValidRoll('NO')">NO</button></span>
+        <span ng-if="confirmValRoll.active">
+            <br/><br/>Are you sure to {{ confirmValRoll.validRoll}} ? <br/>
+            <button class="btn btnGreen" ng-click="clickConfirmValidRoll('YES')">YES</button>
+            <button class="btn btnRed" ng-click="clickConfirmValidRoll('NO')">NO</button>
+        </span>
     </div>
 </div>
 {% endraw %}
