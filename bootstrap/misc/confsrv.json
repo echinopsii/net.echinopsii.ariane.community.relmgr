@@ -4,7 +4,7 @@
     "NEO4J_LOGIN": "neo4j",
     "NEO4J_PASSWORD": "admin",
     "NEO4J_HOST": "localhost",
-    "NEO4J_PORT": "7474",
+    "NEO4J_PORT": "7575",
     "BUILD_TIMEOUT": {"LOCAL": 120, "REMOTE": 900},
     "UI_RUNNING_MODE": "release",
     "URL_SLACK": "https://hooks.slack.com/services/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",
