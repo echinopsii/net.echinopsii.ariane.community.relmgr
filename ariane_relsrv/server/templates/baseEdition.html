@@ -21,13 +21,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
 <hr class="separateur">
-<div class="listRoot">Plugins<button class="btn btn-sm btnExtend" ng-click="togglePlugList()">+/-</button>
+<div class="listRoot">
+    <button class="btn btn-sm btnExtend sectionTitle" ng-click="togglePlugList()">
+        <i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i> Plugins
+    </button>
     <button class="btn btn-sm" ng-disabled="!enableAddDel || activeEdit" ng-click="addElement('plugin')">Add</button>
 </div>
 {% raw %}
-<div class="PlugList" ng-show="isPlugToggle()">
+<div class="PlugList CommonList" ng-show="isPlugToggle()">
     <ul class="blockList">
-        <li ng-repeat="plugName in pluginsDict.Names">{{ plugName.name }}<button class="btn btn-sm btnExtend" ng-click="plugName.ShowHide()">+/-</button>
+        <li ng-repeat="plugName in pluginsDict.Names">
+            <button class="btn btn-sm btnExtend small" ng-click="plugName.ShowHide()">
+                <i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i>
+            </button> {{ plugName.name }}
             <ul class="blockList" ng-repeat="plugSet in pluginsDict.PluginSet" ng-show="plugName.show">
                 <li ng-class="plugSet.selected ? 'active' : ''" ng-if="plugSet.name == plugName.name" ng-click="clickPlug(plugSet)">
                     {{ plugSet.version }} <!--Plugin Delete button-->

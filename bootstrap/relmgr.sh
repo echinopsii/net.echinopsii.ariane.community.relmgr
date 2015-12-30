@@ -19,6 +19,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+help() {
+	echo "Usage: $0 {start | passwd | add_user | stop} [options]"
+	echo ""
+	echo "start options: \n\t -c <config file path> \n\t default config file path is /etc/ariane_relmgr/confsrv.json"
+	echo "password options: \n\t -u <username> -p <password>"
+	echo "add_user options: \n\t -u <username> -p <password>"
+}
+
 which git > /dev/null
 if [ $? -ne 0 ]; then
        if [ "${GIT_HOME}" = "" ]; then
@@ -67,15 +75,15 @@ case "$1" in
         fi
         ;;
     passwd)
-        echo "Starting updating password"
+        echo "New password for user"
         python3 ariane_relsrv/server/__main__.py passwd $2 $3 $4 $5
         ;;
     add_user)
-        echo "Starting adding user"
+        echo "Adding user"
         python3 ariane_relsrv/server/__main__.py add_user $2 $3 $4 $5
         ;;
     *)
-        echo "Usage: $0 {start|stop}"
+	help $0
         exit 1
         ;;
 esac
