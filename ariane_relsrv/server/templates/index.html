@@ -52,19 +52,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		</div>
 		<div class="row">
 	        <span>
-				<button class="btn btn-sm btnAction pull-right" ng-if="page=='view'" ng-click="clickExport()">
+				<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-click="clickExport()">
 					<i class="fa fa-arrow-circle-o-up"></i> Export
 				</button>
-				<button class="btn btn-sm btnAction pull-right" ng-if="page=='view'" ng-click="toggleResetDB()">
+				<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-click="toggleResetDB()">
 					<i class="fa fa-database"></i> Reset Graph DB
 				</button>
-				<button class="btn btn-sm btnAction pull-right" ng-if="page=='view'" ng-click="clickRefresh()">
+				<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-click="clickRefresh()">
 					<i class="fa fa-refresh"></i> Refresh
 				</button>
 			</span>
 		</div>
 		<div class="row">
-			<span class ="pull-right" ng-show="btnActive.reset.showConfirm">
+			<span ng-show="btnActive.reset.showConfirm">
 				Reset Database ? <br/>
 				<button class="btn btnGreen" ng-click="clickResetDB('YES')">Yes</button>
 				<button class="btn btnRed" ng-click="clickResetDB('NO')">No</button>

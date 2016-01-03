@@ -46,7 +46,7 @@ angular.module('ArianeUI')
                 releaseA: "Release versioning : define distribution and module versions.",
                 releaseB: "Release versioning check : check generated files diff.",
                 releaseC: "Release pre build : download generated zip and test it.",
-                releaseD: "Release final build : download generated zip and test it.",
+                releaseD: "Release final build : click validate to generate final distrib.",
                 releaseE: "Manage Plugins"
             },
             DEV:{

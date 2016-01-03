@@ -28,11 +28,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <div ng-if="mode == 'Release'"> Download Section:
         <form id="formdownload" action="/rest/getdelzip" method="post">
             <select ng-model="download.selected" ng-options="name for name in download.zip"></select>
-            <button type="submit" ng-disabled="download.selected == null" ng-click="clickDownload()">Download!</button>
+            <button class="btn btnAction" type="submit" ng-disabled="download.selected == null" ng-click="clickDownload()">Download!</button>
         </form>
     </div>
     <hr ng-if="mode == 'Release'" class="separateur">
-    <ul>
+    <ul class="">
         <li>Commit - <label for="task">Task</label><input type="text" id="task" ng-model="cmdRelC.task"/></li>
         <li><label for="comment">Comments</label><input type="text" id="comment" ng-model="cmdRelC.comment"/></li>
     </ul>
@@ -42,7 +42,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <button class="btn btnGreen" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relC')">VALIDATE</button>
     <button class="btn btnRed" type="submit" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('ROLLBACK', 'relC')">ROLLBACK</button>
     <div>
-        <span ng-if="confirmValRoll.active">Are you sure to {{ confirmValRoll.validRoll}} ? <button ng-click="clickConfirmValidRoll('YES')">YES</button> <button ng-click="clickConfirmValidRoll('NO')">NO</button></span>
+        <span ng-if="confirmValRoll.active">
+            <br/><br/>Are you sure to {{ confirmValRoll.validRoll}} ?<br/>
+            <button class="btn btnGreen" ng-click="clickConfirmValidRoll('YES')">YES</button>
+            <button class="btn btnRed" ng-click="clickConfirmValidRoll('NO')">NO</button>
+        </span>
     </div>
 </div>
 {% endraw %}
