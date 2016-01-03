@@ -45,31 +45,35 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 <body ng-app="ArianeUI">
 <div class="mainBody">
 	
-	<div class="container-fluid">
+	<div class="container-fluid" ng-controller="DisplayColBaseCtrl">
 		
 		<div class="row title">
 			<h1><img src="../static/img/avatar-ariane.png" style="width:50px; padding-bottom: 5px" /> Ariane Release tool</h1>
 		</div>
-		<div class="row" ng-controller="DisplayColBaseCtrl">
+		<div class="row">
 	        <span>
-				<button class="btn btn-sm btnAction pull-right" ng-click="toggleResetDB()">
+				<button class="btn btn-sm btnAction pull-right" ng-if="page=='view'" ng-click="clickExport()">
+					<i class="fa fa-arrow-circle-o-up"></i> Export
+				</button>
+				<button class="btn btn-sm btnAction pull-right" ng-if="page=='view'" ng-click="toggleResetDB()">
 					<i class="fa fa-database"></i> Reset Graph DB
 				</button>
-				<button class="btn btn-sm btnAction pull-right" ng-click="clickRefresh()">
+				<button class="btn btn-sm btnAction pull-right" ng-if="page=='view'" ng-click="clickRefresh()">
 					<i class="fa fa-refresh"></i> Refresh
 				</button>
-				<span ng-show="btnActive.reset.showConfirm">
-					Reset Database ?
-					<button ng-click="clickResetDB('YES')">Yes</button>
-					<button ng-click="clickResetDB('NO')">No</button>
-				</span>
+			</span>
+		</div>
+		<div class="row">
+			<span class ="pull-right" ng-show="btnActive.reset.showConfirm">
+				Reset Database ? <br/>
+				<button class="btn btnGreen" ng-click="clickResetDB('YES')">Yes</button>
+				<button class="btn btnRed" ng-click="clickResetDB('NO')">No</button>
 			</span>
 		</div>
 
 		<div class="row">
-			
 		    <!-- ****************************************************** COLUMN DISTRIBUTION ****************************************************** -->
-		    <div class="col-xs-12 col-md-4 col colBase" ng-controller="DisplayColBaseCtrl">
+		    <div class="col-xs-12 col-md-4 col colBase">
 			    <div class="colWrapper">   
 			        <div class="colHeader">
 			            <span>
@@ -81,18 +85,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 							<button class="btn btn-sm btnExtend sectionTitle" ng-click="toggleDistList()">
 								<i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i> Distributions
 							</button>
-			                <span ng-if="page=='view'">
-								<button class="btn btn-sm btnGreen" ng-if="page=='view'" ng-disabled="!btnActive.release" ng-click="clickReleaseMod()">
+			                <span class="pull-right" ng-if="page=='view'">
+								<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-disabled="!btnActive.release" ng-click="clickReleaseMod()">
 									<i class="fa fa-magic"></i> New Release
 								</button>
-								<button class="btn btn-sm btnGreen" ng-if="page=='view'" ng-disabled="!btnActive.dev" ng-click="clickDevEdit()">
+								<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-disabled="!btnActive.dev" ng-click="clickDevEdit()">
 									<i class="fa fa-magic"></i> New Snapshot
 								</button>
+								<!--
 								<button class="btn btn-sm btnGreen" ng-if="page=='view'" ng-show="btnActive.export"
 										ng-disabled="!btnActive.export" ng-click="clickExport()">
 									<i class="fa fa-arrow-circle-o-up"></i> Export
 								</button>
-								<!--
 			                    <button class="btn btn-sm btnAction pull-right" ng-disabled="!btnActive.reset.active" ng-click="toggleResetDB()">
 									<i class="fa fa-database"></i> Reset Graph DB
 								</button>
@@ -138,9 +142,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 							<button class="btn btn-sm btnExtend sectionTitle" ng-click="toggleCompList()">
 								<i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i> Components
 							</button>
-			            	<button class="btn btn-sm btnAction" ng-if="page=='releaseA' && !isPlugin && enableEdit"
+			            	<button class="btn btn-sm btnAction pull-right" ng-if="enableEdit"
 									ng-disabled="activeEdit" ng-click="addElement('component')">
-								Add
+								<i class="fa fa-magic"></i> Add new component
 							</button>
 			        	</span>
 			        <div class="CompList CommonList" ng-show="isCompToggle()">
@@ -149,9 +153,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			                <li ng-repeat="component in components" ng-class="component.selected ? 'active' : ''" ng-click="clickComponent(component)">
 			                    <span>
 			                        <label >[{{component.version}}] {{ component.name }}</label><!--<span ng-if="component.order"> ({{ component.order }})</span>-->
-			                        <span ng-if="page=='releaseA' && component.selected && enableEdit">
+			                        <span ng-if="component.selected && enableEdit">
 			                            <!--<button class="btn btnAction" ng-click="addElement('module')">Add</button>-->
-			                            <!--<button class="btn btn-sm btnAction" ng-disabled="activeEdit" ng-click="delElement(component)">Delete</button>-->
+			                            <button class="btn btn-sm btnAction pull-right" ng-disabled="activeEdit" ng-click="delElement(component)">
+											<i class="fa fa-remove"></i> Delete
+										</button>
 			                        </span>
 			                    </span>
 			                {% endraw %}
@@ -165,9 +171,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 							<i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i> Modules
 						</button>
 						<span ng-if="subSet.parent"> [ from {{subSet.parent.name}} component ]</span>
-						<button class="btn btn-sm btnAction" ng-if="page=='releaseA' && subSet.parent && enableEdit"
+						<button class="btn btn-sm btnAction pull-right" ng-if="enableEdit"
 								ng-disabled="activeEdit" ng-click="addElement('module', subSet.parent)">
-							Add
+							<i class="fa fa-magic"></i> Add new module
 						</button>
 			        </div>
 			            {% endraw %}
@@ -185,7 +191,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 										<!--<span ng-if="page=='releaseA' && isModuleParent(module) && module.selected && enableEdit">
 											<button class="btn btnAction" ng-disabled="activeEdit" ng-click="addElement('module', module)">Add</button>
 										</span>-->
-										<!--<button class="btn btnAction" ng-if="page=='releaseA' && module.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(module)">Delete</button>-->
+										<button class="btn btn-sm btnAction pull-right" ng-if="module.selected && enableEdit"
+												ng-disabled="activeEdit" ng-click="delElement(module)">
+											<i class="fa fa-remove"></i> Delete
+										</button>
 									</span>
 								</div>
 								<ul class="ModSubList" ng-if="isModuleParent(module)" ng-show="isModSubToggle(module)">
@@ -207,13 +216,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 							sufix:'version':fileSet.parent:'node_type':'distrib' }} ]
 						</span>
 			            {% endraw %}
-			            <button class="bt btn-smn btnAction" ng-if="page=='releaseA' && fileSet.parent && enableEdit" ng-disabled="activeEdit" ng-click="addElement('filenode')">Add</button>
+			            <button class="btn btn-sm btnAction pull-right" ng-if="fileSet.parent && enableEdit"
+								ng-disabled="activeEdit" ng-click="addElement('filenode')">
+							<i class="fa fa-magic"></i> Add new file
+						</button>
 			        </div>
-			        <div class="FileList" ng-show="isFileToggle()">
+			        <div class="FileList CommonList" ng-show="isFileToggle()">
 			            <ul class="blockList">
 			            {% raw %}
-			                <li ng-repeat="filenode in fileSet.filenodes" ng-class="filenode.selected ? 'active' : ''" ng-click="clickFile(filenode)">{{ filenode.name | limitDisplay : limitLetterNum }}
-			                    <!--<button class="btn btnAction" ng-if="page=='releaseA' && filenode.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(filenode)">Delete</button>-->
+			                <li ng-repeat="filenode in fileSet.filenodes" ng-class="filenode.selected ? 'active' : ''" ng-click="clickFile(filenode)">
+								{{ filenode.name | limitDisplay : limitLetterNum }}
+								<button class="btn btn-sm btnAction pull-right" ng-if="filenode.selected && enableEdit" ng-disabled="activeEdit" ng-click="delElement(filenode)">
+									<i class="fa fa-remove"></i> Delete
+								</button>
 			                </li>
 			            {% endraw %}
 			            </ul>

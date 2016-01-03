@@ -46,6 +46,7 @@ angular.module('ArianeUI')
                 loadComponents(baseObj["node"]);
             }
             tmp_subSet = $scope.subSet;
+            $scope.enableEdit = (baseObj.node.editable==="true");
             $scope.subSet = {parent: null, components: []};
             $scope.togSub = false;
             $scope.curNodeSelected["selected"] = false;

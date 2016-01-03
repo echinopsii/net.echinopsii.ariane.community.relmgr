@@ -63,7 +63,7 @@ angular.module('ArianeUI')
                     $scope.isNewNode = false;
                     $scope.isDeleting = false;
                     $scope.parent = {};
-                    $scope.enableEdit = serviceUI.checkEditable() && $scope.page != "view"; // IMPORTANT - Enable properties edition if true
+                    $scope.enableEdit = serviceUI.checkEditable(); // IMPORTANT - Enable properties edition if true
                 }
                 else
                     $scope.enableEdit = false;
