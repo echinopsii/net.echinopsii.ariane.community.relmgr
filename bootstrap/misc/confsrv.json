@@ -1,5 +1,5 @@
 {
-    "DB_EXPORT_PATH": "/tmp/neo4j_cypher_exports",
+    "DB_EXPORT_PATH": "/tmp/",
     "NEO4J_PATH": "/home/mffrench/.my_apps/distribs/neo4j-community-2.2.5",
     "NEO4J_LOGIN": "neo4j",
     "NEO4J_PASSWORD": "admin",
