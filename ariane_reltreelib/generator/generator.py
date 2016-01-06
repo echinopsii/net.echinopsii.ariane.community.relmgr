@@ -369,12 +369,16 @@ class Generator(object):
 
         template = self.env.get_template(fplan.path+"plan_"+comp_plug.name+"_template.jnj")
         modules = [s for s in comp_plug.list_module]
+
+        for s in modules:
+            self.ariane.module_service.update_arianenode_lists(s)
         # Remove each module which is in exceptions list.
         # Note that if module is a parent Module which has a Module to be excluded,
         # this is done in the component template.
         for s in modules.copy():
-            if s.name in sub_exceptions:
-                modules.remove(s)
+            if comp_plug.name in sub_exceptions.keys():
+                if s.name in sub_exceptions[comp_plug.name]:
+                    modules.remove(s)
             if s.isParent():
                 modules.extend(s.list_module)
                 modules.remove(s)

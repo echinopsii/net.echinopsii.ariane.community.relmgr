@@ -1,4 +1,11 @@
-[
-  "taitale",
-  "wresources"
-]
+{
+  "mapping" :
+    [
+      "taitale",
+      "wresources"
+    ]
+}
+
+
+
+
