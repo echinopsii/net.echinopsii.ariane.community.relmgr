@@ -60,10 +60,15 @@ angular.module('ArianeUI')
                 if (backupObj != -1){
                     var baseObj = serviceUI.getBaseObj();
                     $scope.selectedObj = JSON.parse(JSON.stringify(backupObj)); // copy JSON object
+                    for (var property in $scope.selectedObj.node) {
+                        if ($scope.selectedObj.node.hasOwnProperty(property)) {
+                            console.log(typeof $scope.selectedObj.node[property] + '-' + $scope.selectedObj.node[property]);
+                        }
+                    }
                     $scope.isNewNode = false;
                     $scope.isDeleting = false;
                     $scope.parent = {};
-                    $scope.enableEdit = serviceUI.checkEditable() && $scope.page != "view"; // IMPORTANT - Enable properties edition if true
+                    $scope.enableEdit = serviceUI.checkEditable(); // IMPORTANT - Enable properties edition if true
                 }
                 else
                     $scope.enableEdit = false;
@@ -140,6 +145,9 @@ angular.module('ArianeUI')
                 serviceUI.setState({obj: "selectedObj", status:"editing"});
                 setScopeAndNotify('activeEdit', true);
             }
+        };
+        $scope.getTypeOf = function(value) {
+            return typeof value;
         };
         $scope.isPropEditable = function(prop){
             if($scope.isNewNode)

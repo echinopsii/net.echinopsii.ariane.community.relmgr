@@ -41,9 +41,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </div>
         {% endraw %}
         <ul class="editPropList CommonList" ng-repeat="(prop, value) in selectedObj.node">
-            <li class="editPropInput" ng-if="isPropEditable(prop)">
+            <li class="editPropInput" ng-if="isPropEditable(prop)" ng-switch on="getTypeOf(selectedObj.node[prop])">
                 <label ng-bind="prop"></label>
-                <input type="text" ng-disabled="!enableEdit" ng-model="selectedObj.node[prop]" ng-change="setActiveEdit()">
+                <input ng-switch-when="string" type="text" ng-disabled="!enableEdit" ng-model="selectedObj.node[prop]" ng-change="setActiveEdit()">
+                <input ng-switch-when="number" type="number" ng-disabled="!enableEdit" ng-model="selectedObj.node[prop]" ng-change="setActiveEdit()">
+                <input ng-switch-default type="text" ng-disabled="!enableEdit" ng-model="selectedObj.node[prop]" ng-change="setActiveEdit()">
             </li>
         </ul>
 

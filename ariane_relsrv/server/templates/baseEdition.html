@@ -25,7 +25,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <button class="btn btn-sm btnExtend sectionTitle" ng-click="togglePlugList()">
         <i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i> Plugins
     </button>
-    <button class="btn btn-sm" ng-disabled="!enableAddDel || activeEdit" ng-click="addElement('plugin')">Add</button>
+    <button class="btn btn-sm btnAction pull-right" ng-disabled="!enableAddDel || activeEdit" ng-click="addElement('plugin')">
+        <i class="fa fa-magic"></i> Add plugins
+    </button>
 </div>
 {% raw %}
 <div class="PlugList CommonList" ng-show="isPlugToggle()">

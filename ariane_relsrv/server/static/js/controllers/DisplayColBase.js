@@ -46,7 +46,7 @@ angular.module('ArianeUI')
                 releaseA: "Release versioning : define distribution and module versions.",
                 releaseB: "Release versioning check : check generated files diff.",
                 releaseC: "Release pre build : download generated zip and test it.",
-                releaseD: "Release final build : download generated zip and test it.",
+                releaseD: "Release final build : click validate to generate final distrib.",
                 releaseE: "Manage Plugins"
             },
             DEV:{
@@ -187,6 +187,7 @@ angular.module('ArianeUI')
                         $scope.curBaseSelected["selected"] = false;
                     dist["selected"] = true;
                     $scope.curBaseSelected = dist;
+                    $scope.enableEdit = (dist.editable==="true");
                     serviceUI.actionBroadcast();
                     /*$scope.test = serviceUI.getTest();
                     console.log('1:' + JSON.stringify($scope.test));
@@ -639,7 +640,7 @@ angular.module('ArianeUI')
                     $scope.btnActive.export = true;
                     serviceUI.setNotifyLog("error", "View", "An error occured while exporting the new database file to the server");
                 });
-        }
+        };
 
         $scope.clickRefresh = function(){
             $scope.btnActive.refresh = false;

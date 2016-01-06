@@ -197,8 +197,8 @@ ul.blockList div.active {
     background-image: -ms-linear-gradient(top, #fc0505, #d91c84);
     background-image: -o-linear-gradient(top, #fc0505, #d91c84);
     background-image: linear-gradient(to bottom, #fc0505, #d91c84);
-    -webkit-border-radius: 33;
-    -moz-border-radius: 33;
+    -webkit-border-radius: 33px;
+    -moz-border-radius: 33px;
     border-radius: 33px;
     font-family: Arial;
     color: #ffffff;
@@ -231,6 +231,16 @@ ul.blockList div.active {
 .btnExtend.small {
     font-size: 8px;
 }
+
+.btnAction {
+    padding: 4px;
+    margin: 4px;
+    border-radius: 3px;
+    border: 1px solid #333333;
+    background: #cccccc;
+    color: #333;
+}
+
 
 
 .centerize{

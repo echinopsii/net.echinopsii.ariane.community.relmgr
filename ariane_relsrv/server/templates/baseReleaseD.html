@@ -21,27 +21,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
 {% raw %}
-<hr class="separateur">
-<span>{{modeTitle.selected}}</span>
+<hr ng-show="pageStates.relD != 'tovalid'" class="separateur">
+<span ng-show="pageStates.relD != 'tovalid'">{{modeTitle.selected}}</span>
 <hr class="separateur">
 <div class="centerize">
     <div ng-show="pageStates.relD == 'tovalid'"> Download Section:
         <form id="formdownload" action="/rest/getdelzip" method="post">
             <select ng-model="download.selected" ng-options="name for name in download.zip"></select>
-            <button type="submit" ng-disabled="download.selected == null" ng-click="clickDownload()">Download!</button>
+            <button class="btn btnAction" type="submit" ng-disabled="download.selected == null" ng-click="clickDownload()">Download!</button>
         </form>
+        <hr class="separateur">
     </div>
-    <hr class="separateur">
+
     <button class="btn btnGreen" type="submit" ng-show="pageStates.relD != 'tovalid'" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relD')">VALIDATE</button>
     <button class="btn btnRed" type="submit" ng-show="pageStates.relD != 'tovalid'" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('ROLLBACK', 'relD')">ROLLBACK</button>
+
     <button class="btn btnGreen" type="submit" ng-show="pageStates.relD == 'tovalid'" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relD');setCmdD('ReleaseOnly');clickConfirmValidRoll('YES')">RELEASE only</button>
     <button class="btn btnGreen" type="submit" ng-show="pageStates.relD == 'tovalid'" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relD');setCmdD('ReleaseDev');clickConfirmValidRoll('YES')">RELEASE then DEV</button>
     <button class="btn btnRed" type="submit" ng-show="pageStates.relD == 'tovalid'" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('ROLLBACK', 'relD')">ROLLBACK</button>
 
     <div>
-        <span ng-show="confirmValRoll.active  && (confirmValRoll.validRoll == 'ROLLBACK' || pageStates.relD != 'tovalid')">Are you sure to {{ confirmValRoll.validRoll}} ?
-            <button ng-click="clickConfirmValidRoll('YES')">YES</button>
-            <button ng-click="clickConfirmValidRoll('NO')">NO</button>
+        <span ng-show="confirmValRoll.active  && (confirmValRoll.validRoll == 'ROLLBACK' || pageStates.relD != 'tovalid')">
+            <br/><br/>Are you sure to {{ confirmValRoll.validRoll}} ?</br>
+            <button class="btn btnGreen" ng-click="clickConfirmValidRoll('YES')">YES</button>
+            <button class="btn btnRed" ng-click="clickConfirmValidRoll('NO')">NO</button>
         </span>
     </div>
 </div>
