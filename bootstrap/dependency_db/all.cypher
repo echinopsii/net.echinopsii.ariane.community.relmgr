@@ -543,97 +543,6 @@ create (_39922:`FileNode` {`nID`:931, `name`:"ariane.community.distrib-0.7.1.jso
 create (_39923:`FileNode` {`nID`:932, `name`:"ariane.community.git.repos-0.7.1.json", `path`:"ariane.community.distrib/resources/sources/", `type`:"json_git_repos", `version`:"0.6.4-SNAPSHOT"})
 create (_39924:`FileNode` {`nID`:933, `name`:"ariane.community.plugins.json", `path`:"ariane.community.distrib/resources/plugins/", `type`:"json_plugins", `version`:"0.6.4-SNAPSHOT"})
 create (_39925:`Distribution` {`editable`:"false", `nID`:934, `name`:"community", `url_repos`:"http://stash.echinopsii.net/scm/ariane/", `version`:"0.7.1"})
-create (_39926:`FileNode` {`nID`:1026, `name`:"pom.xml", `path`:"ariane.community.core.directory/wat/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39927:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.directory.wat", `groupId`:"net.echinopsii.ariane.community.core.directory", `nID`:1027, `name`:"wat", `order`:2, `version`:"0.7.2-SNAPSHOT"})
-create (_39928:`FileNode` {`nID`:1028, `name`:"pom.xml", `path`:"ariane.community.core.directory/base/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39929:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.directory.base", `groupId`:"net.echinopsii.ariane.community.core.directory", `nID`:1029, `name`:"base", `order`:1, `version`:"0.7.2-SNAPSHOT"})
-create (_39930:`FileNode` {`nID`:1030, `name`:"pom.xml", `path`:"ariane.community.core.directory/", `type`:"pom", `version`:"0.7.2-SNAPSHOT"})
-create (_39931:`FileNode` {`nID`:1031, `name`:"ariane.community.core.directory-master.SNAPSHOT.json", `path`:"ariane.community.core.directory/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.7.2-SNAPSHOT"})
-create (_39932:`FileNode` {`nID`:1032, `name`:"net.echinopsii.ariane.community.core.directory_master.SNAPSHOT.plan", `path`:"ariane.community.core.directory/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.7.2-SNAPSHOT"})
-create (_39933:`Component` {`nID`:1033, `name`:"directory", `order`:6, `type`:"core", `version`:"0.7.2-SNAPSHOT"})
-create (_39934:`Component` {`nID`:1034, `name`:"portal", `order`:4, `type`:"core", `version`:"0.7.2-SNAPSHOT"})
-create (_39935:`FileNode` {`nID`:1035, `name`:"pom.xml", `path`:"ariane.community.core.idm/base/", `type`:"pom", `version`:"0.4.2-SNAPSHOT"})
-create (_39936:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.idm.base", `groupId`:"net.echinopsii.ariane.community.core.idm", `nID`:1036, `name`:"base", `order`:1, `version`:"0.4.3-SNAPSHOT"})
-create (_39937:`FileNode` {`nID`:1037, `name`:"ariane.community.core.idm-master.SNAPSHOT.json", `path`:"ariane.community.core.idm/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.4.3-SNAPSHOT"})
-create (_39938:`FileNode` {`nID`:1038, `name`:"pom.xml", `path`:"ariane.community.core.idm/", `type`:"pom", `version`:"0.4.3-SNAPSHOT"})
-create (_39939:`FileNode` {`nID`:1039, `name`:"net.echinopsii.ariane.community.core.idm_master.SNAPSHOT.plan", `path`:"ariane.community.core.idm/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.4.3-SNAPSHOT"})
-create (_39940:`Component` {`nID`:1040, `name`:"idm", `order`:3, `type`:"core", `version`:"0.4.3-SNAPSHOT"})
-create (_39941:`FileNode` {`nID`:1041, `name`:"pom.xml", `path`:"ariane.community.core.portal/wresources/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39942:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.portal.wresources", `groupId`:"net.echinopsii.ariane.community.core.portal", `nID`:1042, `name`:"wresources", `order`:5, `version`:"0.7.2-SNAPSHOT"})
-create (_39943:`FileNode` {`nID`:1043, `name`:"pom.xml", `path`:"ariane.community.core.portal/wat/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39944:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.portal.wat", `groupId`:"net.echinopsii.ariane.community.core.portal", `nID`:1044, `name`:"wat", `order`:2, `version`:"0.7.2-SNAPSHOT"})
-create (_39945:`FileNode` {`nID`:1045, `name`:"pom.xml", `path`:"ariane.community.core.portal/idmwat/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39946:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.portal.idmwat", `groupId`:"net.echinopsii.ariane.community.core.portal", `nID`:1046, `name`:"idmwat", `order`:3, `version`:"0.7.2-SNAPSHOT"})
-create (_39947:`FileNode` {`nID`:1047, `name`:"pom.xml", `path`:"ariane.community.core.portal/base/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39948:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.portal.base", `groupId`:"net.echinopsii.ariane.community.core.portal", `nID`:1048, `name`:"base", `order`:1, `version`:"0.7.2-SNAPSHOT"})
-create (_39949:`FileNode` {`nID`:1049, `name`:"pom.xml", `path`:"ariane.community.core.portal/wab/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39950:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.portal.wab", `groupId`:"net.echinopsii.ariane.community.core.portal", `nID`:1050, `name`:"wab", `order`:4, `version`:"0.7.2-SNAPSHOT"})
-create (_39951:`FileNode` {`nID`:1051, `name`:"net.echinopsii.ariane.community.core.portal_master.SNAPSHOT.plan", `path`:"ariane.community.core.portal/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.7.2-SNAPSHOT"})
-create (_39952:`FileNode` {`nID`:1052, `name`:"ariane.community.core.portal-master.SNAPSHOT.json", `path`:"ariane.community.core.portal/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.7.2-SNAPSHOT"})
-create (_39953:`FileNode` {`nID`:1053, `name`:"pom.xml", `path`:"ariane.community.core.portal/", `type`:"pom", `version`:"0.7.2-SNAPSHOT"})
-create (_39954:`FileNode` {`nID`:1054, `name`:"pom.xml", `path`:"ariane.community.core.injector/base/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39955:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.injector.base", `groupId`:"net.echinopsii.ariane.community.core.injector", `nID`:1055, `name`:"base", `order`:1, `version`:"0.7.2-SNAPSHOT"})
-create (_39956:`FileNode` {`nID`:1056, `name`:"pom.xml", `path`:"ariane.community.core.injector/wat/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39957:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.injector.wat", `groupId`:"net.echinopsii.ariane.community.core.injector", `nID`:1057, `name`:"wat", `order`:3, `version`:"0.7.2-SNAPSHOT"})
-create (_39958:`FileNode` {`nID`:1058, `name`:"pom.xml", `path`:"ariane.community.core.injector/messaging/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39959:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.injector.messaging", `groupId`:"net.echinopsii.ariane.community.core.injector", `nID`:1059, `name`:"messaging", `order`:2, `version`:"0.7.2-SNAPSHOT"})
-create (_39960:`FileNode` {`nID`:1060, `name`:"net.echinopsii.ariane.community.core.injector_master.SNAPSHOT.plan", `path`:"ariane.community.core.injector/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.7.2-SNAPSHOT"})
-create (_39961:`FileNode` {`nID`:1061, `name`:"ariane.community.core.injector-master.SNAPSHOT.json", `path`:"ariane.community.core.injector/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.7.2-SNAPSHOT"})
-create (_39962:`FileNode` {`nID`:1062, `name`:"pom.xml", `path`:"ariane.community.core.injector/", `type`:"pom", `version`:"0.7.2-SNAPSHOT"})
-create (_39963:`Component` {`nID`:1063, `name`:"injector", `order`:7, `type`:"core", `version`:"0.7.2-SNAPSHOT"})
-create (_39964:`Component` {`nID`:1064, `name`:"messaging", `order`:2, `type`:"none", `version`:"0.1.1-SNAPSHOT"})
-create (_39965:`FileNode` {`nID`:1065, `name`:"net.echinopsii.ariane.community.core.injector_0.7.2.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.2-SNAPSHOT"})
-create (_39966:`FileNode` {`nID`:1066, `name`:"net.echinopsii.ariane.community.core.mapping_0.7.2.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.2-SNAPSHOT"})
-create (_39967:`FileNode` {`nID`:1067, `name`:"net.echinopsii.ariane.community.core.idm_0.4.3.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.2-SNAPSHOT"})
-create (_39968:`FileNode` {`nID`:1068, `name`:"net.echinopsii.ariane.community.messaging_0.1.1.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.2-SNAPSHOT"})
-create (_39969:`FileNode` {`nID`:1069, `name`:"net.echinopsii.ariane.community.core.portal_0.7.2.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.2-SNAPSHOT"})
-create (_39970:`FileNode` {`nID`:1070, `name`:"net.echinopsii.ariane.community.core.directory_0.7.2.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.2-SNAPSHOT"})
-create (_39971:`Component` {`nID`:1071, `name`:"environment", `order`:8, `type`:"environment", `version`:"0.7.2-SNAPSHOT"})
-create (_39972:`FileNode` {`nID`:1072, `name`:"pom.xml", `path`:"ariane.community.messaging/rabbitmq/", `type`:"pom", `version`:"0.1.1-SNAPSHOT"})
-create (_39973:`Module` {`artifactId`:"net.echinopsii.ariane.community.messaging.rabbitmq", `groupId`:"net.echinopsii.ariane.community.messaging", `nID`:1073, `name`:"rabbitmq", `order`:2, `version`:"0.1.1-SNAPSHOT"})
-create (_39974:`FileNode` {`nID`:1074, `name`:"pom.xml", `path`:"ariane.community.messaging/api/", `type`:"pom", `version`:"0.1.1-SNAPSHOT"})
-create (_39975:`Module` {`artifactId`:"net.echinopsii.ariane.community.messaging.api", `groupId`:"net.echinopsii.ariane.community.messaging", `nID`:1075, `name`:"api", `order`:1, `version`:"0.1.1-SNAPSHOT"})
-create (_39976:`FileNode` {`nID`:1076, `name`:"pom.xml", `path`:"ariane.community.messaging/", `type`:"pom", `version`:"0.1.1-SNAPSHOT"})
-create (_39977:`FileNode` {`nID`:1077, `name`:"net.echinopsii.ariane.community.messaging_master.SNAPSHOT.plan", `path`:"ariane.community.messaging/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.1.1-SNAPSHOT"})
-create (_39978:`FileNode` {`nID`:1078, `name`:"ariane.community.messaging-master.SNAPSHOT.json", `path`:"ariane.community.messaging/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.1.1-SNAPSHOT"})
-create (_39979:`FileNode` {`nID`:1079, `name`:"deploy-components.vsh", `path`:"ariane.community.installer/distrib/installer/resources/virgoscripts/", `type`:"vsh", `version`:"0.7.2-SNAPSHOT"})
-create (_39980:`Component` {`nID`:1080, `name`:"installer", `order`:1, `type`:"environment", `version`:"0.7.2-SNAPSHOT"})
-create (_39981:`FileNode` {`nID`:1081, `name`:"pom.xml", `path`:"ariane.community.core.mapping/taitale/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39982:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.taitale", `groupId`:"net.echinopsii.ariane.community.core.mapping", `nID`:1082, `name`:"taitale", `order`:6, `version`:"0.7.2-SNAPSHOT"})
-create (_39983:`FileNode` {`nID`:1083, `name`:"pom.xml", `path`:"ariane.community.core.mapping/wat/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39984:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.wat", `groupId`:"net.echinopsii.ariane.community.core.mapping", `nID`:1084, `name`:"wat", `order`:7, `version`:"0.7.2-SNAPSHOT"})
-create (_39985:`FileNode` {`nID`:1085, `name`:"pom.xml", `path`:"ariane.community.core.mapping/ds/dsl/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39986:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.ds.dsl", `groupId`:"net.echinopsii.ariane.community.core.mapping.ds", `nID`:1086, `name`:"dsl", `order`:4, `version`:"0.7.2-SNAPSHOT"})
-create (_39987:`FileNode` {`nID`:1087, `name`:"pom.xml", `path`:"ariane.community.core.mapping/ds/blueprints/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39988:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.ds.blueprints", `groupId`:"net.echinopsii.ariane.community.core.mapping.ds", `nID`:1088, `name`:"blueprints", `order`:2, `version`:"0.7.2-SNAPSHOT"})
-create (_39989:`FileNode` {`nID`:1089, `name`:"pom.xml", `path`:"ariane.community.core.mapping/ds/rim/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39990:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.ds.rim", `groupId`:"net.echinopsii.ariane.community.core.mapping.ds", `nID`:1090, `name`:"rim", `order`:3, `version`:"0.7.2-SNAPSHOT"})
-create (_39991:`FileNode` {`nID`:1091, `name`:"pom.xml", `path`:"ariane.community.core.mapping/ds/api/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39992:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.ds.api", `groupId`:"net.echinopsii.ariane.community.core.mapping.ds", `nID`:1092, `name`:"api", `order`:1, `version`:"0.7.2-SNAPSHOT"})
-create (_39993:`FileNode` {`nID`:1093, `name`:"pom.xml", `path`:"ariane.community.core.mapping/ds/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
-create (_39994:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.ds", `groupId`:"net.echinopsii.ariane.community.core.mapping", `nID`:1094, `name`:"ds", `order`:5, `version`:"0.7.2-SNAPSHOT"})
-create (_39995:`FileNode` {`nID`:1095, `name`:"net.echinopsii.ariane.community.core.mapping_master.SNAPSHOT.plan", `path`:"ariane.community.core.mapping/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.7.2-SNAPSHOT"})
-create (_39996:`FileNode` {`nID`:1096, `name`:"ariane.community.core.mapping-master.SNAPSHOT.json", `path`:"ariane.community.core.mapping/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.7.2-SNAPSHOT"})
-create (_39997:`FileNode` {`nID`:1097, `name`:"pom.xml", `path`:"ariane.community.core.mapping/", `type`:"pom", `version`:"0.7.2-SNAPSHOT"})
-create (_39998:`Component` {`nID`:1098, `name`:"mapping", `order`:5, `type`:"core", `version`:"0.7.2-SNAPSHOT"})
-create (_39999:`Plugin` {`git_repos`:"https://github.com/echinopsii/net.echinopsii.", `nID`:1099, `name`:"procos", `version`:"0.1.1-b01"})
-create (_40000:`FileNode` {`nID`:1100, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/jsonparser/", `type`:"pom", `version`:"0.2.4-SNAPSHOT"})
-create (_40001:`Module` {`artifactId`:"net.echinopsii.ariane.community.plugin.rabbitmq.jsonparser", `groupId`:"net.echinopsii.ariane.community.plugin.rabbitmq", `nID`:1101, `name`:"jsonparser", `order`:2, `version`:"0.2.5-SNAPSHOT"})
-create (_40002:`FileNode` {`nID`:1102, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/directory/", `type`:"pom", `version`:"0.2.4-SNAPSHOT"})
-create (_40003:`Module` {`artifactId`:"net.echinopsii.ariane.community.plugin.rabbitmq.directory", `groupId`:"net.echinopsii.ariane.community.plugin.rabbitmq", `nID`:1103, `name`:"directory", `order`:1, `version`:"0.2.5-SNAPSHOT"})
-create (_40004:`FileNode` {`nID`:1104, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/injector/", `type`:"pom", `version`:"0.2.4-SNAPSHOT"})
-create (_40005:`Module` {`artifactId`:"net.echinopsii.ariane.community.plugin.rabbitmq.injector", `groupId`:"net.echinopsii.ariane.community.plugin.rabbitmq", `nID`:1105, `name`:"injector", `order`:3, `version`:"0.2.5-SNAPSHOT"})
-create (_40006:`FileNode` {`nID`:1106, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/", `type`:"pom", `version`:"0.2.5-SNAPSHOT"})
-create (_40007:`FileNode` {`nID`:1107, `name`:"ariane.community.plugin.rabbitmq-master.SNAPSHOT.json", `path`:"ariane.community.plugin.rabbitmq/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.2.5-SNAPSHOT"})
-create (_40008:`FileNode` {`nID`:1108, `name`:"net.echinopsii.ariane.community.plugin.rabbitmq_master.SNAPSHOT.plan", `path`:"ariane.community.plugin.rabbitmq/distrib/db/resources/virgo/repository/ariane-plugins/", `type`:"plan", `version`:"0.2.5-SNAPSHOT"})
-create (_40009:`FileNode` {`nID`:1109, `name`:"deploy-plugin.rabbitmq.vsh", `path`:"ariane.community.plugin.rabbitmq/distrib/installer/resources/virgoscripts/", `type`:"vsh", `version`:"0.2.5-SNAPSHOT"})
-create (_40010:`Plugin` {`git_repos`:"https://github.com/echinopsii/net.echinopsii.", `nID`:1110, `name`:"rabbitmq", `version`:"0.2.5-SNAPSHOT"})
-create (_40011:`FileNode` {`nID`:1111, `name`:"pom-ariane.community.distrib-master.SNAPSHOT.xml", `path`:"ariane.community.distrib/resources/maven/", `type`:"pom_dist", `version`:"0.6.4-SNAPSHOT"})
-create (_40012:`FileNode` {`nID`:1112, `name`:"ariane.community.plugins-distrib-master.SNAPSHOT.json", `path`:"ariane.community.distrib/resources/plugins/", `type`:"json_plugin_dist", `version`:"0.6.4-SNAPSHOT"})
-create (_40013:`FileNode` {`nID`:1113, `name`:"ariane.community.distrib-master.SNAPSHOT.json", `path`:"ariane.community.distrib/resources/distrib/", `type`:"json_dist", `version`:"0.6.4-SNAPSHOT"})
-create (_40014:`FileNode` {`nID`:1114, `name`:"ariane.community.git.repos-master.SNAPSHOT.json", `path`:"ariane.community.distrib/resources/sources/", `type`:"json_git_repos", `version`:"0.6.4-SNAPSHOT"})
-create (_40015:`FileNode` {`nID`:1115, `name`:"ariane.community.plugins.json", `path`:"ariane.community.distrib/resources/plugins/", `type`:"json_plugins", `version`:"0.6.4-SNAPSHOT"})
-create (_40016:`Distribution` {`editable`:"true", `nID`:1116, `name`:"community", `url_repos`:"http://stash.echinopsii.net/scm/ariane/", `version`:"0.7.2-SNAPSHOT"})
 create (_40017:`FileNode` {`nID`:897, `name`:"deploy-components.vsh", `path`:"ariane.community.installer/distrib/installer/resources/virgoscripts/", `type`:"vsh", `version`:"0.7.1"})
 create (_40018:`Component` {`nID`:898, `name`:"installer", `order`:1, `type`:"environment", `version`:"0.7.1"})
 create (_40019:`FileNode` {`nID`:899, `name`:"pom.xml", `path`:"ariane.community.core.mapping/taitale/", `type`:"pom", `version`:"0.6.4-SNAPSHOT"})
@@ -849,6 +758,204 @@ create (_40228:`FileNode` {`nID`:427, `name`:"pom.xml", `path`:"ariane.community
 create (_40229:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.idm.base", `groupId`:"net.echinopsii.ariane.community.core.idm", `nID`:428, `name`:"base", `order`:1, `version`:"0.4.1"})
 create (_40230:`FileNode` {`nID`:429, `name`:"ariane.community.core.idm-0.4.1.json", `path`:"ariane.community.core.idm/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.4.1"})
 create (_40231:`FileNode` {`nID`:487, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/injector/", `type`:"pom", `version`:"0.2.2"})
+create (_40988:`FileNode` {`nID`:1119, `name`:"pom.xml", `path`:"ariane.community.core.portal/idmwat/", `type`:"pom", `version`:"0.7.2"})
+create (_40989:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.portal.idmwat", `groupId`:"net.echinopsii.ariane.community.core.portal", `nID`:1120, `name`:"idmwat", `order`:3, `version`:"0.7.2"})
+create (_40990:`FileNode` {`nID`:1121, `name`:"pom.xml", `path`:"ariane.community.core.portal/wab/", `type`:"pom", `version`:"0.7.2"})
+create (_40991:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.portal.wab", `groupId`:"net.echinopsii.ariane.community.core.portal", `nID`:1122, `name`:"wab", `order`:4, `version`:"0.7.2"})
+create (_40992:`FileNode` {`nID`:1123, `name`:"pom.xml", `path`:"ariane.community.core.portal/wat/", `type`:"pom", `version`:"0.7.2"})
+create (_40993:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.portal.wat", `groupId`:"net.echinopsii.ariane.community.core.portal", `nID`:1124, `name`:"wat", `order`:2, `version`:"0.7.2"})
+create (_40994:`FileNode` {`nID`:1125, `name`:"pom.xml", `path`:"ariane.community.core.portal/wresources/", `type`:"pom", `version`:"0.7.2"})
+create (_40995:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.portal.wresources", `groupId`:"net.echinopsii.ariane.community.core.portal", `nID`:1126, `name`:"wresources", `order`:5, `version`:"0.7.2"})
+create (_40996:`FileNode` {`nID`:1127, `name`:"pom.xml", `path`:"ariane.community.core.portal/base/", `type`:"pom", `version`:"0.7.2"})
+create (_40997:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.portal.base", `groupId`:"net.echinopsii.ariane.community.core.portal", `nID`:1128, `name`:"base", `order`:1, `version`:"0.7.2"})
+create (_40998:`FileNode` {`nID`:1129, `name`:"pom.xml", `path`:"ariane.community.core.portal/", `type`:"pom", `version`:"0.7.2"})
+create (_40999:`FileNode` {`nID`:1130, `name`:"net.echinopsii.ariane.community.core.portal_0.7.2.plan", `path`:"ariane.community.core.portal/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.7.2"})
+create (_41000:`FileNode` {`nID`:1131, `name`:"ariane.community.core.portal-0.7.2.json", `path`:"ariane.community.core.portal/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.7.2"})
+create (_41001:`Component` {`nID`:1132, `name`:"portal", `order`:4, `type`:"core", `version`:"0.7.2"})
+create (_41002:`Component` {`nID`:1133, `name`:"idm", `order`:3, `type`:"core", `version`:"0.4.2"})
+create (_41003:`FileNode` {`nID`:1134, `name`:"pom.xml", `path`:"ariane.community.core.injector/base/", `type`:"pom", `version`:"0.7.1"})
+create (_41004:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.injector.base", `groupId`:"net.echinopsii.ariane.community.core.injector", `nID`:1135, `name`:"base", `order`:1, `version`:"0.7.1"})
+create (_41005:`FileNode` {`nID`:1136, `name`:"pom.xml", `path`:"ariane.community.core.injector/wat/", `type`:"pom", `version`:"0.7.1"})
+create (_41006:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.injector.wat", `groupId`:"net.echinopsii.ariane.community.core.injector", `nID`:1137, `name`:"wat", `order`:3, `version`:"0.7.1"})
+create (_41007:`FileNode` {`nID`:1138, `name`:"pom.xml", `path`:"ariane.community.core.injector/messaging/", `type`:"pom", `version`:"0.7.1"})
+create (_41008:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.injector.messaging", `groupId`:"net.echinopsii.ariane.community.core.injector", `nID`:1139, `name`:"messaging", `order`:2, `version`:"0.7.1"})
+create (_41009:`FileNode` {`nID`:1140, `name`:"net.echinopsii.ariane.community.core.injector_0.7.1.plan", `path`:"ariane.community.core.injector/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.7.1"})
+create (_41010:`FileNode` {`nID`:1141, `name`:"pom.xml", `path`:"ariane.community.core.injector/", `type`:"pom", `version`:"0.7.1"})
+create (_41011:`FileNode` {`nID`:1142, `name`:"ariane.community.core.injector-0.7.1.json", `path`:"ariane.community.core.injector/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.7.1"})
+create (_41012:`Component` {`nID`:1143, `name`:"injector", `order`:7, `type`:"core", `version`:"0.7.1"})
+create (_41013:`Component` {`nID`:1144, `name`:"messaging", `order`:2, `type`:"none", `version`:"0.1.0"})
+create (_41014:`FileNode` {`nID`:1145, `name`:"pom.xml", `path`:"ariane.community.core.directory/wat/", `type`:"pom", `version`:"0.7.1"})
+create (_41015:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.directory.wat", `groupId`:"net.echinopsii.ariane.community.core.directory", `nID`:1146, `name`:"wat", `order`:2, `version`:"0.7.1"})
+create (_41016:`FileNode` {`nID`:1147, `name`:"pom.xml", `path`:"ariane.community.core.directory/base/", `type`:"pom", `version`:"0.7.1"})
+create (_41017:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.directory.base", `groupId`:"net.echinopsii.ariane.community.core.directory", `nID`:1148, `name`:"base", `order`:1, `version`:"0.7.1"})
+create (_41018:`FileNode` {`nID`:1149, `name`:"pom.xml", `path`:"ariane.community.core.directory/", `type`:"pom", `version`:"0.7.1"})
+create (_41019:`FileNode` {`nID`:1150, `name`:"net.echinopsii.ariane.community.core.directory_0.7.1.plan", `path`:"ariane.community.core.directory/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.7.1"})
+create (_41020:`FileNode` {`nID`:1151, `name`:"ariane.community.core.directory-0.7.1.json", `path`:"ariane.community.core.directory/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.7.1"})
+create (_41021:`Component` {`nID`:1152, `name`:"directory", `order`:6, `type`:"core", `version`:"0.7.1"})
+create (_41022:`FileNode` {`nID`:1153, `name`:"deploy-components.vsh", `path`:"ariane.community.installer/distrib/installer/resources/virgoscripts/", `type`:"vsh", `version`:"0.7.2"})
+create (_41023:`Component` {`nID`:1154, `name`:"installer", `order`:1, `type`:"environment", `version`:"0.7.2"})
+create (_41024:`FileNode` {`nID`:1155, `name`:"pom.xml", `path`:"ariane.community.messaging/api/", `type`:"pom", `version`:"0.1.0"})
+create (_41025:`Module` {`artifactId`:"net.echinopsii.ariane.community.messaging.api", `groupId`:"net.echinopsii.ariane.community.messaging", `nID`:1156, `name`:"api", `order`:1, `version`:"0.1.0"})
+create (_41026:`FileNode` {`nID`:1157, `name`:"pom.xml", `path`:"ariane.community.messaging/rabbitmq/", `type`:"pom", `version`:"0.1.0"})
+create (_41027:`Module` {`artifactId`:"net.echinopsii.ariane.community.messaging.rabbitmq", `groupId`:"net.echinopsii.ariane.community.messaging", `nID`:1158, `name`:"rabbitmq", `order`:2, `version`:"0.1.0"})
+create (_41028:`FileNode` {`nID`:1159, `name`:"pom.xml", `path`:"ariane.community.messaging/", `type`:"pom", `version`:"0.1.0"})
+create (_41029:`FileNode` {`nID`:1160, `name`:"ariane.community.messaging-0.1.0.json", `path`:"ariane.community.messaging/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.1.0"})
+create (_41030:`FileNode` {`nID`:1161, `name`:"net.echinopsii.ariane.community.messaging_0.1.0.plan", `path`:"ariane.community.messaging/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.1.0"})
+create (_41031:`FileNode` {`nID`:1162, `name`:"pom.xml", `path`:"ariane.community.core.mapping/ds/rim/", `type`:"pom", `version`:"0.7.2"})
+create (_41032:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.ds.rim", `groupId`:"net.echinopsii.ariane.community.core.mapping.ds", `nID`:1163, `name`:"rim", `order`:3, `version`:"0.7.2"})
+create (_41033:`FileNode` {`nID`:1164, `name`:"pom.xml", `path`:"ariane.community.core.mapping/ds/api/", `type`:"pom", `version`:"0.7.2"})
+create (_41034:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.ds.api", `groupId`:"net.echinopsii.ariane.community.core.mapping.ds", `nID`:1165, `name`:"api", `order`:1, `version`:"0.7.2"})
+create (_41035:`FileNode` {`nID`:1166, `name`:"pom.xml", `path`:"ariane.community.core.mapping/ds/dsl/", `type`:"pom", `version`:"0.7.2"})
+create (_41036:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.ds.dsl", `groupId`:"net.echinopsii.ariane.community.core.mapping.ds", `nID`:1167, `name`:"dsl", `order`:4, `version`:"0.7.2"})
+create (_41037:`FileNode` {`nID`:1168, `name`:"pom.xml", `path`:"ariane.community.core.mapping/ds/blueprints/", `type`:"pom", `version`:"0.7.2"})
+create (_41038:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.ds.blueprints", `groupId`:"net.echinopsii.ariane.community.core.mapping.ds", `nID`:1169, `name`:"blueprints", `order`:2, `version`:"0.7.2"})
+create (_41039:`FileNode` {`nID`:1170, `name`:"pom.xml", `path`:"ariane.community.core.mapping/ds/", `type`:"pom", `version`:"0.7.2"})
+create (_41040:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.ds", `groupId`:"net.echinopsii.ariane.community.core.mapping", `nID`:1171, `name`:"ds", `order`:5, `version`:"0.7.2"})
+create (_41041:`FileNode` {`nID`:1172, `name`:"pom.xml", `path`:"ariane.community.core.mapping/wat/", `type`:"pom", `version`:"0.7.2"})
+create (_41042:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.wat", `groupId`:"net.echinopsii.ariane.community.core.mapping", `nID`:1173, `name`:"wat", `order`:7, `version`:"0.7.2"})
+create (_41043:`FileNode` {`nID`:1174, `name`:"pom.xml", `path`:"ariane.community.core.mapping/taitale/", `type`:"pom", `version`:"0.7.2"})
+create (_41044:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.taitale", `groupId`:"net.echinopsii.ariane.community.core.mapping", `nID`:1175, `name`:"taitale", `order`:6, `version`:"0.7.2"})
+create (_41045:`FileNode` {`nID`:1176, `name`:"pom.xml", `path`:"ariane.community.core.mapping/wresources/", `type`:"pom", `version`:"0.7.2"})
+create (_41046:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.wresources", `groupId`:"net.echinopsii.ariane.community.core.mapping", `nID`:1177, `name`:"wresources", `order`:8, `version`:"0.7.2"})
+create (_41047:`FileNode` {`nID`:1178, `name`:"ariane.community.core.mapping-0.7.2.json", `path`:"ariane.community.core.mapping/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.7.2"})
+create (_41048:`FileNode` {`nID`:1179, `name`:"pom.xml", `path`:"ariane.community.core.mapping/", `type`:"pom", `version`:"0.7.2"})
+create (_41049:`FileNode` {`nID`:1180, `name`:"net.echinopsii.ariane.community.core.mapping_0.7.2.plan", `path`:"ariane.community.core.mapping/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.7.2"})
+create (_41050:`Component` {`nID`:1181, `name`:"mapping", `order`:5, `type`:"core", `version`:"0.7.2"})
+create (_41051:`FileNode` {`nID`:1182, `name`:"pom.xml", `path`:"ariane.community.core.idm/base/", `type`:"pom", `version`:"0.4.2"})
+create (_41052:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.idm.base", `groupId`:"net.echinopsii.ariane.community.core.idm", `nID`:1183, `name`:"base", `order`:1, `version`:"0.4.2"})
+create (_41053:`FileNode` {`nID`:1184, `name`:"net.echinopsii.ariane.community.core.idm_0.4.2.plan", `path`:"ariane.community.core.idm/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.4.2"})
+create (_41054:`FileNode` {`nID`:1185, `name`:"pom.xml", `path`:"ariane.community.core.idm/", `type`:"pom", `version`:"0.4.2"})
+create (_41055:`FileNode` {`nID`:1186, `name`:"ariane.community.core.idm-0.4.2.json", `path`:"ariane.community.core.idm/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.4.2"})
+create (_41056:`FileNode` {`nID`:1187, `name`:"net.echinopsii.ariane.community.core.portal_0.7.2.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.2"})
+create (_41057:`FileNode` {`nID`:1188, `name`:"net.echinopsii.ariane.community.core.injector_0.7.2.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.2"})
+create (_41058:`FileNode` {`nID`:1189, `name`:"net.echinopsii.ariane.community.messaging_0.1.1.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.2"})
+create (_41059:`FileNode` {`nID`:1190, `name`:"net.echinopsii.ariane.community.core.idm_0.4.3.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.2"})
+create (_41060:`FileNode` {`nID`:1191, `name`:"net.echinopsii.ariane.community.core.directory_0.7.2.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.2"})
+create (_41061:`FileNode` {`nID`:1192, `name`:"net.echinopsii.ariane.community.core.mapping_0.7.2.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.2"})
+create (_41062:`Component` {`nID`:1193, `name`:"environment", `order`:8, `type`:"environment", `version`:"0.7.2"})
+create (_41063:`Plugin` {`git_repos`:"https://github.com/echinopsii/net.echinopsii.", `nID`:1194, `name`:"procos", `version`:"0.1.1-b01"})
+create (_41064:`FileNode` {`nID`:1195, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/injector/", `type`:"pom", `version`:"0.2.4-SNAPSHOT"})
+create (_41065:`Module` {`artifactId`:"net.echinopsii.ariane.community.plugin.rabbitmq.injector", `groupId`:"net.echinopsii.ariane.community.plugin.rabbitmq", `nID`:1196, `name`:"injector", `order`:3, `version`:"0.2.5-SNAPSHOT"})
+create (_41066:`FileNode` {`nID`:1197, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/directory/", `type`:"pom", `version`:"0.2.4-SNAPSHOT"})
+create (_41067:`Module` {`artifactId`:"net.echinopsii.ariane.community.plugin.rabbitmq.directory", `groupId`:"net.echinopsii.ariane.community.plugin.rabbitmq", `nID`:1198, `name`:"directory", `order`:1, `version`:"0.2.5-SNAPSHOT"})
+create (_41068:`FileNode` {`nID`:1199, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/jsonparser/", `type`:"pom", `version`:"0.2.4-SNAPSHOT"})
+create (_41069:`Module` {`artifactId`:"net.echinopsii.ariane.community.plugin.rabbitmq.jsonparser", `groupId`:"net.echinopsii.ariane.community.plugin.rabbitmq", `nID`:1200, `name`:"jsonparser", `order`:2, `version`:"0.2.5-SNAPSHOT"})
+create (_41070:`FileNode` {`nID`:1201, `name`:"net.echinopsii.ariane.community.plugin.rabbitmq_master.SNAPSHOT.plan", `path`:"ariane.community.plugin.rabbitmq/distrib/db/resources/virgo/repository/ariane-plugins/", `type`:"plan", `version`:"0.2.5-SNAPSHOT"})
+create (_41071:`FileNode` {`nID`:1202, `name`:"deploy-plugin.rabbitmq.vsh", `path`:"ariane.community.plugin.rabbitmq/distrib/installer/resources/virgoscripts/", `type`:"vsh", `version`:"0.2.5-SNAPSHOT"})
+create (_41072:`FileNode` {`nID`:1203, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/", `type`:"pom", `version`:"0.2.5-SNAPSHOT"})
+create (_41073:`FileNode` {`nID`:1204, `name`:"ariane.community.plugin.rabbitmq-master.SNAPSHOT.json", `path`:"ariane.community.plugin.rabbitmq/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.2.5-SNAPSHOT"})
+create (_41074:`Plugin` {`git_repos`:"https://github.com/echinopsii/net.echinopsii.", `nID`:1205, `name`:"rabbitmq", `version`:"0.2.5-SNAPSHOT"})
+create (_41075:`FileNode` {`nID`:1206, `name`:"ariane.community.plugins-distrib-0.7.2.json", `path`:"ariane.community.distrib/resources/plugins/", `type`:"json_plugin_dist", `version`:"0.7.2"})
+create (_41076:`FileNode` {`nID`:1207, `name`:"ariane.community.git.repos-0.7.2.json", `path`:"ariane.community.distrib/resources/sources/", `type`:"json_git_repos", `version`:"0.7.2"})
+create (_41077:`FileNode` {`nID`:1208, `name`:"ariane.community.distrib-0.7.2.json", `path`:"ariane.community.distrib/resources/distrib/", `type`:"json_dist", `version`:"0.7.2"})
+create (_41078:`FileNode` {`nID`:1209, `name`:"ariane.community.plugins.json", `path`:"ariane.community.distrib/resources/plugins/", `type`:"json_plugins", `version`:"0.7.2"})
+create (_41079:`FileNode` {`nID`:1210, `name`:"pom-ariane.community.distrib-0.7.2.xml", `path`:"ariane.community.distrib/resources/maven/", `type`:"pom_dist", `version`:"0.7.2"})
+create (_41080:`Distribution` {`editable`:"false", `nID`:1211, `name`:"community", `url_repos`:"http://stash.echinopsii.net/scm/ariane/", `version`:"0.7.2"})
+create (_41156:`FileNode` {`nID`:1287, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/jsonparser/", `type`:"pom", `version`:"0.2.4-SNAPSHOT"})
+create (_41157:`Module` {`artifactId`:"net.echinopsii.ariane.community.plugin.rabbitmq.jsonparser", `groupId`:"net.echinopsii.ariane.community.plugin.rabbitmq", `nID`:1288, `name`:"jsonparser", `order`:2, `version`:"0.2.5-SNAPSHOT"})
+create (_41158:`FileNode` {`nID`:1289, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/directory/", `type`:"pom", `version`:"0.2.4-SNAPSHOT"})
+create (_41159:`Module` {`artifactId`:"net.echinopsii.ariane.community.plugin.rabbitmq.directory", `groupId`:"net.echinopsii.ariane.community.plugin.rabbitmq", `nID`:1290, `name`:"directory", `order`:1, `version`:"0.2.5-SNAPSHOT"})
+create (_41160:`FileNode` {`nID`:1291, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/injector/", `type`:"pom", `version`:"0.2.4-SNAPSHOT"})
+create (_41161:`Module` {`artifactId`:"net.echinopsii.ariane.community.plugin.rabbitmq.injector", `groupId`:"net.echinopsii.ariane.community.plugin.rabbitmq", `nID`:1292, `name`:"injector", `order`:3, `version`:"0.2.5-SNAPSHOT"})
+create (_41162:`FileNode` {`nID`:1293, `name`:"ariane.community.plugin.rabbitmq-master.SNAPSHOT.json", `path`:"ariane.community.plugin.rabbitmq/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.2.5-SNAPSHOT"})
+create (_41163:`FileNode` {`nID`:1294, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/", `type`:"pom", `version`:"0.2.5-SNAPSHOT"})
+create (_41164:`FileNode` {`nID`:1295, `name`:"deploy-plugin.rabbitmq.vsh", `path`:"ariane.community.plugin.rabbitmq/distrib/installer/resources/virgoscripts/", `type`:"vsh", `version`:"0.2.5-SNAPSHOT"})
+create (_41165:`FileNode` {`nID`:1296, `name`:"net.echinopsii.ariane.community.plugin.rabbitmq_master.SNAPSHOT.plan", `path`:"ariane.community.plugin.rabbitmq/distrib/db/resources/virgo/repository/ariane-plugins/", `type`:"plan", `version`:"0.2.5-SNAPSHOT"})
+create (_41166:`Plugin` {`git_repos`:"https://github.com/echinopsii/net.echinopsii.", `nID`:1297, `name`:"rabbitmq", `version`:"0.2.5-SNAPSHOT"})
+create (_41167:`Plugin` {`git_repos`:"https://github.com/echinopsii/net.echinopsii.", `nID`:1298, `name`:"procos", `version`:"0.1.1-b01"})
+create (_41174:`FileNode` {`nID`:1305, `name`:"pom.xml", `path`:"ariane.community.core.portal/idmwat/", `type`:"pom", `version`:"0.7.3-SNAPSHOT"})
+create (_41175:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.portal.idmwat", `groupId`:"net.echinopsii.ariane.community.core.portal", `nID`:1306, `name`:"idmwat", `order`:3, `version`:"0.7.3-SNAPSHOT"})
+create (_41176:`FileNode` {`nID`:1307, `name`:"pom.xml", `path`:"ariane.community.core.portal/wab/", `type`:"pom", `version`:"0.7.3-SNAPSHOT"})
+create (_41177:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.portal.wab", `groupId`:"net.echinopsii.ariane.community.core.portal", `nID`:1308, `name`:"wab", `order`:4, `version`:"0.7.3-SNAPSHOT"})
+create (_41178:`FileNode` {`nID`:1309, `name`:"pom.xml", `path`:"ariane.community.core.portal/wat/", `type`:"pom", `version`:"0.7.3-SNAPSHOT"})
+create (_41179:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.portal.wat", `groupId`:"net.echinopsii.ariane.community.core.portal", `nID`:1310, `name`:"wat", `order`:2, `version`:"0.7.3-SNAPSHOT"})
+create (_41180:`FileNode` {`nID`:1311, `name`:"pom.xml", `path`:"ariane.community.core.portal/wresources/", `type`:"pom", `version`:"0.7.3-SNAPSHOT"})
+create (_41181:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.portal.wresources", `groupId`:"net.echinopsii.ariane.community.core.portal", `nID`:1312, `name`:"wresources", `order`:5, `version`:"0.7.3-SNAPSHOT"})
+create (_41182:`FileNode` {`nID`:1313, `name`:"pom.xml", `path`:"ariane.community.core.portal/base/", `type`:"pom", `version`:"0.7.3-SNAPSHOT"})
+create (_41183:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.portal.base", `groupId`:"net.echinopsii.ariane.community.core.portal", `nID`:1314, `name`:"base", `order`:1, `version`:"0.7.3-SNAPSHOT"})
+create (_41184:`FileNode` {`nID`:1315, `name`:"pom.xml", `path`:"ariane.community.core.portal/", `type`:"pom", `version`:"0.7.3-SNAPSHOT"})
+create (_41185:`FileNode` {`nID`:1316, `name`:"net.echinopsii.ariane.community.core.portal_master.SNAPSHOT.plan", `path`:"ariane.community.core.portal/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.7.3-SNAPSHOT"})
+create (_41186:`FileNode` {`nID`:1317, `name`:"ariane.community.core.portal-master.SNAPSHOT.json", `path`:"ariane.community.core.portal/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.7.3-SNAPSHOT"})
+create (_41187:`Component` {`nID`:1318, `name`:"portal", `order`:4, `type`:"core", `version`:"0.7.3-SNAPSHOT"})
+create (_41188:`Component` {`nID`:1319, `name`:"idm", `order`:3, `type`:"core", `version`:"0.4.3-SNAPSHOT"})
+create (_41189:`FileNode` {`nID`:1320, `name`:"pom.xml", `path`:"ariane.community.core.injector/base/", `type`:"pom", `version`:"0.7.2-SNAPSHOT"})
+create (_41190:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.injector.base", `groupId`:"net.echinopsii.ariane.community.core.injector", `nID`:1321, `name`:"base", `order`:1, `version`:"0.7.2-SNAPSHOT"})
+create (_41191:`FileNode` {`nID`:1322, `name`:"pom.xml", `path`:"ariane.community.core.injector/wat/", `type`:"pom", `version`:"0.7.2-SNAPSHOT"})
+create (_41192:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.injector.wat", `groupId`:"net.echinopsii.ariane.community.core.injector", `nID`:1323, `name`:"wat", `order`:3, `version`:"0.7.2-SNAPSHOT"})
+create (_41193:`FileNode` {`nID`:1324, `name`:"pom.xml", `path`:"ariane.community.core.injector/messaging/", `type`:"pom", `version`:"0.7.2-SNAPSHOT"})
+create (_41194:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.injector.messaging", `groupId`:"net.echinopsii.ariane.community.core.injector", `nID`:1325, `name`:"messaging", `order`:2, `version`:"0.7.2-SNAPSHOT"})
+create (_41195:`FileNode` {`nID`:1326, `name`:"net.echinopsii.ariane.community.core.injector_master.SNAPSHOT.plan", `path`:"ariane.community.core.injector/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.7.2-SNAPSHOT"})
+create (_41196:`FileNode` {`nID`:1327, `name`:"pom.xml", `path`:"ariane.community.core.injector/", `type`:"pom", `version`:"0.7.2-SNAPSHOT"})
+create (_41197:`FileNode` {`nID`:1328, `name`:"ariane.community.core.injector-master.SNAPSHOT.json", `path`:"ariane.community.core.injector/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.7.2-SNAPSHOT"})
+create (_41198:`Component` {`nID`:1329, `name`:"injector", `order`:7, `type`:"core", `version`:"0.7.2-SNAPSHOT"})
+create (_41199:`Component` {`nID`:1330, `name`:"messaging", `order`:2, `type`:"none", `version`:"0.1.1-SNAPSHOT"})
+create (_41200:`FileNode` {`nID`:1331, `name`:"pom.xml", `path`:"ariane.community.core.directory/wat/", `type`:"pom", `version`:"0.7.2-SNAPSHOT"})
+create (_41201:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.directory.wat", `groupId`:"net.echinopsii.ariane.community.core.directory", `nID`:1332, `name`:"wat", `order`:2, `version`:"0.7.2-SNAPSHOT"})
+create (_41202:`FileNode` {`nID`:1333, `name`:"pom.xml", `path`:"ariane.community.core.directory/base/", `type`:"pom", `version`:"0.7.2-SNAPSHOT"})
+create (_41203:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.directory.base", `groupId`:"net.echinopsii.ariane.community.core.directory", `nID`:1334, `name`:"base", `order`:1, `version`:"0.7.2-SNAPSHOT"})
+create (_41204:`FileNode` {`nID`:1335, `name`:"pom.xml", `path`:"ariane.community.core.directory/", `type`:"pom", `version`:"0.7.2-SNAPSHOT"})
+create (_41205:`FileNode` {`nID`:1336, `name`:"net.echinopsii.ariane.community.core.directory_master.SNAPSHOT.plan", `path`:"ariane.community.core.directory/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.7.2-SNAPSHOT"})
+create (_41206:`FileNode` {`nID`:1337, `name`:"ariane.community.core.directory-master.SNAPSHOT.json", `path`:"ariane.community.core.directory/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.7.2-SNAPSHOT"})
+create (_41207:`Component` {`nID`:1338, `name`:"directory", `order`:6, `type`:"core", `version`:"0.7.2-SNAPSHOT"})
+create (_41208:`FileNode` {`nID`:1339, `name`:"deploy-components.vsh", `path`:"ariane.community.installer/distrib/installer/resources/virgoscripts/", `type`:"vsh", `version`:"0.7.3-SNAPSHOT"})
+create (_41209:`Component` {`nID`:1340, `name`:"installer", `order`:1, `type`:"environment", `version`:"0.7.3-SNAPSHOT"})
+create (_41210:`FileNode` {`nID`:1341, `name`:"pom.xml", `path`:"ariane.community.messaging/api/", `type`:"pom", `version`:"0.1.1-SNAPSHOT"})
+create (_41211:`Module` {`artifactId`:"net.echinopsii.ariane.community.messaging.api", `groupId`:"net.echinopsii.ariane.community.messaging", `nID`:1342, `name`:"api", `order`:1, `version`:"0.1.1-SNAPSHOT"})
+create (_41212:`FileNode` {`nID`:1343, `name`:"pom.xml", `path`:"ariane.community.messaging/rabbitmq/", `type`:"pom", `version`:"0.1.1-SNAPSHOT"})
+create (_41213:`Module` {`artifactId`:"net.echinopsii.ariane.community.messaging.rabbitmq", `groupId`:"net.echinopsii.ariane.community.messaging", `nID`:1344, `name`:"rabbitmq", `order`:2, `version`:"0.1.1-SNAPSHOT"})
+create (_41214:`FileNode` {`nID`:1345, `name`:"pom.xml", `path`:"ariane.community.messaging/", `type`:"pom", `version`:"0.1.1-SNAPSHOT"})
+create (_41215:`FileNode` {`nID`:1346, `name`:"ariane.community.messaging-master.SNAPSHOT.json", `path`:"ariane.community.messaging/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.1.1-SNAPSHOT"})
+create (_41216:`FileNode` {`nID`:1347, `name`:"net.echinopsii.ariane.community.messaging_master.SNAPSHOT.plan", `path`:"ariane.community.messaging/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.1.1-SNAPSHOT"})
+create (_41217:`FileNode` {`nID`:1348, `name`:"pom.xml", `path`:"ariane.community.core.mapping/ds/rim/", `type`:"pom", `version`:"0.7.3-SNAPSHOT"})
+create (_41218:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.ds.rim", `groupId`:"net.echinopsii.ariane.community.core.mapping.ds", `nID`:1349, `name`:"rim", `order`:3, `version`:"0.7.3-SNAPSHOT"})
+create (_41219:`FileNode` {`nID`:1350, `name`:"pom.xml", `path`:"ariane.community.core.mapping/ds/api/", `type`:"pom", `version`:"0.7.3-SNAPSHOT"})
+create (_41220:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.ds.api", `groupId`:"net.echinopsii.ariane.community.core.mapping.ds", `nID`:1351, `name`:"api", `order`:1, `version`:"0.7.3-SNAPSHOT"})
+create (_41221:`FileNode` {`nID`:1352, `name`:"pom.xml", `path`:"ariane.community.core.mapping/ds/dsl/", `type`:"pom", `version`:"0.7.3-SNAPSHOT"})
+create (_41222:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.ds.dsl", `groupId`:"net.echinopsii.ariane.community.core.mapping.ds", `nID`:1353, `name`:"dsl", `order`:4, `version`:"0.7.3-SNAPSHOT"})
+create (_41223:`FileNode` {`nID`:1354, `name`:"pom.xml", `path`:"ariane.community.core.mapping/ds/blueprints/", `type`:"pom", `version`:"0.7.3-SNAPSHOT"})
+create (_41224:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.ds.blueprints", `groupId`:"net.echinopsii.ariane.community.core.mapping.ds", `nID`:1355, `name`:"blueprints", `order`:2, `version`:"0.7.3-SNAPSHOT"})
+create (_41225:`FileNode` {`nID`:1356, `name`:"pom.xml", `path`:"ariane.community.core.mapping/ds/", `type`:"pom", `version`:"0.7.3-SNAPSHOT"})
+create (_41226:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.ds", `groupId`:"net.echinopsii.ariane.community.core.mapping", `nID`:1357, `name`:"ds", `order`:5, `version`:"0.7.3-SNAPSHOT"})
+create (_41227:`FileNode` {`nID`:1358, `name`:"pom.xml", `path`:"ariane.community.core.mapping/wat/", `type`:"pom", `version`:"0.7.3-SNAPSHOT"})
+create (_41228:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.wat", `groupId`:"net.echinopsii.ariane.community.core.mapping", `nID`:1359, `name`:"wat", `order`:7, `version`:"0.7.3-SNAPSHOT"})
+create (_41229:`FileNode` {`nID`:1360, `name`:"pom.xml", `path`:"ariane.community.core.mapping/taitale/", `type`:"pom", `version`:"0.7.3-SNAPSHOT"})
+create (_41230:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.taitale", `groupId`:"net.echinopsii.ariane.community.core.mapping", `nID`:1361, `name`:"taitale", `order`:6, `version`:"0.7.3-SNAPSHOT"})
+create (_41231:`FileNode` {`nID`:1362, `name`:"pom.xml", `path`:"ariane.community.core.mapping/wresources/", `type`:"pom", `version`:"0.7.3-SNAPSHOT"})
+create (_41232:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.mapping.wresources", `groupId`:"net.echinopsii.ariane.community.core.mapping", `nID`:1363, `name`:"wresources", `order`:8, `version`:"0.7.3-SNAPSHOT"})
+create (_41233:`FileNode` {`nID`:1364, `name`:"ariane.community.core.mapping-master.SNAPSHOT.json", `path`:"ariane.community.core.mapping/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.7.3-SNAPSHOT"})
+create (_41234:`FileNode` {`nID`:1365, `name`:"pom.xml", `path`:"ariane.community.core.mapping/", `type`:"pom", `version`:"0.7.3-SNAPSHOT"})
+create (_41235:`FileNode` {`nID`:1366, `name`:"net.echinopsii.ariane.community.core.mapping_master.SNAPSHOT.plan", `path`:"ariane.community.core.mapping/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.7.3-SNAPSHOT"})
+create (_41236:`Component` {`nID`:1367, `name`:"mapping", `order`:5, `type`:"core", `version`:"0.7.3-SNAPSHOT"})
+create (_41237:`FileNode` {`nID`:1368, `name`:"pom.xml", `path`:"ariane.community.core.idm/base/", `type`:"pom", `version`:"0.4.3-SNAPSHOT"})
+create (_41238:`Module` {`artifactId`:"net.echinopsii.ariane.community.core.idm.base", `groupId`:"net.echinopsii.ariane.community.core.idm", `nID`:1369, `name`:"base", `order`:1, `version`:"0.4.3-SNAPSHOT"})
+create (_41239:`FileNode` {`nID`:1370, `name`:"net.echinopsii.ariane.community.core.idm_master.SNAPSHOT.plan", `path`:"ariane.community.core.idm/distrib/db/resources/virgo/repository/ariane-core/", `type`:"plan", `version`:"0.4.3-SNAPSHOT"})
+create (_41240:`FileNode` {`nID`:1371, `name`:"pom.xml", `path`:"ariane.community.core.idm/", `type`:"pom", `version`:"0.4.3-SNAPSHOT"})
+create (_41241:`FileNode` {`nID`:1372, `name`:"ariane.community.core.idm-master.SNAPSHOT.json", `path`:"ariane.community.core.idm/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.4.3-SNAPSHOT"})
+create (_41242:`FileNode` {`nID`:1373, `name`:"net.echinopsii.ariane.community.core.portal_0.7.3.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.3-SNAPSHOT"})
+create (_41243:`FileNode` {`nID`:1374, `name`:"net.echinopsii.ariane.community.core.injector_0.7.2.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.3-SNAPSHOT"})
+create (_41244:`FileNode` {`nID`:1375, `name`:"net.echinopsii.ariane.community.messaging_0.1.1.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.3-SNAPSHOT"})
+create (_41245:`FileNode` {`nID`:1376, `name`:"net.echinopsii.ariane.community.core.idm_0.4.3.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.3-SNAPSHOT"})
+create (_41246:`FileNode` {`nID`:1377, `name`:"net.echinopsii.ariane.community.core.directory_0.7.2.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.3-SNAPSHOT"})
+create (_41247:`FileNode` {`nID`:1378, `name`:"net.echinopsii.ariane.community.core.mapping_0.7.3.SNAPSHOT.plan.tpl", `path`:"ariane.community.environment/Virgo/virgo-tomcat-server-3.6.2.RELEASE/repository/ariane-core/", `type`:"plantpl", `version`:"0.7.3-SNAPSHOT"})
+create (_41248:`Component` {`nID`:1379, `name`:"environment", `order`:8, `type`:"environment", `version`:"0.7.3-SNAPSHOT"})
+create (_41249:`Plugin` {`git_repos`:"https://github.com/echinopsii/net.echinopsii.", `nID`:1380, `name`:"procos", `version`:"0.1.1-b01"})
+create (_41250:`FileNode` {`nID`:1381, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/injector/", `type`:"pom", `version`:"0.2.4-SNAPSHOT"})
+create (_41251:`Module` {`artifactId`:"net.echinopsii.ariane.community.plugin.rabbitmq.injector", `groupId`:"net.echinopsii.ariane.community.plugin.rabbitmq", `nID`:1382, `name`:"injector", `order`:3, `version`:"0.2.5-SNAPSHOT"})
+create (_41252:`FileNode` {`nID`:1383, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/directory/", `type`:"pom", `version`:"0.2.4-SNAPSHOT"})
+create (_41253:`Module` {`artifactId`:"net.echinopsii.ariane.community.plugin.rabbitmq.directory", `groupId`:"net.echinopsii.ariane.community.plugin.rabbitmq", `nID`:1384, `name`:"directory", `order`:1, `version`:"0.2.5-SNAPSHOT"})
+create (_41254:`FileNode` {`nID`:1385, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/jsonparser/", `type`:"pom", `version`:"0.2.4-SNAPSHOT"})
+create (_41255:`Module` {`artifactId`:"net.echinopsii.ariane.community.plugin.rabbitmq.jsonparser", `groupId`:"net.echinopsii.ariane.community.plugin.rabbitmq", `nID`:1386, `name`:"jsonparser", `order`:2, `version`:"0.2.5-SNAPSHOT"})
+create (_41256:`FileNode` {`nID`:1387, `name`:"net.echinopsii.ariane.community.plugin.rabbitmq_master.SNAPSHOT.plan", `path`:"ariane.community.plugin.rabbitmq/distrib/db/resources/virgo/repository/ariane-plugins/", `type`:"plan", `version`:"0.2.5-SNAPSHOT"})
+create (_41257:`FileNode` {`nID`:1388, `name`:"deploy-plugin.rabbitmq.vsh", `path`:"ariane.community.plugin.rabbitmq/distrib/installer/resources/virgoscripts/", `type`:"vsh", `version`:"0.2.5-SNAPSHOT"})
+create (_41258:`FileNode` {`nID`:1389, `name`:"pom.xml", `path`:"ariane.community.plugin.rabbitmq/", `type`:"pom", `version`:"0.2.5-SNAPSHOT"})
+create (_41259:`FileNode` {`nID`:1390, `name`:"ariane.community.plugin.rabbitmq-master.SNAPSHOT.json", `path`:"ariane.community.plugin.rabbitmq/distrib/db/resources/builds/", `type`:"json_build", `version`:"0.2.5-SNAPSHOT"})
+create (_41260:`Plugin` {`git_repos`:"https://github.com/echinopsii/net.echinopsii.", `nID`:1391, `name`:"rabbitmq", `version`:"0.2.5-SNAPSHOT"})
+create (_41261:`FileNode` {`nID`:1392, `name`:"ariane.community.plugins-distrib-master.SNAPSHOT.json", `path`:"ariane.community.distrib/resources/plugins/", `type`:"json_plugin_dist", `version`:"0.7.3-SNAPSHOT"})
+create (_41262:`FileNode` {`nID`:1393, `name`:"ariane.community.git.repos-master.SNAPSHOT.json", `path`:"ariane.community.distrib/resources/sources/", `type`:"json_git_repos", `version`:"0.7.3-SNAPSHOT"})
+create (_41263:`FileNode` {`nID`:1394, `name`:"ariane.community.distrib-master.SNAPSHOT.json", `path`:"ariane.community.distrib/resources/distrib/", `type`:"json_dist", `version`:"0.7.3-SNAPSHOT"})
+create (_41264:`FileNode` {`nID`:1395, `name`:"ariane.community.plugins.json", `path`:"ariane.community.distrib/resources/plugins/", `type`:"json_plugins", `version`:"0.7.3-SNAPSHOT"})
+create (_41265:`FileNode` {`nID`:1396, `name`:"pom-ariane.community.distrib-master.SNAPSHOT.xml", `path`:"ariane.community.distrib/resources/maven/", `type`:"pom_dist", `version`:"0.7.3-SNAPSHOT"})
+create (_41266:`Distribution` {`editable`:"true", `nID`:1397, `name`:"community", `url_repos`:"http://stash.echinopsii.net/scm/ariane/", `version`:"0.7.3-SNAPSHOT"})
 create _39382-[:`CONTAINS`]->_40231
 create _39384-[:`CONTAINS`]->_39383
 create _39387-[:`CONTAINS`]->_39392
@@ -1435,106 +1542,6 @@ create _39925-[:`composedBy`]->_39802
 create _39925-[:`composedBy`]->_39884
 create _39925-[:`composedBy`]->_39877
 create _39925-[:`composedBy`]->_39803
-create _39927-[:`CONTAINS`]->_39926
-create _39929-[:`CONTAINS`]->_39928
-create _39933-[:`CONTAINS`]->_39930
-create _39933-[:`CONTAINS`]->_39932
-create _39933-[:`CONTAINS`]->_39931
-create _39933-[:`module`]->_39927
-create _39933-[:`module`]->_39929
-create _39933-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_39934
-create _39934-[:`CONTAINS`]->_39953
-create _39934-[:`CONTAINS`]->_39951
-create _39934-[:`CONTAINS`]->_39952
-create _39934-[:`module`]->_39946
-create _39934-[:`module`]->_39950
-create _39934-[:`module`]->_39944
-create _39934-[:`module`]->_39942
-create _39934-[:`module`]->_39948
-create _39934-[:`dependency` {`version_max`:"0.5.0", `version_min`:"0.4.0"}]->_39940
-create _39936-[:`CONTAINS`]->_39935
-create _39940-[:`CONTAINS`]->_39939
-create _39940-[:`CONTAINS`]->_39938
-create _39940-[:`CONTAINS`]->_39937
-create _39940-[:`module`]->_39936
-create _39942-[:`CONTAINS`]->_39941
-create _39944-[:`CONTAINS`]->_39943
-create _39946-[:`CONTAINS`]->_39945
-create _39948-[:`CONTAINS`]->_39947
-create _39950-[:`CONTAINS`]->_39949
-create _39955-[:`CONTAINS`]->_39954
-create _39957-[:`CONTAINS`]->_39956
-create _39959-[:`CONTAINS`]->_39958
-create _39963-[:`CONTAINS`]->_39960
-create _39963-[:`CONTAINS`]->_39962
-create _39963-[:`CONTAINS`]->_39961
-create _39963-[:`module`]->_39955
-create _39963-[:`module`]->_39957
-create _39963-[:`module`]->_39959
-create _39963-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_39934
-create _39963-[:`dependency` {`version_max`:"0.2.0", `version_min`:"0.1.0"}]->_39964
-create _39964-[:`CONTAINS`]->_39976
-create _39964-[:`CONTAINS`]->_39978
-create _39964-[:`CONTAINS`]->_39977
-create _39964-[:`module`]->_39975
-create _39964-[:`module`]->_39973
-create _39971-[:`CONTAINS`]->_39969
-create _39971-[:`CONTAINS`]->_39965
-create _39971-[:`CONTAINS`]->_39968
-create _39971-[:`CONTAINS`]->_39967
-create _39971-[:`CONTAINS`]->_39970
-create _39971-[:`CONTAINS`]->_39966
-create _39973-[:`CONTAINS`]->_39972
-create _39975-[:`CONTAINS`]->_39974
-create _39980-[:`CONTAINS`]->_39979
-create _39982-[:`CONTAINS`]->_39981
-create _39984-[:`CONTAINS`]->_39983
-create _39986-[:`CONTAINS`]->_39985
-create _39988-[:`CONTAINS`]->_39987
-create _39990-[:`CONTAINS`]->_39989
-create _39992-[:`CONTAINS`]->_39991
-create _39994-[:`CONTAINS`]->_39993
-create _39994-[:`module`]->_39990
-create _39994-[:`module`]->_39992
-create _39994-[:`module`]->_39986
-create _39994-[:`module`]->_39988
-create _39998-[:`CONTAINS`]->_39996
-create _39998-[:`CONTAINS`]->_39997
-create _39998-[:`CONTAINS`]->_39995
-create _39998-[:`module`]->_39994
-create _39998-[:`module`]->_39984
-create _39998-[:`module`]->_39982
-create _39998-[:`dependency` {`version_max`:"0.5.0", `version_min`:"0.4.0"}]->_39940
-create _39998-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_39934
-create _39999-[:`compatibleWith`]->_40016
-create _40001-[:`CONTAINS`]->_40000
-create _40003-[:`CONTAINS`]->_40002
-create _40005-[:`CONTAINS`]->_40004
-create _40010-[:`CONTAINS`]->_40008
-create _40010-[:`CONTAINS`]->_40009
-create _40010-[:`CONTAINS`]->_40006
-create _40010-[:`CONTAINS`]->_40007
-create _40010-[:`module`]->_40005
-create _40010-[:`module`]->_40003
-create _40010-[:`module`]->_40001
-create _40010-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_39963
-create _40010-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_39998
-create _40010-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_39934
-create _40010-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_39933
-create _40010-[:`compatibleWith`]->_40016
-create _40016-[:`CONTAINS`]->_40012
-create _40016-[:`CONTAINS`]->_40014
-create _40016-[:`CONTAINS`]->_40013
-create _40016-[:`CONTAINS`]->_40015
-create _40016-[:`CONTAINS`]->_40011
-create _40016-[:`composedBy`]->_39934
-create _40016-[:`composedBy`]->_39963
-create _40016-[:`composedBy`]->_39933
-create _40016-[:`composedBy`]->_39980
-create _40016-[:`composedBy`]->_39964
-create _40016-[:`composedBy`]->_39998
-create _40016-[:`composedBy`]->_39940
-create _40016-[:`composedBy`]->_39971
 create _40018-[:`CONTAINS`]->_40017
 create _40020-[:`CONTAINS`]->_40019
 create _40021-[:`CONTAINS`]->_39864
@@ -1782,5 +1789,219 @@ create _40224-[:`module`]->_40221
 create _40224-[:`module`]->_40218
 create _40224-[:`dependency` {`version_max`:"0.7.0", `version_min`:"0.6.0"}]->_40223
 create _40229-[:`CONTAINS`]->_40228
+create _40989-[:`CONTAINS`]->_40988
+create _40991-[:`CONTAINS`]->_40990
+create _40993-[:`CONTAINS`]->_40992
+create _40995-[:`CONTAINS`]->_40994
+create _40997-[:`CONTAINS`]->_40996
+create _41001-[:`CONTAINS`]->_41000
+create _41001-[:`CONTAINS`]->_40999
+create _41001-[:`CONTAINS`]->_40998
+create _41001-[:`module`]->_40997
+create _41001-[:`module`]->_40995
+create _41001-[:`module`]->_40993
+create _41001-[:`module`]->_40991
+create _41001-[:`module`]->_40989
+create _41001-[:`dependency` {`version_max`:"0.5.0", `version_min`:"0.4.0"}]->_41002
+create _41002-[:`CONTAINS`]->_41055
+create _41002-[:`CONTAINS`]->_41054
+create _41002-[:`CONTAINS`]->_41053
+create _41002-[:`module`]->_41052
+create _41004-[:`CONTAINS`]->_41003
+create _41006-[:`CONTAINS`]->_41005
+create _41008-[:`CONTAINS`]->_41007
+create _41012-[:`CONTAINS`]->_41011
+create _41012-[:`CONTAINS`]->_41010
+create _41012-[:`CONTAINS`]->_41009
+create _41012-[:`module`]->_41008
+create _41012-[:`module`]->_41006
+create _41012-[:`module`]->_41004
+create _41012-[:`dependency` {`version_max`:"0.2.0", `version_min`:"0.1.0"}]->_41013
+create _41012-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_41001
+create _41013-[:`CONTAINS`]->_41030
+create _41013-[:`CONTAINS`]->_41029
+create _41013-[:`CONTAINS`]->_41028
+create _41013-[:`module`]->_41027
+create _41013-[:`module`]->_41025
+create _41015-[:`CONTAINS`]->_41014
+create _41017-[:`CONTAINS`]->_41016
+create _41021-[:`CONTAINS`]->_41020
+create _41021-[:`CONTAINS`]->_41019
+create _41021-[:`CONTAINS`]->_41018
+create _41021-[:`module`]->_41017
+create _41021-[:`module`]->_41015
+create _41021-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_41001
+create _41023-[:`CONTAINS`]->_41022
+create _41025-[:`CONTAINS`]->_41024
+create _41027-[:`CONTAINS`]->_41026
+create _41032-[:`CONTAINS`]->_41031
+create _41034-[:`CONTAINS`]->_41033
+create _41036-[:`CONTAINS`]->_41035
+create _41038-[:`CONTAINS`]->_41037
+create _41040-[:`CONTAINS`]->_41039
+create _41040-[:`module`]->_41038
+create _41040-[:`module`]->_41036
+create _41040-[:`module`]->_41034
+create _41040-[:`module`]->_41032
+create _41042-[:`CONTAINS`]->_41041
+create _41044-[:`CONTAINS`]->_41043
+create _41046-[:`CONTAINS`]->_41045
+create _41050-[:`CONTAINS`]->_41049
+create _41050-[:`CONTAINS`]->_41048
+create _41050-[:`CONTAINS`]->_41047
+create _41050-[:`module`]->_41046
+create _41050-[:`module`]->_41044
+create _41050-[:`module`]->_41042
+create _41050-[:`module`]->_41040
+create _41050-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_41001
+create _41050-[:`dependency` {`version_max`:"0.5.0", `version_min`:"0.4.0"}]->_41002
+create _41052-[:`CONTAINS`]->_41051
+create _41062-[:`CONTAINS`]->_41061
+create _41062-[:`CONTAINS`]->_41060
+create _41062-[:`CONTAINS`]->_41059
+create _41062-[:`CONTAINS`]->_41058
+create _41062-[:`CONTAINS`]->_41057
+create _41062-[:`CONTAINS`]->_41056
+create _41063-[:`compatibleWith`]->_41080
+create _41065-[:`CONTAINS`]->_41064
+create _41067-[:`CONTAINS`]->_41066
+create _41069-[:`CONTAINS`]->_41068
+create _41074-[:`CONTAINS`]->_41073
+create _41074-[:`CONTAINS`]->_41072
+create _41074-[:`CONTAINS`]->_41071
+create _41074-[:`CONTAINS`]->_41070
+create _41074-[:`module`]->_41069
+create _41074-[:`module`]->_41067
+create _41074-[:`module`]->_41065
+create _41074-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_41021
+create _41074-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_41001
+create _41074-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_41050
+create _41074-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_41012
+create _41074-[:`compatibleWith`]->_41080
+create _41080-[:`CONTAINS`]->_41079
+create _41080-[:`CONTAINS`]->_41078
+create _41080-[:`CONTAINS`]->_41077
+create _41080-[:`CONTAINS`]->_41076
+create _41080-[:`CONTAINS`]->_41075
+create _41080-[:`composedBy`]->_41062
+create _41080-[:`composedBy`]->_41002
+create _41080-[:`composedBy`]->_41050
+create _41080-[:`composedBy`]->_41013
+create _41080-[:`composedBy`]->_41023
+create _41080-[:`composedBy`]->_41021
+create _41080-[:`composedBy`]->_41012
+create _41080-[:`composedBy`]->_41001
+create _41157-[:`CONTAINS`]->_41156
+create _41159-[:`CONTAINS`]->_41158
+create _41161-[:`CONTAINS`]->_41160
+create _41166-[:`CONTAINS`]->_41165
+create _41166-[:`CONTAINS`]->_41164
+create _41166-[:`CONTAINS`]->_41163
+create _41166-[:`CONTAINS`]->_41162
+create _41166-[:`module`]->_41161
+create _41166-[:`module`]->_41159
+create _41166-[:`module`]->_41157
+create _41175-[:`CONTAINS`]->_41174
+create _41177-[:`CONTAINS`]->_41176
+create _41179-[:`CONTAINS`]->_41178
+create _41181-[:`CONTAINS`]->_41180
+create _41183-[:`CONTAINS`]->_41182
+create _41187-[:`CONTAINS`]->_41186
+create _41187-[:`CONTAINS`]->_41185
+create _41187-[:`CONTAINS`]->_41184
+create _41187-[:`module`]->_41183
+create _41187-[:`module`]->_41181
+create _41187-[:`module`]->_41179
+create _41187-[:`module`]->_41177
+create _41187-[:`module`]->_41175
+create _41187-[:`dependency` {`version_max`:"0.5.0", `version_min`:"0.4.0"}]->_41188
+create _41188-[:`CONTAINS`]->_41241
+create _41188-[:`CONTAINS`]->_41240
+create _41188-[:`CONTAINS`]->_41239
+create _41188-[:`module`]->_41238
+create _41190-[:`CONTAINS`]->_41189
+create _41192-[:`CONTAINS`]->_41191
+create _41194-[:`CONTAINS`]->_41193
+create _41198-[:`CONTAINS`]->_41197
+create _41198-[:`CONTAINS`]->_41196
+create _41198-[:`CONTAINS`]->_41195
+create _41198-[:`module`]->_41194
+create _41198-[:`module`]->_41192
+create _41198-[:`module`]->_41190
+create _41198-[:`dependency` {`version_max`:"0.2.0", `version_min`:"0.1.0"}]->_41199
+create _41198-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_41187
+create _41199-[:`CONTAINS`]->_41216
+create _41199-[:`CONTAINS`]->_41215
+create _41199-[:`CONTAINS`]->_41214
+create _41199-[:`module`]->_41213
+create _41199-[:`module`]->_41211
+create _41201-[:`CONTAINS`]->_41200
+create _41203-[:`CONTAINS`]->_41202
+create _41207-[:`CONTAINS`]->_41206
+create _41207-[:`CONTAINS`]->_41205
+create _41207-[:`CONTAINS`]->_41204
+create _41207-[:`module`]->_41203
+create _41207-[:`module`]->_41201
+create _41207-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_41187
+create _41209-[:`CONTAINS`]->_41208
+create _41211-[:`CONTAINS`]->_41210
+create _41213-[:`CONTAINS`]->_41212
+create _41218-[:`CONTAINS`]->_41217
+create _41220-[:`CONTAINS`]->_41219
+create _41222-[:`CONTAINS`]->_41221
+create _41224-[:`CONTAINS`]->_41223
+create _41226-[:`CONTAINS`]->_41225
+create _41226-[:`module`]->_41224
+create _41226-[:`module`]->_41222
+create _41226-[:`module`]->_41220
+create _41226-[:`module`]->_41218
+create _41228-[:`CONTAINS`]->_41227
+create _41230-[:`CONTAINS`]->_41229
+create _41232-[:`CONTAINS`]->_41231
+create _41236-[:`CONTAINS`]->_41235
+create _41236-[:`CONTAINS`]->_41234
+create _41236-[:`CONTAINS`]->_41233
+create _41236-[:`module`]->_41232
+create _41236-[:`module`]->_41230
+create _41236-[:`module`]->_41228
+create _41236-[:`module`]->_41226
+create _41236-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_41187
+create _41236-[:`dependency` {`version_max`:"0.5.0", `version_min`:"0.4.0"}]->_41188
+create _41238-[:`CONTAINS`]->_41237
+create _41248-[:`CONTAINS`]->_41247
+create _41248-[:`CONTAINS`]->_41246
+create _41248-[:`CONTAINS`]->_41245
+create _41248-[:`CONTAINS`]->_41244
+create _41248-[:`CONTAINS`]->_41243
+create _41248-[:`CONTAINS`]->_41242
+create _41249-[:`compatibleWith`]->_41266
+create _41251-[:`CONTAINS`]->_41250
+create _41253-[:`CONTAINS`]->_41252
+create _41255-[:`CONTAINS`]->_41254
+create _41260-[:`CONTAINS`]->_41259
+create _41260-[:`CONTAINS`]->_41258
+create _41260-[:`CONTAINS`]->_41257
+create _41260-[:`CONTAINS`]->_41256
+create _41260-[:`module`]->_41255
+create _41260-[:`module`]->_41253
+create _41260-[:`module`]->_41251
+create _41260-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_41207
+create _41260-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_41187
+create _41260-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_41236
+create _41260-[:`dependency` {`version_max`:"0.8.0", `version_min`:"0.7.0"}]->_41198
+create _41260-[:`compatibleWith`]->_41266
+create _41266-[:`CONTAINS`]->_41265
+create _41266-[:`CONTAINS`]->_41264
+create _41266-[:`CONTAINS`]->_41263
+create _41266-[:`CONTAINS`]->_41262
+create _41266-[:`CONTAINS`]->_41261
+create _41266-[:`composedBy`]->_41248
+create _41266-[:`composedBy`]->_41188
+create _41266-[:`composedBy`]->_41236
+create _41266-[:`composedBy`]->_41199
+create _41266-[:`composedBy`]->_41209
+create _41266-[:`composedBy`]->_41207
+create _41266-[:`composedBy`]->_41198
+create _41266-[:`composedBy`]->_41187
 ;
 commit
