@@ -367,7 +367,6 @@ class Generator(object):
             self.ariane.module_service.update_arianenode_lists(s)
         # Remove each module which is not deployable.
         for s in modules.copy():
-            print(str(s))
             if s.isParent():
                 modules.extend(s.list_module)
                 modules.remove(s)
