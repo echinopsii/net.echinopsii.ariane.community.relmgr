@@ -19,9 +19,7 @@
  You should have received a copy of the GNU Affero General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/**
- * Created by stanrenia on 14/08/15.
- */
+
 angular.module('ArianeUI')
     .controller('EditCtrl', function ($scope, serviceAjax, serviceUI) {
         $scope.selectedObj = {};
@@ -40,14 +38,14 @@ angular.module('ArianeUI')
         var editablesView = {
             component: ['name', 'version', 'type'],
             plugin: ["name", "version"],
-            module: ['name', 'version', 'groupId', 'artifactId', 'order'],
+            module: ['name', 'version', 'groupId', 'artifactId', 'order', 'deployable'],
             filenode: ["name", "type", "path"],
             distrib: ["name", "version", "url_repos"]
         };
         var editablesForNewNode = {
             component: ['name', 'version', 'order', 'type'],
             plugin: ["name", "version"],
-            module: ["name", "order"],
+            module: ["name", "order", 'deployable'],
             filenode: ["name", "version", "type", "path"],
             distrib: ["name", "version", "url_repos"]
         };

@@ -134,12 +134,6 @@ class Generator(object):
                 self.exception_sub_lib = json.load(data_file)
         return self.exception_sub_lib
 
-    def get_module_plan_exceptions(self):
-        if self.exception_sub_plan.__len__() == 0:
-            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/module_plan_exceptions.json', 'r') as data_file:
-                self.exception_sub_plan = json.load(data_file)
-        return self.exception_sub_plan
-
     def get_component_pom_gen_exceptions(self):
         if self.exception_pom_file_gen.__len__() == 0:
             with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/pom_file_gen_exceptions.json', 'r') as data_file:
@@ -362,7 +356,6 @@ class Generator(object):
     def generate_plan(self, comp_plug, fplan):
         if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output+fplan.path):
             return
-        sub_exceptions = self.get_module_plan_exceptions()
         snapshot = False
         if "SNAPSHOT" in comp_plug.version:
             snapshot = True
@@ -372,15 +365,13 @@ class Generator(object):
 
         for s in modules:
             self.ariane.module_service.update_arianenode_lists(s)
-        # Remove each module which is in exceptions list.
-        # Note that if module is a parent Module which has a Module to be excluded,
-        # this is done in the component template.
+        # Remove each module which is not deployable.
         for s in modules.copy():
-            if comp_plug.name in sub_exceptions.keys():
-                if s.name in sub_exceptions[comp_plug.name]:
-                    modules.remove(s)
+            print(str(s))
             if s.isParent():
                 modules.extend(s.list_module)
+                modules.remove(s)
+            if not s.deployable:
                 modules.remove(s)
         modules = sorted(modules, key=lambda module: module.order)
         vmin, vmax = ariane_delivery.ArianeRelation.make_vmin_vmax(comp_plug.version)

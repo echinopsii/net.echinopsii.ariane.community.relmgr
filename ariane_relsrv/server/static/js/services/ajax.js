@@ -19,14 +19,12 @@
  You should have received a copy of the GNU Affero General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/**
- * Created by stanrenia on 14/08/15.
- */
+
 angular.module('ArianeUI')
     .factory('serviceAjax', function serviceAjax($http, $rootScope) {
         var url = CONFIG.url;
         var port = CONFIG.port;
-        var nodeKeys = ['name', 'version', 'groupId', 'artifactId', 'order', 'git_repos','nID', 'type', 'path'];
+        var nodeKeys = ['name', 'version', 'groupId', 'artifactId', 'deployable', 'order', 'git_repos','nID', 'type', 'path'];
         function cleanElementAttr(element){
             var copy = JSON.parse(JSON.stringify(element));
             for(var key in element){

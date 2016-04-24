@@ -143,7 +143,7 @@ class NeoGraph(object):
         node = args["node"]
         if node.bound:
             for key in args.keys():
-                if key in node.properties.keys():
+                if key is not "node":
                     node.properties[key] = args[key]
             node.push()
         return node

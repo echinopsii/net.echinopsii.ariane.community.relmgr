@@ -324,16 +324,18 @@ class DistributionService(DeliveryTree):
 
         def copysubparent(sub):
             DeliveryTree.module_service.update_arianenode_lists(sub)
-            csub = Module(sub.name, sub.version, sub.groupId, sub.artifactId, order=sub.order)
+            csub = Module(sub.name, sub.version, sub.groupId, sub.artifactId,
+                          order=sub.order, deployable=sub.deployable)
             for sf in sub.list_files:
                 csub.add_file(FileNode(sf.name, sf.type, sf.version, sf.path))
             for s in sub.list_module:
                 if s.isParent():
                     ss = copysubparent(s)
-                    csub.add_module(Module(ss.name, ss.version, ss.groupId, ss.artifactId, order=ss.order))
+                    csub.add_module(Module(ss.name, ss.version, ss.groupId, ss.artifactId,
+                                           order=ss.order, deployable=ss.deployable))
                 else:
                     DeliveryTree.module_service.update_arianenode_lists(s)
-                    ss = Module(s.name, s.version, s.groupId, s.artifactId, order=s.order)
+                    ss = Module(s.name, s.version, s.groupId, s.artifactId, order=s.order, deployable=s.deployable)
                     for sf in s.list_files:
                         ss.add_file(FileNode(sf.name, sf.type, sf.version, sf.path))
                     csub.add_module(ss)
@@ -355,7 +357,7 @@ class DistributionService(DeliveryTree):
                     cm.add_module(sub)
                 else:
                     DeliveryTree.module_service.update_arianenode_lists(s)
-                    csub = Module(s.name, s.version, s.groupId, s.artifactId, order=s.order)
+                    csub = Module(s.name, s.version, s.groupId, s.artifactId, order=s.order, deployable=s.deployable)
                     for subf in s.list_files:
                         csub.add_file(FileNode(subf.name, subf.type, subf.version, subf.path))
                     cm.add_module(csub)
@@ -380,7 +382,7 @@ class DistributionService(DeliveryTree):
                     cm.add_module(sub)
                 else:
                     DeliveryTree.module_service.update_arianenode_lists(s)
-                    csub = Module(s.name, s.version, s.groupId, s.artifactId, order=s.order)
+                    csub = Module(s.name, s.version, s.groupId, s.artifactId, order=s.order, deployable=s.deployable)
                     for subf in s.list_files:
                         csub.add_file(FileNode(subf.name, subf.type, subf.version, subf.path))
                     cm.add_module(csub)
@@ -713,7 +715,7 @@ class ModuleService(DeliveryTree):
     def _create_ariane_node(self, node):
         args = DeliveryTree.graph_dao.get_node_properties(node)
         return Module(args["name"], args["version"], args["groupId"], args["artifactId"], id=args["nID"],
-                         order=args["order"])
+                         order=args["order"], deployable=args["deployable"])
 
     def make_files(self, module, parent_path):
         self.__make_file_pom(module, parent_path)
@@ -930,7 +932,7 @@ class ArianeNode(object):
             node = Plugin(args["name"], args["version"], args["nID"], git_repos=args["git_repos"])
         elif node_type == "Module":
             node = Module(args["name"], args["version"], args["groupId"], args["artifactId"], args["nID"],
-                             order=args["order"])
+                             order=args["order"], deployable=args["deployable"])
         else:
             return None
 
@@ -1276,7 +1278,7 @@ class Component(ArianeNode):
 
 class Module(ArianeNode):
 
-    def __init__(self, name, version,  groupId="none", artifactId="none", id=0, order=0):
+    def __init__(self, name, version,  groupId="none", artifactId="none", id=0, order=0, deployable=True):
         super().__init__(name, version)
         self.node_type = self.__class__.__name__
         self.id = id
@@ -1285,17 +1287,21 @@ class Module(ArianeNode):
         self.order = order
         self.list_module = []
         self._old_version = self.version
+        self.deployable = deployable if deployable is not None else True
         self.dir = {"name": self.name, "version": self.version, "groupId": self.groupId,
-                    "artifactId": self.artifactId, "order": self.order, "nID": self.id}
+                    "artifactId": self.artifactId, "order": self.order, "nID": self.id,
+                    "deployable": self.deployable}
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
     def _get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "groupId": self.groupId,
-                    "artifactId": self.artifactId, "order": self.order, "nID": self.id}
+                    "artifactId": self.artifactId, "order": self.order, "nID": self.id,
+                    "deployable": self.deployable}
         return self.dir
 
     def update(self, args):
         flag = False
+        print(args)
         for key in args.keys():
             if self._check_current_property(key):
                 if key == "name" and self.name != args[key]:
@@ -1308,6 +1314,8 @@ class Module(ArianeNode):
                     self.artifactId = args[key]
                 elif key == "order" and self.order != args[key]:
                     self.order = args[key]
+                elif key == "deployable" and self.deployable != args[key]:
+                    self.deployable = args[key]
                 else:
                     continue
                 flag = True
@@ -1423,7 +1431,8 @@ class Module(ArianeNode):
 
     def __repr__(self):
         out = "Module(name = "+self.name+", version = "+self.version+", groupId = "+self.groupId+", " \
-              "artifactId = "+self.artifactId+", nID = "+str(self.id)+")"
+              "artifactId = "+self.artifactId+", nID = "+str(self.id) + \
+              ", deployable = " + str(self.deployable) + ")"
         return out
 
 class Plugin(ArianeNode):
