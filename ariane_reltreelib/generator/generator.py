@@ -124,12 +124,6 @@ class Generator(object):
     def set_release_plugin_exceptions(self, exce_list):
         self.exception_release_plug = [e for e in exce_list]
 
-    def get_component_file_gen_exceptions(self):
-        if self.exception_mod_file_gen.__len__() == 0:
-            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/component_file_gen_exceptions.json', 'r') as data_file:
-                self.exception_mod_file_gen = json.load(data_file)
-        return self.exception_mod_file_gen
-
     def get_component_on_dev_only(self):
         if self.exception_mod_on_dev_only.__len__() == 0:
             with open(Generator.ariane_deliverytool_module_path + "/resources/exceptions/component_gen_on_dev_only_exceptions.json", 'r') as data_file:
@@ -183,25 +177,24 @@ class Generator(object):
 
     def generate_component_files(self, version):
         components = self.get_components_list(version)
-        file_gen_exception = self.get_component_file_gen_exceptions()
-        mod_on_dev_only = self.get_component_on_dev_only()
         isSNAPSHOT = "SNAPSHOT" in version
         flag_clean_env = True
 
         for mod in components:
-            if mod.name in file_gen_exception:  # Currently no exception since 'environment' files are generated
-                continue
+            #TODO: clear
+            #if mod.name in file_gen_exception:  # Currently no exception since 'environment' files are generated
+            #    continue
             if mod.name in self.exception_release_mod:
                 continue
             if not isSNAPSHOT:
                 if GitTagHandler.is_git_tagged(mod.version, path=self.dir_output+mod.get_directory_name()):
                     continue
-                if mod.name in mod_on_dev_only:
-                    continue
             self.ariane.component_service.update_arianenode_lists(mod)
             mod_files = self.ariane.get_files(mod)
             for f in mod_files:
-                if f.type == "plan":
+                if "SNAPSHOT" in f.name:
+                    continue
+                elif f.type == "plan":
                     self.generate_plan(mod, f)
                 elif f.type == "json_build":
                     self.generate_lib_json(mod, f)
