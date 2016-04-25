@@ -36,14 +36,14 @@ angular.module('ArianeUI')
         $scope.editionTemplate = editionTemplates[0];
         var templateErr = "err.html";
         var editablesView = {
-            component: ['name', 'version', 'type'],
+            component: ['name', 'version', 'type', 'build'],
             plugin: ["name", "version"],
             module: ['name', 'version', 'groupId', 'artifactId', 'order', 'deployable', 'extension'],
             filenode: ["name", "type", "path"],
             distrib: ["name", "version", "url_repos"]
         };
         var editablesForNewNode = {
-            component: ['name', 'version', 'order', 'type'],
+            component: ['name', 'version', 'order', 'type', 'build'],
             plugin: ["name", "version"],
             module: ["name", "order", 'deployable', 'extension'],
             filenode: ["name", "version", "type", "path"],

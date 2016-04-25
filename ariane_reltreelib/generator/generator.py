@@ -124,12 +124,6 @@ class Generator(object):
     def set_release_plugin_exceptions(self, exce_list):
         self.exception_release_plug = [e for e in exce_list]
 
-    def get_component_pom_gen_exceptions(self):
-        if self.exception_pom_file_gen.__len__() == 0:
-            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/pom_file_gen_exceptions.json', 'r') as data_file:
-                self.exception_pom_file_gen = json.load(data_file)
-        return self.exception_pom_file_gen
-
     def get_component_file_gen_exceptions(self):
         if self.exception_mod_file_gen.__len__() == 0:
             with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/component_file_gen_exceptions.json', 'r') as data_file:
@@ -262,9 +256,7 @@ class Generator(object):
         :param comp_plug: ariane_delivery.component or ariane_delivery.Plugin object stored in database
         :return: Nothing
         """
-        pom_gen_exception = self.get_component_pom_gen_exceptions()
-
-        if comp_plug.name not in pom_gen_exception:
+        if comp_plug.build == Component.BUILD_MVN or comp_plug.build == Component.BUILD_MVN_PYTHON3:
             if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output+comp_plug.get_directory_name()):
                 return
             if type(comp_plug) is ariane_delivery.Component:
@@ -326,9 +318,8 @@ class Generator(object):
         if GitTagHandler.is_git_tagged(version, path=self.dir_output+fpom.path):
             return
         components = self.get_components_list(version)
-        mod_exception = self.get_component_pom_gen_exceptions()
         for m in components.copy():
-            if m.name in mod_exception:
+            if m.build != Component.BUILD_MVN and m.build != Component.BUILD_MVN_PYTHON3:
                 components.remove(m)
         components = sorted(components, key=lambda mod: mod.order)
         template = self.env.get_template(fpom.path + 'pom_distrib.jnj')
@@ -496,8 +487,9 @@ class Generator(object):
         url = dist.url_repos
         for m in components:
             key = m.get_directory_name()
+            #TODO: clear
             if m.type == "none":
-                typ = "core"
+                typ = Component.TYPE_CORE
             else:
                 typ = m.type
             dictio[key] = {"type": typ, "url": url + key + '.git'}

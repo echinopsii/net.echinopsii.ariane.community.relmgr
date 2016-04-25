@@ -348,7 +348,7 @@ class DistributionService(DeliveryTree):
             cd.add_file(FileNode(df.name, df.type, df.version, df.path))
 
         for m in dist.list_component:  # Copying components and their modules and files
-            cm = Component(m.name, m.version, m.type, order=m.order)
+            cm = Component(m.name, m.version, m.type, order=m.order, build=m.build)
             DeliveryTree.component_service.update_arianenode_lists(m)
             for mf in m.list_files:
                 cm.add_file(FileNode(mf.name, mf.type, mf.version, mf.path))
@@ -561,7 +561,8 @@ class ComponentService(DeliveryTree):
     @staticmethod
     def _create_ariane_node(node):
         args = DeliveryTree.graph_dao.get_node_properties(node)
-        return Component(args["name"], args["version"], type=args["type"], id=args["nID"], order=args["order"])
+        return Component(args["name"], args["version"], type=args["type"], id=args["nID"],
+                         build=args["build"], order=args["order"])
 
     def _get_label(self):
         return self._ariane_node.node_type
@@ -930,7 +931,8 @@ class ArianeNode(object):
         if node_type == "Distribution":
             node = Distribution(args["name"], args["version"], args["nID"], editable=args["editable"], url_repos=args["url_repos"])
         elif node_type == "Component":
-            node = Component(args["name"], args["version"], args["type"], args["nID"], order=args["order"])
+            node = Component(args["name"], args["version"], args["type"], args["nID"],
+                             build=args["build"], order=args["order"])
         elif node_type == "Plugin":
             node = Plugin(args["name"], args["version"], args["nID"], git_repos=args["git_repos"])
         elif node_type == "Module":
@@ -1079,7 +1081,12 @@ class Component(ArianeNode):
     TYPE_LIB = "library"
     TYPE_ENV = "environment"
 
-    def __init__(self, name, version, type="none", id=0, order=0):
+    BUILD_MVN = "maven"
+    BUILD_MVN_PYTHON3 = "maven_python3"
+    BUILD_PYTHON3 = "python3"
+    BUILD_NONE = "none"
+
+    def __init__(self, name, version, type="none", id=0, order=0, build=None):
         super().__init__(name, version)
         self.id = id
         self.node_type = self.__class__.__name__
@@ -1088,8 +1095,9 @@ class Component(ArianeNode):
         self.directory_name = ""
         self.list_module = []
         self.list_component_dependency = []
+        self.build = build
         self.dir = {"name": self.name, "version": self.version, "type": self.type,
-                    "order": self.order, "nID": self.id}
+                    "build": self.build, "order": self.order, "nID": self.id}
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
         self._len_list_mod_dep = 0
         self._len_list_module = 0
@@ -1098,7 +1106,7 @@ class Component(ArianeNode):
 
     def _get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "type": self.type,
-                    "order": self.order, "nID": self.id}
+                    "build": self.build, "order": self.order, "nID": self.id}
         return self.dir
 
     def update(self, args):
@@ -1113,6 +1121,8 @@ class Component(ArianeNode):
                     self.type = args[key]
                 elif key == "order" and self.order != args[key]:
                     self.order = args[key]
+                elif key == "build" and self.build != args[key]:
+                    self.build = args[key]
                 else:
                     continue
                 flag = True
@@ -1271,8 +1281,8 @@ class Component(ArianeNode):
     def get_directory_name(self):
         if self.directory_name == "":
             dname = 'ariane.community.'
-            if self.type == "core":
-                dname += "core."
+            if self.type == Component.TYPE_CORE:
+                dname += Component.TYPE_CORE + "."
             self.directory_name = dname + self.name
         return self.directory_name
 
@@ -1280,7 +1290,8 @@ class Component(ArianeNode):
         return "component"
 
     def __repr__(self):
-        out = "component( name = "+self.name+", version = "+self.version+", type = "+self.type+", nID = "+str(self.id)+")"
+        out = "component( name = "+self.name+", version = "+self.version+", type = "+self.type + \
+              ", build = " + self.build + ", nID = "+str(self.id)+")"
         return out
 
 class Module(ArianeNode):

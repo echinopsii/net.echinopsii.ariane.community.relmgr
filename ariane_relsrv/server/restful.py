@@ -544,6 +544,7 @@ class RestComponentList(Resource):
         self.reqparse.add_argument('name', type=str, help='component name')
         self.reqparse.add_argument('version', type=str, help='component version')
         self.reqparse.add_argument('type', type=str, help='component version')
+        self.reqparse.add_argument('build', type=str, help='component build')
         self.reqparse.add_argument('order', type=int, help="component order for Installer .vsh file")
         self.reqparse.add_argument('nID', type=int, help='component database ID named "nID"')
         self.reqparse.add_argument('dist_version')
