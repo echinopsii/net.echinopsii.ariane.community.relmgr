@@ -38,14 +38,14 @@ angular.module('ArianeUI')
         var editablesView = {
             component: ['name', 'version', 'type'],
             plugin: ["name", "version"],
-            module: ['name', 'version', 'groupId', 'artifactId', 'order', 'deployable'],
+            module: ['name', 'version', 'groupId', 'artifactId', 'order', 'deployable', 'extension'],
             filenode: ["name", "type", "path"],
             distrib: ["name", "version", "url_repos"]
         };
         var editablesForNewNode = {
             component: ['name', 'version', 'order', 'type'],
             plugin: ["name", "version"],
-            module: ["name", "order", 'deployable'],
+            module: ["name", "order", 'deployable', 'extension'],
             filenode: ["name", "version", "type", "path"],
             distrib: ["name", "version", "url_repos"]
         };

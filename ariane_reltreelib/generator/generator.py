@@ -24,6 +24,8 @@ import os, json, ariane_reltreelib
 from os.path import join, exists, getmtime, realpath
 from collections import OrderedDict
 import subprocess
+from ariane_reltreelib.dao.ariane_delivery import Module
+
 __author__ = 'stanrenia'
 
 class MyLoader(BaseLoader):
@@ -121,18 +123,6 @@ class Generator(object):
 
     def set_release_plugin_exceptions(self, exce_list):
         self.exception_release_plug = [e for e in exce_list]
-
-    def get_module_lib_extensions(self):
-        if self.extension_sub_lib.__len__() == 0:
-            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/module_lib_extensions.json', 'r') as data_file:
-                self.extension_sub_lib = json.load(data_file)
-        return self.extension_sub_lib
-
-    def get_module_lib_exceptions(self):
-        if self.exception_sub_lib.__len__() == 0:
-            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/module_lib_exceptions.json', 'r') as data_file:
-                self.exception_sub_lib = json.load(data_file)
-        return self.exception_sub_lib
 
     def get_component_pom_gen_exceptions(self):
         if self.exception_pom_file_gen.__len__() == 0:
@@ -525,28 +515,28 @@ class Generator(object):
         with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
             json.dump(dictio, target, indent=4)
 
+    #TODO : REAL RECURSIVE ALGO
     def generate_lib_json(self, comp_plug, fjson):
         if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output+fjson.path):
             return
-        extension_dict = self.get_module_lib_extensions()
-        exception_list = self.get_module_lib_exceptions()
         list_lib = []
         for s in comp_plug.list_module:
-            ext = ".jar"
-            if s.name not in exception_list:
-                if s.name in extension_dict.keys():
-                    ext = extension_dict[s.name]
-
-                if s.isParent():
-                    for s_sub in s.list_module:
-                        ext = ".jar"
+            ext = s.extension
+            if ext == Module.EXTENSION_JAR or ext == Module.EXTENSION_WAR:
+                url = "net/echinopsii/" + str(comp_plug.get_directory_name()).replace('.', '/') + "/"
+                url += "net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"/" + \
+                       comp_plug.version+"/net.echinopsii."+comp_plug.get_directory_name() + \
+                       "."+s.name+"-"+comp_plug.version + "." + ext
+                list_lib.append(url)
+            elif s.isParent():
+                for s_sub in s.list_module:
+                    ext = s_sub.extension
+                    if ext == Module.EXTENSION_JAR or ext == Module.EXTENSION_WAR:
                         url = "net/echinopsii/" + str(comp_plug.get_directory_name()).replace('.', '/') + "/"+s.name+"/"
-                        url += "net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"."+s_sub.name+"/"+comp_plug.version+"/net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"."+s_sub.name+"-"+comp_plug.version + ext
+                        url += "net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"."+s_sub.name+"/" + \
+                               comp_plug.version+"/net.echinopsii."+comp_plug.get_directory_name()+"."+s.name + \
+                               "."+s_sub.name+"-"+comp_plug.version + "." + ext
                         list_lib.append(url)
-                else:
-                    url = "net/echinopsii/" + str(comp_plug.get_directory_name()).replace('.', '/') + "/"
-                    url += "net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"/"+comp_plug.version+"/net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"-"+comp_plug.version + ext
-                    list_lib.append(url)
 
             with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
                 json.dump(list_lib, target, indent=4)

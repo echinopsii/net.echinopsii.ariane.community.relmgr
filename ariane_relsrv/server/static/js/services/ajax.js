@@ -24,7 +24,8 @@ angular.module('ArianeUI')
     .factory('serviceAjax', function serviceAjax($http, $rootScope) {
         var url = CONFIG.url;
         var port = CONFIG.port;
-        var nodeKeys = ['name', 'version', 'groupId', 'artifactId', 'deployable', 'order', 'git_repos','nID', 'type', 'path'];
+        var nodeKeys = ['name', 'version', 'groupId', 'artifactId', 'deployable', 'extension',
+            'order', 'git_repos','nID', 'type', 'path'];
         function cleanElementAttr(element){
             var copy = JSON.parse(JSON.stringify(element));
             for(var key in element){

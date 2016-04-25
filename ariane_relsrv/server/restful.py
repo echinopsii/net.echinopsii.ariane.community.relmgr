@@ -404,6 +404,7 @@ class RestModuleList(Resource):
         self.reqparse.add_argument('groupId', type=str)
         self.reqparse.add_argument('artifactId', type=str)
         self.reqparse.add_argument('deployable', type=bool)
+        self.reqparse.add_argument('extension', type=str)
         self.reqparse.add_argument('nID', type=int, help='Module database ID named "nID"')
         self.reqparse.add_argument('order', type=int)
         self.reqparse.add_argument('module')
