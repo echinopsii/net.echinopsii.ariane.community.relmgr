@@ -83,7 +83,7 @@ class Generator(object):
     ariane = None
     dir_output = None
 
-    # TODO Modifiy MyLoader path when realese.
+    # TODO Modifiy MyLoader path when release.
     def __init__(self, ariane_delivery_service, project_directory):
         output_directory = self.__refactor_path(project_directory["outputs"])
         templates_directory = self.__refactor_path(project_directory["templates"])
@@ -93,15 +93,6 @@ class Generator(object):
         self.components_dict = {}
         self.plugin_dict = {}
         self.distrib_dict = {}
-        self.exception_release_mod = []
-        self.exception_release_plug = []
-        self.exception_sub_plan = []
-        self.exception_sub_lib = []
-        self.exception_mod_file_gen = []
-        self.exception_pom_file_gen = []
-        self.extension_sub_lib = []
-        self.exception_vsh = []
-        self.exception_mod_on_dev_only = []
 
     def get_distrib(self, version):
         # if version not in self.distrib_dict.keys():
@@ -117,18 +108,6 @@ class Generator(object):
         if version not in self.plugin_dict.keys():
             self.plugin_dict[version] = self.ariane.plugin_service.get_all(self.get_distrib(version))
         return [p for p in self.plugin_dict[version]]
-
-    def set_release_component_exceptions(self, exce_list):
-        self.exception_release_mod = [e for e in exce_list]
-
-    def set_release_plugin_exceptions(self, exce_list):
-        self.exception_release_plug = [e for e in exce_list]
-
-    def get_component_on_dev_only(self):
-        if self.exception_mod_on_dev_only.__len__() == 0:
-            with open(Generator.ariane_deliverytool_module_path + "/resources/exceptions/component_gen_on_dev_only_exceptions.json", 'r') as data_file:
-                self.exception_mod_file_gen = json.load(data_file)
-        return self.exception_mod_on_dev_only
 
     def __refactor_path(self, arg_path):
         if not str(arg_path).endswith('/'):
@@ -181,11 +160,6 @@ class Generator(object):
         flag_clean_env = True
 
         for mod in components:
-            #TODO: clear
-            #if mod.name in file_gen_exception:  # Currently no exception since 'environment' files are generated
-            #    continue
-            if mod.name in self.exception_release_mod:
-                continue
             if not isSNAPSHOT:
                 if GitTagHandler.is_git_tagged(mod.version, path=self.dir_output+mod.get_directory_name()):
                     continue
@@ -226,8 +200,8 @@ class Generator(object):
             if not isSNAPSHOT:
                 if GitTagHandler.is_git_tagged(plug.version, path=self.dir_output+plug.get_directory_name()):
                     continue
-            if plug.name in self.exception_release_plug:
-                continue
+            #if plug.name in self.exception_release_plug:
+            #    continue
             self.ariane.plugin_service.update_arianenode_lists(plug)
             plug_files = self.ariane.get_files(plug)
             for f in plug_files:
