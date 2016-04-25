@@ -728,7 +728,7 @@ class FileGenManager(object):
             return 1, None  # "There is no copy of the master SNAPSHOT Distribution"
 
         cmd = command.Command(dao_ariane=ariane, project_path=project_path)
-        cmd.gen.set_release_component_exceptions(GitManager.COMPONENTS_EXCEPTIONS)
+        #cmd.gen.set_release_component_exceptions(GitManager.COMPONENTS_EXCEPTIONS)
         try:
             cmd.execute(cmd_str, version, name)
             return 0, None
