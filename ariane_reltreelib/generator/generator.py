@@ -79,6 +79,7 @@ class GitTagHandler(object):
             return tags[len(tags)-1]
 
 class Generator(object):
+    #TODO:clean
     ariane_deliverytool_module_path = os.path.dirname(ariane_reltreelib.__file__)
     ariane = None
     dir_output = None

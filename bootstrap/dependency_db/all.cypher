@@ -955,7 +955,7 @@ create (_44804:`FileNode` {`nID`:1486, `name`:"ariane.community.distrib-0.7.3.js
 create (_44805:`FileNode` {`nID`:1487, `name`:"ariane.community.plugins.json", `path`:"ariane.community.distrib/resources/plugins/", `type`:"json_plugins", `version`:"0.7.3"})
 create (_44806:`FileNode` {`nID`:1488, `name`:"ariane.community.plugins-distrib-0.7.3.json", `path`:"ariane.community.distrib/resources/plugins/", `type`:"json_plugin_dist", `version`:"0.7.3"})
 create (_44807:`FileNode` {`nID`:1489, `name`:"ariane.community.git.repos-0.7.3.json", `path`:"ariane.community.distrib/resources/sources/", `type`:"json_git_repos", `version`:"0.7.3"})
-create (_44808:`Distribution` {`editable`:"false", `nID`:1490, `name`:"community", `url_repos`:"http://stash.echinopsii.net/scm/~mffrench/", `version`:"0.7.3"})
+create (_44808:`Distribution` {`editable`:"false", `nID`:1490, `name`:"community", `url_repos`:"http://stash.echinopsii.net/scm/ariane/", `version`:"0.7.3"})
 create (_44809:`FileNode` {`nID`:1584, `name`:"pom.xml", `path`:"ariane.community.messaging/api/", `type`:"pom", `version`:"0.1.1-SNAPSHOT"})
 create (_44810:`Module` {`artifactId`:"net.echinopsii.ariane.community.messaging.api", `deployable`:true, `extension`:"jar", `groupId`:"net.echinopsii.ariane.community.messaging", `nID`:1585, `name`:"api", `order`:1, `version`:"0.1.1-SNAPSHOT"})
 create (_44811:`FileNode` {`nID`:1586, `name`:"pom.xml", `path`:"ariane.community.messaging/rabbitmq/", `type`:"pom", `version`:"0.1.1-SNAPSHOT"})
@@ -1048,7 +1048,7 @@ create (_44897:`FileNode` {`nID`:1672, `name`:"ariane.community.distrib-master.S
 create (_44898:`FileNode` {`nID`:1673, `name`:"ariane.community.plugins.json", `path`:"ariane.community.distrib/resources/plugins/", `type`:"json_plugins", `version`:"0.7.4-SNAPSHOT"})
 create (_44899:`FileNode` {`nID`:1674, `name`:"ariane.community.plugins-distrib-master.SNAPSHOT.json", `path`:"ariane.community.distrib/resources/plugins/", `type`:"json_plugin_dist", `version`:"0.7.4-SNAPSHOT"})
 create (_44900:`FileNode` {`nID`:1675, `name`:"ariane.community.git.repos-master.SNAPSHOT.json", `path`:"ariane.community.distrib/resources/sources/", `type`:"json_git_repos", `version`:"0.7.4-SNAPSHOT"})
-create (_44901:`Distribution` {`editable`:"true", `nID`:1676, `name`:"community", `url_repos`:"http://stash.echinopsii.net/scm/~mffrench/", `version`:"0.7.4-SNAPSHOT"})
+create (_44901:`Distribution` {`editable`:"true", `nID`:1676, `name`:"community", `url_repos`:"http://stash.echinopsii.net/scm/ariane/", `version`:"0.7.4-SNAPSHOT"})
 create _43852-[:`CONTAINS`]->_44610
 create _43854-[:`CONTAINS`]->_43853
 create _43857-[:`CONTAINS`]->_43860

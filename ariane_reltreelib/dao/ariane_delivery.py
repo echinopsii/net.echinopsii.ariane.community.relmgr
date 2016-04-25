@@ -24,6 +24,7 @@ __author__ = 'stanrenia'
 
 
 class DeliveryTree(object):
+    #TODO:clean
     graph_dao = None
     dao_type = None
     module_service = None
@@ -259,6 +260,8 @@ class DeliveryTree(object):
             return True
 
 class DistributionService(DeliveryTree):
+
+    #TODO: clean
     def __init__(self):
         self._ariane_node = Distribution("model", "model")
         self.reinit_subclass()
@@ -426,12 +429,6 @@ class DistributionService(DeliveryTree):
         for plug in distrib.list_plugin:
             DeliveryTree.plugin_service.make_files(plug["Plugin"])
 
-        # ariane.community.distrib/resources/distrib/ariane.community.distrib-0.6.2.json
-        # ariane.community.distrib/resources/maven/pom-ariane.community.distrib-0.6.2.xml
-        # ariane.community.distrib/resources/plugins/ariane.community.plugins.json
-        # ariane.community.distrib/resources/plugins/ariane.community.plugins-distrib-0.6.2.json
-        # ariane.community.distrib/resources/sources/ariane.community.git.repos-0.6.2.json
-
         self.__make_file_json_dist(distrib)
         self.__make_file_pom_dist(distrib)
         self.__make_file_json_plugins(distrib)
@@ -467,6 +464,7 @@ class DistributionService(DeliveryTree):
         return self._ariane_node.node_type
 
 class ComponentService(DeliveryTree):
+    #TODO:clean
     def __init__(self):
         self._ariane_node = Component("model", "model")
         self.reinit_subclass()
@@ -568,6 +566,7 @@ class ComponentService(DeliveryTree):
         return self._ariane_node.node_type
 
 class PluginService(DeliveryTree):
+    #TODO: clean
     def __init__(self):
         self._ariane_node = Plugin("model", "model")
         self.reinit_subclass()
@@ -734,6 +733,7 @@ class ModuleService(DeliveryTree):
     def _get_label(self):
         return self._ariane_node.node_type
 
+#TODO: clean
 # class ModuleParentService(DeliveryTree):
 #     def __init__(self):
 #         self._ariane_node = ModuleParent("model", "model")
@@ -807,6 +807,7 @@ class ModuleService(DeliveryTree):
 #         return self._ariane_node.node_type
 
 class ArianeRelation(object):
+    #TODO: clean
     Dist_component = "composedBy"
     component_component = "dependency"
     component_Plugin = component_component
@@ -856,6 +857,8 @@ class ArianeNode(object):
         self.pom_attr = "net.echinopsii."
         self.list_files = []
         self.list_relation = []
+
+    #TODO: define _get_dir and get_rest_endpoint to be reimplemented by subclass
 
     def get_properties(self, gettype=False):
         prop = self._get_dir()
@@ -1633,7 +1636,7 @@ class Plugin(ArianeNode):
         out = "Plugin( name = "+self.name+", version = "+self.version+", nID = "+str(self.id)+")"
         return out
 
-
+#TODO: clean
 # class ModuleParent(ArianeNode):
 #
 #     def __init__(self, name, version, groupId="", artifactId="", id=0, order=0):
