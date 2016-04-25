@@ -24,7 +24,7 @@ import os, json, ariane_reltreelib
 from os.path import join, exists, getmtime, realpath
 from collections import OrderedDict
 import subprocess
-from ariane_reltreelib.dao.ariane_delivery import Module
+from ariane_reltreelib.dao.ariane_delivery import Module, Component
 
 __author__ = 'stanrenia'
 
@@ -141,12 +141,6 @@ class Generator(object):
             with open(Generator.ariane_deliverytool_module_path + "/resources/exceptions/component_gen_on_dev_only_exceptions.json", 'r') as data_file:
                 self.exception_mod_file_gen = json.load(data_file)
         return self.exception_mod_on_dev_only
-
-    def get_vsh_exceptions(self):
-        if self.exception_vsh.__len__() == 0:
-            with open(Generator.ariane_deliverytool_module_path + '/resources/exceptions/component_vsh_exceptions.json', 'r') as data_file:
-                self.exception_vsh = json.load(data_file)
-        return self.exception_vsh
 
     def __refactor_path(self, arg_path):
         if not str(arg_path).endswith('/'):
@@ -544,21 +538,20 @@ class Generator(object):
     def generate_vsh_installer(self, version, components, fvsh):
         if GitTagHandler.is_git_tagged(version, path=self.dir_output+fvsh.path):
             return
-        vsh_exceptions = self.get_vsh_exceptions()
         components = sorted(components, key=lambda mod: mod.order)
-        modlist = []
-        for mod in components:
-            v = mod.version
+        components_list = []
+        for component in components:
+            v = component.version
             if "-SNAPSHOT" in v:
                 v = str(v).replace('-', '.')
-            modlist.append({"name": mod.name, "version": v, "type": mod.type})
+            components_list.append({"name": component.name, "version": v, "type": component.type})
 
-        for mod in modlist.copy():
-            if mod["name"] in vsh_exceptions:
-                modlist.remove(mod)
+        for component in components_list.copy():
+            if component["type"] == Component.TYPE_ENV:
+                components_list.remove(component)
 
         template = self.env.get_template(fvsh.path+'installer_vsh.jnj')
-        args = {"components": modlist}
+        args = {"components": components_list}
 
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
             target.write(template.render(args))

@@ -1075,6 +1075,10 @@ class Distribution(ArianeNode):
 
 class Component(ArianeNode):
 
+    TYPE_CORE = "core"
+    TYPE_LIB = "library"
+    TYPE_ENV = "environment"
+
     def __init__(self, name, version, type="none", id=0, order=0):
         super().__init__(name, version)
         self.id = id
