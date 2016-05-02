@@ -157,17 +157,17 @@ class Generator(object):
 
     def generate_component_files(self, version):
         components = self.get_components_list(version)
-        isSNAPSHOT = "SNAPSHOT" in version
+        is_snapshot_version = "SNAPSHOT" in version
         flag_clean_env = True
 
         for mod in components:
-            if not isSNAPSHOT:
+            if not is_snapshot_version:
                 if GitTagHandler.is_git_tagged(mod.version, path=self.dir_output+mod.get_directory_name()):
                     continue
             self.ariane.component_service.update_arianenode_lists(mod)
             mod_files = self.ariane.get_files(mod)
             for f in mod_files:
-                if "SNAPSHOT" in f.name:
+                if "SNAPSHOT" in f.name and not is_snapshot_version:
                     continue
                 elif f.type == "plan":
                     self.generate_plan(mod, f)
@@ -176,7 +176,7 @@ class Generator(object):
                 elif f.type == "vsh":
                     self.generate_vsh_installer(version, components, f)
                 elif f.type == "plantpl":
-                    if isSNAPSHOT:
+                    if is_snapshot_version:
                         if flag_clean_env:
                             self.__clean_environment_files(self.dir_output + f.path)
                             flag_clean_env = False
