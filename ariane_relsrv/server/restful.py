@@ -814,6 +814,7 @@ class RestDistributionManager(Resource):
             #if err < 0:
             #    abort_error("INTERNAL_ERROR", "UNABLE TO REMOVE THE DATABASE DISTRIBTUTION COPY")
             #LOGGER.info("The current distribution copy in database was removed")
+            #TODO: a proper function for removing DEV copy ???
             ReleaseTools.export_new_distrib()
             return make_response(json.dumps({}), 200, headers_json)
 
@@ -826,6 +827,12 @@ class RestDistributionManager(Resource):
             err = ReleaseTools.export_new_distrib(True)
             if err:
                 abort_error("BAD_REQUEST", "Could not have exported the new database")
+            return make_response(json.dumps({}), 200, headers_json)
+
+        elif action == "syncFromLastDev":
+            err = DatabaseManager.sync_db_from_last_dev()
+            if err:
+                abort_error("BAD_REQUEST", "Could not have sync from last development")
             return make_response(json.dumps({}), 200, headers_json)
 
         else:

@@ -19,7 +19,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from ariane_reltreelib.dao import graphDBFabric
+from ariane_reltreelib.devparser.devparser import DistParser, MavenParser
 import json
+
 __author__ = 'stanrenia'
 
 
@@ -266,6 +268,32 @@ class DistributionService(DeliveryTree):
         self._ariane_node = Distribution("model", "model")
         self.reinit_subclass()
 
+    def sync_db_from_last_dev(self, distrib):
+        if self.__get_name_version_master(distrib.version) == "master.SNAPSHOT":
+            distrib.list_files = DeliveryTree.get_files(distrib)
+            distrib.list_component = DeliveryTree.component_service.get_all(distrib)
+
+            dev_distrib_components_list = None
+            for df in distrib.list_files:
+                if df.type == "json_git_repos":
+                    dev_distrib_components_list = DistParser.get_components_for_distrib(
+                        df.path + df.name
+                    )
+            if dev_distrib_components_list is not None:
+                for dev_component in dev_distrib_components_list:
+                    exist_already = False
+                    for db_component in distrib.list_component:
+                        if dev_component['name'] == db_component.name:
+                            exist_already = True
+                            break
+                    if not exist_already:
+                        #TODO
+                        #add new component in DB
+                        pass
+
+            for db_component in distrib.list_component:
+                DeliveryTree.component_service.sync_db_from_last_dev(db_component)
+
     def update_arianenode_lists(self, distrib):
         if isinstance(distrib, Distribution):
             distrib.list_files = DeliveryTree.get_files(distrib)
@@ -441,7 +469,7 @@ class DistributionService(DeliveryTree):
         distrib.add_file(FileNode(fname, "json_dist", distrib.version, fpath))
 
     def __make_file_pom_dist(self, distrib):
-        fname = "pom-"+distrib.get_directory_name()+'-'+ self.__get_name_version_master(distrib.version) + '.xml'
+        fname = "pom-"+distrib.get_directory_name()+'-' + self.__get_name_version_master(distrib.version) + '.xml'
         fpath = distrib.get_directory_name() + '/resources/maven/'
         distrib.add_file(FileNode(fname, "pom_dist", distrib.version, fpath))
 
@@ -451,12 +479,12 @@ class DistributionService(DeliveryTree):
         distrib.add_file(FileNode(fname, "json_plugins", distrib.version, fpath))
 
     def __make_file_json_plugin_dist(self, distrib):
-        fname = 'ariane.community.plugins-distrib-'+ self.__get_name_version_master(distrib.version) +'.json'
+        fname = 'ariane.community.plugins-distrib-' + self.__get_name_version_master(distrib.version) + '.json'
         fpath = distrib.get_directory_name()+"/resources/plugins/"
         distrib.add_file(FileNode(fname, "json_plugin_dist", distrib.version, fpath))
 
     def __make_file_json_git_repos(self, distrib):
-        fname = 'ariane.community.git.repos-'+ self.__get_name_version_master(distrib.version) +'.json'
+        fname = 'ariane.community.git.repos-' + self.__get_name_version_master(distrib.version) + '.json'
         fpath = distrib.get_directory_name() + "/resources/sources/"
         distrib.add_file(FileNode(fname, "json_git_repos", distrib.version, fpath))
 
@@ -468,6 +496,43 @@ class ComponentService(DeliveryTree):
     def __init__(self):
         self._ariane_node = Component("model", "model")
         self.reinit_subclass()
+
+    def sync_db_from_last_dev(self, component):
+        if self.__get_name_version_master(component.version) == "master.SNAPSHOT":
+            component.list_module = DeliveryTree.module_service.get_all(component)
+            component.list_component_dependency = DeliveryTree.component_service.get_all_dep(component)
+            component.list_files = DeliveryTree.get_files(component)
+
+            if len(component.list_files) == 0:
+                #TODO
+                print("Seems to be a new component - make files")
+                component.list_files = DeliveryTree.get_files(component)
+
+            dev_submodule_list = None
+            for df in component.list_files:
+                if df.type == "pom":
+                    dev_submodule_list = MavenParser.get_submodules_from_pom(
+                        df.path + df.name
+                    )
+            if dev_submodule_list is not None:
+                for submodule_name in dev_submodule_list:
+                    exist_already = False
+                    for module in component.list_module:
+                        if module.name == submodule_name:
+                            exist_already = True
+                            break
+                    if not exist_already:
+                        print("New submodule " + submodule_name + " for " + component.name)
+
+            dev_ariane_dep_list = None
+            for df in component.list_files:
+                if df.type == "pom":
+                    dev_ariane_dep_list = MavenParser.get_ariane_dependencies_from_pom(
+                        df.path + df.name
+                    )
+            if dev_ariane_dep_list is not None:
+                print("["+component.name+"] dev component list :\n" + str(dev_ariane_dep_list))
+                print("["+component.name+"] db component list :\n" + str(component.list_component_dependency))
 
     def update_arianenode_lists(self, component):
         if isinstance(component, Component):
@@ -508,6 +573,25 @@ class ComponentService(DeliveryTree):
 
         return list_mod
 
+    def get_all_dep(self, component):
+        """
+        get all dependencies from a given component.
+        Note: ArianeRelation.component_component = "dependencies".
+        :param component: Component object
+        :return: a list of all dependencies objects related to component
+        """
+        list_dep = []
+        if isinstance(component, Component):
+            #TODO: check label
+            args = {"reverse": False, "node": component.node,
+                    "label": self._ariane_node.__class__.__name__,
+                    "relation": ArianeRelation.component_component}
+            list_node = DeliveryTree.graph_dao.get_all(args)
+            for node in list_node:
+                dep = self._create_ariane_node(node)
+                list_dep.append(dep)
+        return list_dep
+
     def get_relations(self, args, rels=None):
         if rels is None:
             return self._get_relations(args, ArianeRelation.component_relations)
@@ -527,6 +611,7 @@ class ComponentService(DeliveryTree):
         for sub in component.list_module:
             DeliveryTree.module_service.make_files(sub, component.get_directory_name() + '/')
 
+        #TODO : change logic from checking component name to checking if file really exists
         if component.name not in ["environment", "installer"]:
             self.__make_file_build(component)
             self.__make_file_plan(component)
@@ -570,6 +655,9 @@ class PluginService(DeliveryTree):
     def __init__(self):
         self._ariane_node = Plugin("model", "model")
         self.reinit_subclass()
+
+    def sync_db_from_last_dev(self, plugin):
+        pass
 
     def update_arianenode_lists(self, plugin):
         if isinstance(plugin, Plugin):
@@ -674,6 +762,9 @@ class ModuleService(DeliveryTree):
         self._ariane_node = Module("model", "model")
         self.reinit_subclass()
 
+    def sync_db_from_last_dev(self, module):
+        pass
+
     def update_arianenode_lists(self, module):
         if isinstance(module, Module):
             module.list_files = DeliveryTree.get_files(module)
@@ -691,7 +782,8 @@ class ModuleService(DeliveryTree):
         :return: a list of all Module objects related to comp_plug_mod
         """
         list_module = []
-        if isinstance(comp_plug_mod, Component) or isinstance(comp_plug_mod, Plugin) or isinstance(comp_plug_mod, Module):
+        if isinstance(comp_plug_mod, Component) or isinstance(comp_plug_mod, Plugin) or \
+                isinstance(comp_plug_mod, Module):
             args = {"reverse": False, "node": comp_plug_mod.node,
                     "label": self._ariane_node.__class__.__name__,
                     "relation": ArianeRelation.component_Module}

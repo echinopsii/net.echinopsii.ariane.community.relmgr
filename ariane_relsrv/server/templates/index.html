@@ -86,6 +86,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 								<i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i> Distributions
 							</button>
 			                <span class="pull-right" ng-if="page=='view'">
+								<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-disabled="!btnActive.release" ng-click="syncLastDev()">
+									<i class="fa fa-magic"></i> Sync last DEV
+								</button>
 								<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-disabled="!btnActive.release" ng-click="clickReleaseMod()">
 									<i class="fa fa-magic"></i> New Release
 								</button>

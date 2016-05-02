@@ -219,6 +219,7 @@ class Generator(object):
                         if sub.isParent():
                             self.__generate_pom_subparent(sub, s_grId, s_artId)
 
+    #TODO: use this method ?
     def generate_pom(self, comp_plug):
         """ Generate all poms (parent and children) for a given component or plugin.
         :param comp_plug: ariane_delivery.component or ariane_delivery.Plugin object stored in database

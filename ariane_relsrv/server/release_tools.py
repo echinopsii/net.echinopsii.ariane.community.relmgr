@@ -349,6 +349,19 @@ class DatabaseManager(object):
         return newdevcp
 
     @staticmethod
+    def sync_db_from_last_dev():
+        dev = ariane.distribution_service.get_dev_distrib()
+        if not isinstance(dev, ariane_delivery.Distribution):
+            return 1
+        if dev.editable != "true":
+            return 2
+        cpy_dev = DatabaseManager.get_distrib_copies()
+        if len(cpy_dev) > 0:
+            return 3
+        ariane.distribution_service.sync_db_from_last_dev(dev)
+        return 0
+
+    @staticmethod
     def reset_database():
         alldistrib_file = "all.cypher"
         fpath = os.path.join(relmgr_path, "bootstrap", "dependency_db", alldistrib_file)

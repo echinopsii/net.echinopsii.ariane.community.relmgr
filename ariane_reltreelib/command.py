@@ -31,10 +31,10 @@ import sys, os, shutil, argparse, subprocess, json
 # else:
 #     if project_path + module_name not in sys.path:
 #         sys.path.append(project_path + module_name)
-
 from ariane_reltreelib.generator import generator
 from ariane_reltreelib.dao import ariane_delivery
 from ariane_reltreelib import exceptions as err
+from ariane_reltreelib.ariane_definitions import ArianeDefinitions
 
 __author__ = 'stanrenia'
 # Liste commandes: distribution, distrib_only, modules_only, plugins_only: -version
@@ -68,6 +68,7 @@ class Command(object):
                 Command.dao_ariane = dao_ariane
                 Command.project_path = project_path
                 Command.gen = generator.Generator(Command.dao_ariane, {"outputs": project_path, "templates": project_path})
+                ArianeDefinitions.set_project_abs_path(project_path)
 
     def import_all_distribs(self):
         os.system(Command.conf["NEO4J_PATH"]+"/bin/neo4j-shell -file " + Command.project_path + Command.conf["EXPORT_DB"] + "all.cypher")

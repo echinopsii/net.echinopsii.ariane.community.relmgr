@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 __author__ = 'stan renia'
 
 import logging.config
@@ -33,6 +34,7 @@ sys.path.append(relmgr_path)
 import logging
 import argparse
 from ariane_reltreelib.dao import ariane_delivery
+from ariane_reltreelib.ariane_definitions import ArianeDefinitions
 from ariane_relsrv.server.config import Config
 
 def setup_logging(default_path='misc/relsrv_logging_conf.json', default_level=logging.INFO):
@@ -90,9 +92,9 @@ myglobals = {"conf": RELMGR_CONFIG, "delivery_tree": ariane, "logger": LOGGER, "
              "relmgr_path": relmgr_path}
 
 if __name__ == '__main__':
-    if RELMGR_CONFIG.testing:
-        restful.start_relmgr(myglobals)
-    elif args.command == "relmgr":
+    #TODO: REMOVE LOOP DEPENDENCIES
+    if RELMGR_CONFIG.testing or args.command == "relmgr":
+        ArianeDefinitions.set_project_abs_path(project_path)
         restful.start_relmgr(myglobals)
     elif args.command in ["passwd", "add_user"]:
         if args.username and args.password:

@@ -233,6 +233,19 @@ angular.module('ArianeUI')
                 serviceUI.actionBroadcast();
             }
         };
+        $scope.syncLastDev = function() {
+            serviceAjax.distribManager("other", "syncFromLastDev")
+                .success(function(data){
+                    loadDistribs();
+                    serviceUI.setNotifyLog("info", "View", data.message);
+                    serviceUI.setState({obj: "default", status: "done"});
+                })
+                .error(function(data){
+                    serviceUI.setState({obj: "default", status: "done"});
+                    //$scope.btnActive.reset.active = true;
+                    serviceUI.setNotifyLog("error", "View", data.message);
+                });
+        };
         $scope.clickReleaseMod = function(){
             if(serviceUI.setState({obj: "baseRelease", state: "nextPage"})){
                 var distrib = serviceUI.getBaseObj();
