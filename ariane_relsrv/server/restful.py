@@ -815,6 +815,7 @@ class RestDistributionManager(Resource):
             #    abort_error("INTERNAL_ERROR", "UNABLE TO REMOVE THE DATABASE DISTRIBTUTION COPY")
             #LOGGER.info("The current distribution copy in database was removed")
             #TODO: a proper function for removing DEV copy ???
+            #TODO: mail Stan
             ReleaseTools.export_new_distrib()
             return make_response(json.dumps({}), 200, headers_json)
 
