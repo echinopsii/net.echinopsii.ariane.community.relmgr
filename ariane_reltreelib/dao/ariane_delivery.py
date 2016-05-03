@@ -17,9 +17,9 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 from ariane_reltreelib.dao import graphDBFabric
 from ariane_reltreelib.devparser.devparser import DistParser, MavenParser
+from ariane_reltreelib.ariane_definitions import ArianeDefinitions
 import json
 
 __author__ = 'stanrenia'
@@ -287,8 +287,11 @@ class DistributionService(DeliveryTree):
                             exist_already = True
                             break
                     if not exist_already:
-                        #TODO
-                        #add new component in DB
+                        print("New component for distrib : " + dev_component['name'])
+                        #TODO:
+                        #if pom file exist then parse file to get version
+                        #cm = Component(dev_component['name'], 0, dev_component['type'], order=0, build="none")
+                        #distrib.add_component(cm)
                         pass
 
             for db_component in distrib.list_component:
@@ -505,8 +508,9 @@ class ComponentService(DeliveryTree):
 
             if len(component.list_files) == 0:
                 #TODO
-                print("Seems to be a new component - make files")
-                component.list_files = DeliveryTree.get_files(component)
+                #print("Seems to be a new component - make files")
+                #component.list_files = DeliveryTree.get_files(component)
+                pass
 
             dev_submodule_list = None
             for df in component.list_files:
@@ -515,14 +519,23 @@ class ComponentService(DeliveryTree):
                         df.path + df.name
                     )
             if dev_submodule_list is not None:
-                for submodule_name in dev_submodule_list:
+                for submodule_dev in dev_submodule_list:
                     exist_already = False
-                    for module in component.list_module:
-                        if module.name == submodule_name:
+                    for submodule in component.list_module:
+                        if submodule.name == submodule_dev[ArianeDefinitions.MODULE_NAME]:
                             exist_already = True
                             break
                     if not exist_already:
-                        print("New submodule " + submodule_name + " for " + component.name)
+                        #print("New submodule " + str(submodule_dev) + " for " + component.name)
+                        csub = Module(
+                            submodule_dev[ArianeDefinitions.MODULE_NAME],
+                            submodule_dev[ArianeDefinitions.MODULE_VERSION],
+                            submodule_dev[ArianeDefinitions.MODULE_GROUPID],
+                            submodule_dev[ArianeDefinitions.MODULE_ARTIFACTID],
+                            order=0,
+                            deployable=submodule_dev[ArianeDefinitions.MODULE_DEPLOYABLE],
+                            extension=submodule_dev[ArianeDefinitions.MODULE_EXTENSION])
+                        component.add_module(csub)
 
             dev_ariane_dep_list = None
             for df in component.list_files:
@@ -531,8 +544,26 @@ class ComponentService(DeliveryTree):
                         df.path + df.name
                     )
             if dev_ariane_dep_list is not None:
-                print("["+component.name+"] dev component list :\n" + str(dev_ariane_dep_list))
-                print("["+component.name+"] db component list :\n" + str(component.list_component_dependency))
+                for ariane_dep_dev in dev_ariane_dep_list:
+                    exist_already = False
+                    for ariane_dep in component.list_component_dependency:
+                        if ariane_dep.name == ariane_dep_dev[ArianeDefinitions.COMPONENT_DEPENDENCY_NAME]:
+                                exist_already = True
+                                break
+                    if not exist_already:
+                        lists_distrib_component = DeliveryTree.component_service.get_all(component)
+                        ariane_dep = [t for t in lists_distrib_component
+                                      if t.name == ariane_dep_dev[ArianeDefinitions.COMPONENT_DEPENDENCY_NAME]][0]
+                        if ariane_dep is not None:
+                            component.add_component_dependency({
+                                "component": ariane_dep,
+                                "version_min": ariane_dep_dev[ArianeDefinitions.COMPONENT_DEPENDENCY_MIN_VERSION],
+                                "version_max": ariane_dep_dev[ArianeDefinitions.COMPONENT_DEPENDENCY_MAX_VERSION],
+                                "version": ariane_dep_dev[ArianeDefinitions.COMPONENT_DEPENDENCY_CURRENT_VERSION]
+                            })
+
+            for submodule in component.list_module:
+                DeliveryTree.module_service.sync_db_from_last_dev(submodule)
 
     def update_arianenode_lists(self, component):
         if isinstance(component, Component):
@@ -556,6 +587,8 @@ class ComponentService(DeliveryTree):
 
     def get_all(self, args=None):
         """ Get all components from a given distribution
+        or all components from same distrib as given component
+        or all components from same distribs as give plugin
         :param distribution: Distribution object
         :return: a list of all component objects related to the distribution
         """
@@ -565,6 +598,17 @@ class ComponentService(DeliveryTree):
             list_node = DeliveryTree.graph_dao.get_all(args)
             for node in list_node:
                 list_mod.append(self._create_ariane_node(node))
+        elif type(args) is Component:
+            args = {"reverse": True, "node": args.node, "relation": ArianeRelation.Dist_component}
+            distrib = DeliveryTree.graph_dao.get_all(args)[0]
+            if distrib is not None:
+                list_mod = DeliveryTree.component_service.get_all(distrib)
+        elif type(args) is Plugin:
+            args = {"reverse": True, "node": args.node, "relation": ArianeRelation.Plugin_Dist}
+            distribs = DeliveryTree.graph_dao.get_all(args)
+            for distrib in distribs:
+                for component in DeliveryTree.component_service.get_all(distrib):
+                    list_mod.append(component)
         elif args is None:
             pass
 
@@ -583,6 +627,7 @@ class ComponentService(DeliveryTree):
         list_dep = []
         if isinstance(component, Component):
             #TODO: check label
+            #TODO: mail Stan
             args = {"reverse": False, "node": component.node,
                     "label": self._ariane_node.__class__.__name__,
                     "relation": ArianeRelation.component_component}
@@ -657,7 +702,68 @@ class PluginService(DeliveryTree):
         self.reinit_subclass()
 
     def sync_db_from_last_dev(self, plugin):
-        pass
+        if self.__get_name_version_master(plugin.version) == "master.SNAPSHOT":
+            plugin.list_module = DeliveryTree.plugin_service.get_all(plugin)
+            plugin.list_component_dependency = DeliveryTree.plugin_service.get_all_dep(plugin)
+            plugin.list_files = DeliveryTree.get_files(plugin)
+
+            if len(plugin.list_files) == 0:
+                #TODO
+                print("Seems to be a new component - make files")
+                plugin.list_files = DeliveryTree.get_files(plugin)
+
+            dev_submodule_list = None
+            for df in plugin.list_files:
+                if df.type == "pom":
+                    dev_submodule_list = MavenParser.get_submodules_from_pom(
+                        df.path + df.name
+                    )
+            if dev_submodule_list is not None:
+                for submodule_dev in dev_submodule_list:
+                    exist_already = False
+                    for submodule in plugin.list_module:
+                        if submodule.name == submodule_dev[ArianeDefinitions.MODULE_NAME]:
+                            exist_already = True
+                            break
+                    if not exist_already:
+                        print("New submodule " + str(submodule_dev) + " for " + plugin.name)
+                        psub = Module(
+                            submodule_dev[ArianeDefinitions.MODULE_NAME],
+                            submodule_dev[ArianeDefinitions.MODULE_VERSION],
+                            submodule_dev[ArianeDefinitions.MODULE_GROUPID],
+                            submodule_dev[ArianeDefinitions.MODULE_ARTIFACTID],
+                            order=0,
+                            deployable=submodule_dev[ArianeDefinitions.MODULE_DEPLOYABLE],
+                            extension=submodule_dev[ArianeDefinitions.MODULE_EXTENSION])
+                        plugin.add_module(psub)
+
+            dev_ariane_dep_list = None
+            for df in plugin.list_files:
+                if df.type == "pom":
+                    dev_ariane_dep_list = MavenParser.get_ariane_dependencies_from_pom(
+                        df.path + df.name
+                    )
+            if dev_ariane_dep_list is not None:
+                for ariane_dep_dev in dev_ariane_dep_list:
+                    exist_already = False
+                    for ariane_dep in plugin.list_component_dependency:
+                        if ariane_dep.name == ariane_dep_dev[ArianeDefinitions.COMPONENT_DEPENDENCY_NAME]:
+                            exist_already = True
+                            break
+                    if not exist_already:
+                        lists_distrib_component = DeliveryTree.component_service.get_all(plugin)
+                        ariane_deps = [t for t in lists_distrib_component
+                                      if t.name == ariane_dep_dev[ArianeDefinitions.COMPONENT_DEPENDENCY_NAME]]
+                        for ariane_dep in ariane_deps:
+                            plugin.add_component_dependency({
+                                "component": ariane_dep,
+                                "version_min": ariane_dep_dev[ArianeDefinitions.COMPONENT_DEPENDENCY_MIN_VERSION],
+                                "version_max": ariane_dep_dev[ArianeDefinitions.COMPONENT_DEPENDENCY_MAX_VERSION],
+                                "version": ariane_dep_dev[ArianeDefinitions.COMPONENT_DEPENDENCY_CURRENT_VERSION]
+                            })
+
+            for submodule in plugin.list_module:
+                DeliveryTree.module_service.sync_db_from_last_dev(submodule)
 
     def update_arianenode_lists(self, plugin):
         if isinstance(plugin, Plugin):
@@ -703,6 +809,25 @@ class PluginService(DeliveryTree):
             list_plugin = None
 
         return list_plugin
+
+    def get_all_dep(self, plugin):
+        """
+        get all dependencies from a given plugin.
+        Note: ArianeRelation.component_component = "dependencies".
+        :param plugin: plugin object
+        :return: a list of all dependencies objects related to component
+        """
+        list_dep = []
+        if isinstance(plugin, Component):
+            #TODO: check label
+            args = {"reverse": False, "node": plugin.node,
+                    "label": self._ariane_node.__class__.__name__,
+                    "relation": ArianeRelation.component_component}
+            list_node = DeliveryTree.graph_dao.get_all(args)
+            for node in list_node:
+                dep = self._create_ariane_node(node)
+                list_dep.append(dep)
+        return list_dep
 
     def get_relations(self, args):
         return self._get_relations(args, ArianeRelation.Plugin_relations)
@@ -763,7 +888,43 @@ class ModuleService(DeliveryTree):
         self.reinit_subclass()
 
     def sync_db_from_last_dev(self, module):
-        pass
+        if self.__get_name_version_master(module.version) == "master.SNAPSHOT":
+            module.list_module = DeliveryTree.module_service.get_all(module)
+            module.list_files = DeliveryTree.get_files(module)
+
+            if len(module.list_files) == 0:
+                #TODO
+                print("Seems to be a new component - make files")
+                module.list_files = DeliveryTree.get_files(module)
+
+            dev_submodule_list = None
+            for df in module.list_files:
+                if df.type == "pom":
+                    dev_submodule_list = MavenParser.get_submodules_from_pom(
+                        df.path + df.name
+                    )
+
+            if dev_submodule_list is not None:
+                for submodule_dev in dev_submodule_list:
+                    exist_already = False
+                    for submodule in module.list_module:
+                        if submodule.name == submodule_dev[ArianeDefinitions.MODULE_NAME]:
+                            exist_already = True
+                            break
+                    if not exist_already:
+                        print("New submodule " + str(submodule_dev) + " for " + module.name)
+                        msub = Module(
+                            submodule_dev[ArianeDefinitions.MODULE_NAME],
+                            submodule_dev[ArianeDefinitions.MODULE_VERSION],
+                            submodule_dev[ArianeDefinitions.MODULE_GROUPID],
+                            submodule_dev[ArianeDefinitions.MODULE_ARTIFACTID],
+                            order=0,
+                            deployable=submodule_dev[ArianeDefinitions.MODULE_DEPLOYABLE],
+                            extension=submodule_dev[ArianeDefinitions.MODULE_EXTENSION])
+                        module.add_module(msub)
+
+            for module in module.list_module:
+                DeliveryTree.module_service.sync_db_from_last_dev(module)
 
     def update_arianenode_lists(self, module):
         if isinstance(module, Module):
@@ -825,7 +986,14 @@ class ModuleService(DeliveryTree):
     def _get_label(self):
         return self._ariane_node.node_type
 
+    def __get_name_version_master(self, version):
+        if "SNAPSHOT" in str(version):
+            return "master.SNAPSHOT"
+        else:
+            return version
+
 #TODO: clean
+#TODO: mail Stan
 # class ModuleParentService(DeliveryTree):
 #     def __init__(self):
 #         self._ariane_node = ModuleParent("model", "model")
@@ -1421,7 +1589,7 @@ class Module(ArianeNode):
 
     def update(self, args):
         flag = False
-        print(args)
+        #print(args)
         for key in args.keys():
             if self._check_current_property(key):
                 if key == "name" and self.name != args[key]:
@@ -1553,8 +1721,8 @@ class Module(ArianeNode):
         return prop
 
     def __repr__(self):
-        out = "Module(name = "+self.name+", version = "+self.version+", groupId = "+self.groupId+", " \
-              "artifactId = "+self.artifactId+", nID = "+str(self.id) + \
+        out = "Module(name = " + str(self.name) + ", version = " + str(self.version) + ", groupId = " + str(self.groupId) + ", " \
+              "artifactId = " + str(self.artifactId) + ", nID = "+str(self.id) + \
               ", deployable = " + str(self.deployable) + ", extension =  " + str(self.extension) + ")"
         return out
 

@@ -219,7 +219,6 @@ class Generator(object):
                         if sub.isParent():
                             self.__generate_pom_subparent(sub, s_grId, s_artId)
 
-    #TODO: use this method ?
     def generate_pom(self, comp_plug):
         """ Generate all poms (parent and children) for a given component or plugin.
         :param comp_plug: ariane_delivery.component or ariane_delivery.Plugin object stored in database
@@ -471,6 +470,7 @@ class Generator(object):
             json.dump(dictio, target, indent=4)
 
     #TODO : REAL RECURSIVE ALGO
+    #TODO : mail Stan
     def generate_lib_json(self, comp_plug, fjson):
         if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output+fjson.path):
             return

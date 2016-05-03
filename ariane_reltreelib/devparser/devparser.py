@@ -27,54 +27,119 @@ __author__ = 'mffrench'
 class MavenParser(object):
 
     @staticmethod
+    def get_module_definition_from_pom(pom_file_path):
+        module_definition = None
+        if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + pom_file_path):
+            module_definition = {}
+            ns = ArianeDefinitions.MAVEN_NS
+            tree = xml.ElementTree()
+            tree.parse(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + pom_file_path)
+            if tree.getroot().find(("{%s}" + ArianeDefinitions.MAVEN_MODULE_GROUPID) % ns) is not None:
+                module_definition[ArianeDefinitions.MODULE_GROUPID] = tree.getroot().find(
+                    ("{%s}" + ArianeDefinitions.MAVEN_MODULE_GROUPID) % ns
+                ).text
+            else:
+                #VERSION PROBABLY DEFINED IN PARENT
+                p = tree.getroot().find(("{%s}" + ArianeDefinitions.MAVEN_PARENT) % ns)
+                if p is not None:
+                    if p.find(("{%s}" + ArianeDefinitions.MAVEN_MODULE_GROUPID) % ns) is not None:
+                        module_definition[ArianeDefinitions.MODULE_GROUPID] = p.find(
+                            ("{%s}" + ArianeDefinitions.MAVEN_MODULE_GROUPID) % ns
+                        ).text
+
+            if tree.getroot().find(("{%s}" + ArianeDefinitions.MAVEN_MODULE_ARTIFACTID) % ns) is not None:
+                module_definition[ArianeDefinitions.MODULE_ARTIFACTID] = tree.getroot().find(
+                    ("{%s}" + ArianeDefinitions.MAVEN_MODULE_ARTIFACTID) % ns
+                ).text
+
+            if tree.getroot().find(("{%s}" + ArianeDefinitions.MAVEN_MODULE_VERSION) % ns) is not None:
+                module_definition[ArianeDefinitions.MODULE_VERSION] = tree.getroot().find(
+                    ("{%s}" + ArianeDefinitions.MAVEN_MODULE_VERSION) % ns
+                ).text
+            else:
+                #VERSION PROBABLY DEFINED IN PARENT
+                p = tree.getroot().find(("{%s}" + ArianeDefinitions.MAVEN_PARENT) % ns)
+                if p is not None:
+                    if p.find(("{%s}" + ArianeDefinitions.MAVEN_MODULE_VERSION) % ns) is not None:
+                        module_definition[ArianeDefinitions.MODULE_VERSION] = p.find(
+                            ("{%s}" + ArianeDefinitions.MAVEN_MODULE_VERSION) % ns
+                        ).text
+
+            if tree.getroot().find(("{%s}" + ArianeDefinitions.MAVEN_MODULE_PACKAGING) % ns) is not None:
+                if tree.getroot().find(
+                        ("{%s}" + ArianeDefinitions.MAVEN_MODULE_PACKAGING) % ns
+                ).text == ArianeDefinitions.MAVEN_PACKAGING_BND:
+                    module_definition[ArianeDefinitions.MODULE_EXTENSION] = ArianeDefinitions.MAVEN_PACKAGING_JAR
+                else:
+                    module_definition[ArianeDefinitions.MODULE_EXTENSION] = tree.getroot().find(
+                        ("{%s}" + ArianeDefinitions.MAVEN_MODULE_PACKAGING) % ns).text
+        return module_definition
+
+    @staticmethod
     def get_submodules_from_pom(pom_file_path):
-        submodules_list = []
-
-        ns = "http://maven.apache.org/POM/4.0.0"
-        tree = xml.ElementTree()
-        tree.parse(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + pom_file_path)
-        modules = tree.getroot().find("{%s}modules" % ns)
-        if modules is not None:
-            for child in modules:
-                submodules_list.append(child.text)
-
+        submodules_list = None
+        if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + pom_file_path):
+            submodules_list = []
+            ns = ArianeDefinitions.MAVEN_NS
+            parent_tree = xml.ElementTree()
+            parent_tree.parse(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + pom_file_path)
+            modules = parent_tree.getroot().find(("{%s}" + ArianeDefinitions.MAVEN_MODULES) % ns)
+            if modules is not None:
+                for child in modules:
+                    submodule_pom_file_path = pom_file_path.split('pom.xml')[0] + child.text + os.sep + "pom.xml"
+                    submodule = MavenParser.get_module_definition_from_pom(submodule_pom_file_path)
+                    if submodule is None:
+                        submodule = {}
+                        submodule[ArianeDefinitions.MODULE_GROUPID] = ""
+                        submodule[ArianeDefinitions.MODULE_ARTIFACTID] = ""
+                        submodule[ArianeDefinitions.MODULE_VERSION] = ""
+                        submodule[ArianeDefinitions.MODULE_EXTENSION] = ""
+                    submodule[ArianeDefinitions.MODULE_NAME] = child.text
+                    if ArianeDefinitions.MODULE_EXTENSION not in submodule or \
+                        submodule[ArianeDefinitions.MODULE_EXTENSION] == "" or \
+                        submodule[ArianeDefinitions.MODULE_EXTENSION] == "none" or \
+                        submodule[ArianeDefinitions.MODULE_EXTENSION] == "pom":
+                        submodule[ArianeDefinitions.MODULE_DEPLOYABLE] = False
+                    else:
+                        submodule[ArianeDefinitions.MODULE_DEPLOYABLE] = True
+                    submodules_list.append(submodule)
         return submodules_list
 
     @staticmethod
     def get_ariane_dependencies_from_pom(pom_file_path):
-        dependencies_list = []
+        dependencies_list = None
+        if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + pom_file_path):
+            dependencies_list = []
+            ns = ArianeDefinitions.MAVEN_NS
+            tree = xml.ElementTree()
+            tree.parse(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + pom_file_path)
+            properties = tree.getroot().find(("{%s}" + ArianeDefinitions.MAVEN_PROPERTIES) % ns)
+            if properties is not None:
+                for child in properties:
+                    if "ariane" in child.tag:
+                        if ArianeDefinitions.COMPONENT_DEPENDENCY_MIN_VERSION in child.tag or \
+                                ArianeDefinitions.COMPONENT_DEPENDENCY_MAX_VERSION in child.tag:
+                            child_tag_component_name_idx = len(child.tag.split(".")) - 2
+                        else:
+                            child_tag_component_name_idx = len(child.tag.split(".")) - 1
+                        dependency_name = child.tag.split(".")[child_tag_component_name_idx]
 
-        ns = "http://maven.apache.org/POM/4.0.0"
-        tree = xml.ElementTree()
-        tree.parse(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + pom_file_path)
-        properties = tree.getroot().find("{%s}properties" % ns)
-        if properties is not None:
-            for child in properties:
-                if "ariane" in child.tag:
-                    if ArianeDefinitions.COMPONENT_DEPENDENCY_MIN_VERSION in child.tag or \
-                            ArianeDefinitions.COMPONENT_DEPENDENCY_MIN_VERSION in child.tag:
-                        child_tag_component_name_idx = len(child.tag.split(".")) - 2
-                    else:
-                        child_tag_component_name_idx = len(child.tag.split(".")) - 1
-                    dependency_name = child.tag.split(".")[child_tag_component_name_idx]
+                        ariane_dependency = None
+                        for dependency in dependencies_list:
+                            if dependency[ArianeDefinitions.COMPONENT_DEPENDENCY_NAME] == dependency_name:
+                                ariane_dependency = dependency
+                                break
 
-                    ariane_dependency = None
-                    for dependency in dependencies_list:
-                        if dependency[ArianeDefinitions.COMPONENT_DEPENDENCY_NAME] == dependency_name:
-                            ariane_dependency = dependency
-                            break
+                        if ariane_dependency is None:
+                            ariane_dependency = {ArianeDefinitions.COMPONENT_DEPENDENCY_NAME: dependency_name}
+                            dependencies_list.append(ariane_dependency)
 
-                    if ariane_dependency is None:
-                        ariane_dependency = {ArianeDefinitions.COMPONENT_DEPENDENCY_NAME: dependency_name}
-                        dependencies_list.append(ariane_dependency)
-
-                    if ArianeDefinitions.COMPONENT_DEPENDENCY_MIN_VERSION in child.tag:
-                        ariane_dependency[ArianeDefinitions.COMPONENT_DEPENDENCY_MIN_VERSION] = child.text
-                    elif ArianeDefinitions.COMPONENT_DEPENDENCY_MAX_VERSION in child.tag:
-                        ariane_dependency[ArianeDefinitions.COMPONENT_DEPENDENCY_MAX_VERSION] = child.text
-                    else:
-                        ariane_dependency[ArianeDefinitions.COMPONENT_DEPENDENCY_CURRENT_VERSION] = child.text
-
+                        if ArianeDefinitions.COMPONENT_DEPENDENCY_MIN_VERSION in child.tag:
+                            ariane_dependency[ArianeDefinitions.COMPONENT_DEPENDENCY_MIN_VERSION] = child.text
+                        elif ArianeDefinitions.COMPONENT_DEPENDENCY_MAX_VERSION in child.tag:
+                            ariane_dependency[ArianeDefinitions.COMPONENT_DEPENDENCY_MAX_VERSION] = child.text
+                        else:
+                            ariane_dependency[ArianeDefinitions.COMPONENT_DEPENDENCY_CURRENT_VERSION] = child.text
         return dependencies_list
 
 
@@ -82,16 +147,20 @@ class DistParser(object):
 
     @staticmethod
     def get_components_for_distrib(dist_json_git_repos_file_path):
-        components_for_distrib = []
-        git_repos = json.load(open(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + dist_json_git_repos_file_path))
-        for module in git_repos.keys():
-            git_repo = git_repos[module]
-            git_repo_type = git_repo[ArianeDefinitions.COMPONENT_TYPE]
-            if git_repo_type == "core" or git_repo_type == "environment" or git_repo_type == "library":
-                simple_name_idx = len(module.split(".")) - 1
-                module_simple_name = module.split(".")[simple_name_idx]
-                components_for_distrib.append({
-                    ArianeDefinitions.COMPONENT_NAME: module_simple_name,
-                    ArianeDefinitions.COMPONENT_TYPE: git_repo_type
-                })
+        components_for_distrib = None
+        if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + dist_json_git_repos_file_path):
+            components_for_distrib = []
+            git_repos = json.load(open(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + dist_json_git_repos_file_path))
+            for module in git_repos.keys():
+                git_repo = git_repos[module]
+                git_repo_type = git_repo[ArianeDefinitions.COMPONENT_TYPE]
+                if git_repo_type == ArianeDefinitions.COMPONENT_TYPE_CORE or \
+                        git_repo_type == ArianeDefinitions.COMPONENT_TYPE_ENVIRONMENT or \
+                        git_repo_type == ArianeDefinitions.COMPONENT_TYPE_LIBRARY:
+                    simple_name_idx = len(module.split(".")) - 1
+                    module_simple_name = module.split(".")[simple_name_idx]
+                    components_for_distrib.append({
+                        ArianeDefinitions.COMPONENT_NAME: module_simple_name,
+                        ArianeDefinitions.COMPONENT_TYPE: git_repo_type
+                    })
         return components_for_distrib
