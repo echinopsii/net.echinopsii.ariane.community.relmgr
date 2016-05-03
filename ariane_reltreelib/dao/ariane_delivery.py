@@ -17,6 +17,8 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import os
+import time
 from ariane_reltreelib.dao import graphDBFabric
 from ariane_reltreelib.devparser.devparser import DistParser, MavenParser
 from ariane_reltreelib.ariane_definitions import ArianeDefinitions
@@ -287,7 +289,7 @@ class DistributionService(DeliveryTree):
                             exist_already = True
                             break
                     if not exist_already:
-                        print("New component for distrib : " + dev_component['name'])
+                        #print("New component for distrib : " + dev_component['name'])
                         #TODO:
                         #if pom file exist then parse file to get version
                         #cm = Component(dev_component['name'], 0, dev_component['type'], order=0, build="none")
@@ -507,10 +509,9 @@ class ComponentService(DeliveryTree):
             component.list_files = DeliveryTree.get_files(component)
 
             if len(component.list_files) == 0:
-                #TODO
-                #print("Seems to be a new component - make files")
-                #component.list_files = DeliveryTree.get_files(component)
-                pass
+                # if new component make_files and replay
+                DeliveryTree.component_service.make_files(component)
+                component.list_files = DeliveryTree.get_files(component)
 
             dev_submodule_list = None
             for df in component.list_files:
@@ -526,7 +527,6 @@ class ComponentService(DeliveryTree):
                             exist_already = True
                             break
                     if not exist_already:
-                        #print("New submodule " + str(submodule_dev) + " for " + component.name)
                         csub = Module(
                             submodule_dev[ArianeDefinitions.MODULE_NAME],
                             submodule_dev[ArianeDefinitions.MODULE_VERSION],
@@ -600,14 +600,18 @@ class ComponentService(DeliveryTree):
                 list_mod.append(self._create_ariane_node(node))
         elif type(args) is Component:
             args = {"reverse": True, "node": args.node, "relation": ArianeRelation.Dist_component}
-            distrib = DeliveryTree.graph_dao.get_all(args)[0]
-            if distrib is not None:
-                list_mod = DeliveryTree.component_service.get_all(distrib)
+            distrib_node = DeliveryTree.graph_dao.get_all(args)[0]
+            if distrib_node is not None:
+                list_mod = DeliveryTree.component_service.get_all(
+                    DeliveryTree.distribution_service._create_ariane(distrib_node)
+                )
         elif type(args) is Plugin:
             args = {"reverse": True, "node": args.node, "relation": ArianeRelation.Plugin_Dist}
             distribs = DeliveryTree.graph_dao.get_all(args)
-            for distrib in distribs:
-                for component in DeliveryTree.component_service.get_all(distrib):
+            for distrib_node in distribs:
+                for component in DeliveryTree.component_service.get_all(
+                        DeliveryTree.distribution_service._create_ariane(distrib_node)
+                ):
                     list_mod.append(component)
         elif args is None:
             pass
@@ -655,36 +659,34 @@ class ComponentService(DeliveryTree):
         """
         for sub in component.list_module:
             DeliveryTree.module_service.make_files(sub, component.get_directory_name() + '/')
-
-        #TODO : change logic from checking component name to checking if file really exists
-        if component.name not in ["environment", "installer"]:
-            self.__make_file_build(component)
-            self.__make_file_plan(component)
-        if component.name not in ["environment", "installer"]:
-            self.__make_file_pom(component)
-
-        if component.name in ["installer"]:
-            self.__make_file_vsh(component)
+        self.__make_file_build(component)
+        self.__make_file_plan(component)
+        self.__make_file_pom(component)
+        self.__make_file_vsh(component)
 
     def __make_file_build(self, component):
         fname = component.get_directory_name() + '-' + self.__get_name_version_master(component.version) + '.json'
         fpath = component.get_directory_name()+"/distrib/db/resources/builds/"
-        component.add_file(FileNode(fname, "json_build", component.version, fpath))
+        if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
+            component.add_file(FileNode(fname, "json_build", component.version, fpath))
 
     def __make_file_plan(self, component):
         fname = "net.echinopsii."+ component.get_directory_name() + '_' + self.__get_name_version_master(component.version) + '.plan'
         fpath = component.get_directory_name()+"/distrib/db/resources/virgo/repository/ariane-core/"
-        component.add_file(FileNode(fname, "plan", component.version, fpath))
+        if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
+            component.add_file(FileNode(fname, "plan", component.version, fpath))
 
     def __make_file_pom(self, component):
         fname = "pom.xml"
         fpath = component.get_directory_name() + '/'
-        component.add_file(FileNode(fname, "pom", component.version, fpath))
+        if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
+            component.add_file(FileNode(fname, "pom", component.version, fpath))
 
     def __make_file_vsh(self, component):
         fname = 'deploy-components.vsh'
         fpath = component.get_directory_name() + "/distrib/installer/resources/virgoscripts/"
-        component.add_file(FileNode(fname, "vsh", component.version, fpath))
+        if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
+            component.add_file(FileNode(fname, "vsh", component.version, fpath))
 
     @staticmethod
     def _create_ariane_node(node):
@@ -708,8 +710,8 @@ class PluginService(DeliveryTree):
             plugin.list_files = DeliveryTree.get_files(plugin)
 
             if len(plugin.list_files) == 0:
-                #TODO
-                print("Seems to be a new component - make files")
+                # if new plugin make_files and replay
+                DeliveryTree.plugin_service.make_files(plugin)
                 plugin.list_files = DeliveryTree.get_files(plugin)
 
             dev_submodule_list = None
@@ -846,34 +848,34 @@ class PluginService(DeliveryTree):
         for sub in plugin.list_module:
             DeliveryTree.module_service.make_files(sub, plugin.get_directory_name() + '/')
 
-        if plugin.name not in [""]:
-            self.__make_file_build(plugin)
-            self.__make_file_plan(plugin)
-        if plugin.name not in [""]:
-            self.__make_file_pom(plugin)
-
-        if plugin.name not in [""]:
-            self.__make_file_vsh(plugin)
+        self.__make_file_build(plugin)
+        self.__make_file_plan(plugin)
+        self.__make_file_pom(plugin)
+        self.__make_file_vsh(plugin)
 
     def __make_file_build(self, plugin):
         fname = plugin.get_directory_name() + '-' + self.__get_name_version_master(plugin.version) + '.json'
         fpath = plugin.get_directory_name()+"/distrib/db/resources/builds/"
-        plugin.add_file(FileNode(fname, "json_build", plugin.version, fpath))
+        if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
+            plugin.add_file(FileNode(fname, "json_build", plugin.version, fpath))
 
     def __make_file_plan(self, plugin):
         fname = "net.echinopsii."+ plugin.get_directory_name() + '_' + self.__get_name_version_master(plugin.version) + '.plan'
         fpath = plugin.get_directory_name()+"/distrib/db/resources/virgo/repository/ariane-plugins/"
-        plugin.add_file(FileNode(fname, "plan", plugin.version, fpath))
+        if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
+            plugin.add_file(FileNode(fname, "plan", plugin.version, fpath))
 
     def __make_file_pom(self, plugin):
         fname = "pom.xml"
         fpath = plugin.get_directory_name() + '/'
-        plugin.add_file(FileNode(fname, "pom", plugin.version, fpath))
+        if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
+            plugin.add_file(FileNode(fname, "pom", plugin.version, fpath))
 
     def __make_file_vsh(self, plugin):
         fname = 'deploy-plugin.'+plugin.name+'.vsh'
         fpath = plugin.get_directory_name() + "/distrib/installer/resources/virgoscripts/"
-        plugin.add_file(FileNode(fname, "vsh", plugin.version, fpath))
+        if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
+            plugin.add_file(FileNode(fname, "vsh", plugin.version, fpath))
 
     def _create_ariane_node(self, node):
         args = DeliveryTree.graph_dao.get_node_properties(node)
@@ -893,8 +895,17 @@ class ModuleService(DeliveryTree):
             module.list_files = DeliveryTree.get_files(module)
 
             if len(module.list_files) == 0:
-                #TODO
-                print("Seems to be a new component - make files")
+                # if new module make_files and replay
+                parent = DeliveryTree.module_service.get_parent(module)
+                parent_path = ""
+                while parent is not None:
+                    if isinstance(parent, Module):
+                        parent_path = parent.name + os.path.sep + parent_path
+                        parent = DeliveryTree.module_service.get_parent(parent)
+                    elif isinstance(parent, Component):
+                        parent_path = parent.get_directory_name() + parent_path
+                        parent = None
+                DeliveryTree.module_service.make_files(module, parent_path)
                 module.list_files = DeliveryTree.get_files(module)
 
             dev_submodule_list = None
@@ -957,15 +968,19 @@ class ModuleService(DeliveryTree):
     def get_relations(self, args):
         return self._get_relations(args, ArianeRelation.Module_relations)
 
+    #TODO : wtf tfinf ?
+    #TODO : mail Stan
     def get_parent(self, module):
-        grid = module.groupId
-        i = grid.rfinf('.')
-        parent_name = grid[i+1:]
-        parent = DeliveryTree.component_service.get_unique({"name": parent_name})
+        #grid = module.groupId
+        #i = grid.rfinf('.')
+        #parent_name = grid[i+1:]
+        grid_len = len(module.groupId.split("."))
+        parent_name = module.groupId.split(".")[grid_len - 1]
+        parent = DeliveryTree.component_service.get_unique({"name": parent_name, "version": module.version})
         if parent is None:
-            parent = DeliveryTree.plugin_service.get_unique({"name": parent_name})
+            parent = DeliveryTree.plugin_service.get_unique({"name": parent_name, "version": module.version})
         if parent is None:
-            parent = DeliveryTree.module_service.get_unique({"name": parent_name})
+            parent = DeliveryTree.module_service.get_unique({"name": parent_name, "version": module.version})
         return parent
 
     def _create_ariane_node(self, node):
@@ -976,12 +991,13 @@ class ModuleService(DeliveryTree):
     def make_files(self, module, parent_path):
         self.__make_file_pom(module, parent_path)
         for sub in module.list_module:
-            DeliveryTree.module_service.make_files(sub, parent_path+module.name+'/')
+            DeliveryTree.module_service.make_files(sub, parent_path + os.path.sep + module.name + os.path.sep)
 
     def __make_file_pom(self, module, parent_path):
         fname = "pom.xml"
-        fpath = parent_path + module.name + '/'
-        module.add_file(FileNode(fname, "pom", module.version, fpath))
+        fpath = parent_path + os.path.sep + module.name + os.path.sep
+        if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + os.path.sep + fpath + fname):
+            module.add_file(FileNode(fname, "pom", module.version, fpath))
 
     def _get_label(self):
         return self._ariane_node.node_type
