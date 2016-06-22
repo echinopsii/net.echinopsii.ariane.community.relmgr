@@ -603,14 +603,14 @@ class ComponentService(DeliveryTree):
             distrib_node = DeliveryTree.graph_dao.get_all(args)[0]
             if distrib_node is not None:
                 list_mod = DeliveryTree.component_service.get_all(
-                    DeliveryTree.distribution_service._create_ariane(distrib_node)
+                    DeliveryTree.distribution_service._create_ariane_node(distrib_node)
                 )
         elif type(args) is Plugin:
             args = {"reverse": True, "node": args.node, "relation": ArianeRelation.Plugin_Dist}
             distribs = DeliveryTree.graph_dao.get_all(args)
             for distrib_node in distribs:
                 for component in DeliveryTree.component_service.get_all(
-                        DeliveryTree.distribution_service._create_ariane(distrib_node)
+                        DeliveryTree.distribution_service._create_ariane_node(distrib_node)
                 ):
                     list_mod.append(component)
         elif args is None:
@@ -1008,79 +1008,6 @@ class ModuleService(DeliveryTree):
         else:
             return version
 
-#TODO: clean
-#TODO: mail Stan
-# class ModuleParentService(DeliveryTree):
-#     def __init__(self):
-#         self._ariane_node = ModuleParent("model", "model")
-#         self.reinit_subclass()
-#
-#     def update_arianenode_lists(self, subpar):
-#         if isinstance(subpar, ModuleParent):
-#             subpar.list_files = DeliveryTree.get_files(subpar)
-#             subpar.list_module = DeliveryTree.module_service.get_all(subpar)
-#             subpar.list_module.extend(DeliveryTree.module_parent_service.get_all(subpar))
-#             if subpar.list_module is None:
-#                 subpar.list_module = []
-#             DeliveryTree.module_parent_service.get_relations(subpar)
-#             subpar._len_list_files = len(subpar.list_files)
-#
-#     def deep_update_arianenode_lists(self, subpar):
-#         if isinstance(subpar, ModuleParent):
-#             self.update_arianenode_lists(subpar)
-#             for s in subpar.list_module:
-#                 if isinstance(s, ModuleParent):
-#                     DeliveryTree.module_parent_service.deep_update_arianenode_lists(s)
-#
-#     def get_all(self, component):
-#         """
-#         get all modules from a given component or plugin
-#         :param component: component/Plugin object
-#         :return: a list of all Module object related to the component
-#         """
-#         list_module = []
-#         args = {"reverse": False, "node": component.node, "label": self._ariane_node.__class__.__name__, "relation": ArianeRelation.component_Module}
-#         list_node = DeliveryTree.graph_dao.get_all(args)
-#         for node in list_node:
-#             sub = self._create_ariane_node(node)
-#             sub.list_module.extend(ModuleService().get_all(sub))
-#             list_module.append(sub)
-#         return list_module
-#
-#     def get_relations(self, args):
-#         return self._get_relations(args, ArianeRelation.ModuleParent_relations)
-#
-#     def get_parent(self, module):
-#         grid = module.groupId
-#         i = str(grid).rfind('.')
-#         parent_name = grid[i+1:]
-#         parent = DeliveryTree.component_service.get_unique({"name": parent_name, "version": module.version})
-#         if parent is None:
-#             parent = DeliveryTree.plugin_service.get_unique({"name": parent_name, "version": module.version})
-#             if parent is None:
-#                 parent = DeliveryTree.module_parent_service.get_unique({"artifactId": module.artifactId, "version": module.version})
-#         return parent
-#
-#     def _create_ariane_node(self, node):
-#         args = DeliveryTree.graph_dao.get_node_properties(node)
-#         return ModuleParent(args["name"], args["version"], args["groupId"], args["artifactId"], args["nID"],
-#                                order=args["order"])
-#
-#     def make_files(self, subpar, parent_path):
-#         self.__make_file_pom(subpar, parent_path)
-#         for sub in subpar.list_module:
-#             if isinstance(sub, Module):
-#                 DeliveryTree.module_service.make_files(sub, parent_path+subpar.name+'/')
-#             else:
-#                 DeliveryTree.module_parent_service.make_files(sub, parent_path+subpar.name+'/')
-#
-#     def __make_file_pom(self, subpar, parent_path):
-#         fname = "pom.xml"
-#         fpath = parent_path + subpar.name + '/'
-#         subpar.add_file(FileNode(fname, "pom", subpar.version, fpath))
-#
-#     def _get_label(self):
-#         return self._ariane_node.node_type
 
 class ArianeRelation(object):
     #TODO: clean
@@ -1912,120 +1839,6 @@ class Plugin(ArianeNode):
         out = "Plugin( name = "+self.name+", version = "+self.version+", nID = "+str(self.id)+")"
         return out
 
-#TODO: clean
-# class ModuleParent(ArianeNode):
-#
-#     def __init__(self, name, version, groupId="", artifactId="", id=0, order=0):
-#         super().__init__(name, version)
-#         self.node_type = self.__class__.__name__
-#         self.id = id
-#         self.list_module = []
-#         self.order = order
-#         self.artifactId = artifactId
-#         self.groupId = groupId
-#         self._old_version = self.version
-#         self.dir = {"name": self.name, "version": self.version, "groupId": self.groupId, "artifactId": self.artifactId,
-#                     "order": self.order, "nID": self.id}
-#         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
-#
-#     def _get_dir(self):
-#         self.dir = {"name": self.name, "version": self.version, "groupId": self.groupId, "artifactId": self.artifactId,
-#                     "order": self.order, "nID": self.id}
-#         return self.dir
-#
-#     def update(self, args):
-#         flag = False
-#         for key in args.keys():
-#             if self._check_current_property(key):
-#                 if key == "name" and self.name != args[key]:
-#                     self.name = args[key]
-#                 elif key == "version" and self.version != args[key]:
-#                     self.version = args[key]
-#                 elif key == "groupId" and self.groupId != args[key]:
-#                     self.groupId = args[key]
-#                 elif key == "artifactId" and self.artifactId != args[key]:
-#                     self.artifactId = args[key]
-#                 elif key == "order" and self.order != args[key]:
-#                     self.order = args[key]
-#                 else:
-#                     continue
-#                 flag = True
-#         return flag
-#
-#     def save(self):
-#         if self.id == 0:
-#             for module in self.list_module:
-#                 module.save()
-#
-#             for fnode in self.list_files:
-#                 fnode.save()
-#
-#             self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
-#             self._old_version = self.version
-#
-#             for module in self.list_module:
-#                 self.__create_relation(module)
-#
-#             for fnode in self.list_files:
-#                 self._create_file(fnode)
-#
-#         else:
-#             dir = self._get_dir()
-#             dir["node"] = self.node
-#             self.node = DeliveryTree.graph_dao.save_node(dir)
-#             if self._old_version != self.version:
-#                 DeliveryTree.module_parent_service.update_arianenode_lists(self)
-#                 for s in self.list_module:
-#                     s.version = self.version
-#                     s.save()
-#                 self.update_filesname()
-#
-#     def delete(self):
-#         """
-#         Delete all related Modules, relationships and self from graph database.
-#         Notify Distribution Object (the parent node) in order to update its list of related nodes (Distribution related
-#         nodes are: component and Plugin)
-#         :return: Nothing
-#         """
-#         if self._is_saved():
-#             DeliveryTree.module_parent_service.update_arianenode_lists(self)
-#             for module in self.list_module.copy():
-#                 module.delete()
-#             for f in self.list_files:
-#                 f.delete()
-#             for rel in self.list_relation:
-#                 DeliveryTree.graph_dao.delete(rel)
-#             DeliveryTree.graph_dao.delete(self.node)
-#             self._reset_node()
-#
-#     def add_module(self, module):
-#         if isinstance(module, Module) or isinstance(module, ModuleParent):
-#             self.list_module.append(module)
-#             if self._is_saved():
-#                 self.__create_relation(module)
-#
-#     def __create_relation(self, module):
-#         link_args = {"node": self.node, "relation": ArianeRelation.ModuleParent_Module, "linked_node": module.node}
-#         nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
-#         self.list_relation.append(rel)
-#         if nid is not None:
-#             module.id = nid
-#
-#     def set_groupid_artifact(self, mod_plug):
-#         if (isinstance(mod_plug, Component) or isinstance(mod_plug, Plugin)):
-#             self.groupId = '' + self.pom_attr + mod_plug.get_directory_name()
-#             self.artifactId = self.groupId + '.' + self.name
-#         elif isinstance(mod_plug, ModuleParent):  # Handling ModuleParent->ModuleParent
-#             self.groupId = mod_plug.artifactId
-#             self.artifactId = self.groupId + '.' + self.name
-#
-#     def get_rest_endpoint(self):
-#         return "module"
-#
-#     def __repr__(self):
-#         out = "ModuleParent( name = "+self.name+", version = "+self.version+", nID = "+str(self.id)+")"
-#         return out
-# 
 
 class FileNode(object):
 

@@ -81,16 +81,12 @@ class GitTagHandler(object):
 class Generator(object):
     #TODO:clean
     ariane_deliverytool_module_path = os.path.dirname(ariane_reltreelib.__file__)
-    ariane = None
-    dir_output = None
 
     # TODO Modifiy MyLoader path when release.
     def __init__(self, ariane_delivery_service, project_directory):
-        output_directory = self.__refactor_path(project_directory["outputs"])
-        templates_directory = self.__refactor_path(project_directory["templates"])
-        self.env = Environment(loader=MyLoader(templates_directory))
-        Generator.ariane = ariane_delivery_service
-        Generator.dir_output = output_directory
+        self.jinja_env = Environment(loader=MyLoader(self.__refactor_path(project_directory["templates"])))
+        self.ariane = ariane_delivery_service
+        self.dir_output = self.__refactor_path(project_directory["outputs"])
         self.components_dict = {}
         self.plugin_dict = {}
         self.distrib_dict = {}
@@ -155,6 +151,7 @@ class Generator(object):
             elif df.type == "json_plugin_dist":
                 self.generate_json_plugin_dist(version, df)
 
+    #TODO: RECURSIVITY ?
     def generate_component_files(self, version):
         components = self.get_components_list(version)
         is_snapshot_version = "SNAPSHOT" in version
@@ -245,7 +242,7 @@ class Generator(object):
 
     def __generate_pom_module(self, sub, grId, artId):
         fpom = self.ariane.get_one_file(sub, 'pom')
-        template = self.env.get_template(fpom.path + 'pom.jnj')
+        template = self.jinja_env.get_template(fpom.path + 'pom.jnj')
 
         args = {"version": sub.version, "groupId": grId, "artifactId": artId, "name": sub.name}
 
@@ -265,7 +262,7 @@ class Generator(object):
                 self.__generate_pom_subparent(s, s_grId, s_artId)
 
     def __generate_pom_comp_plug(self, comp_plug, fpom):
-        template = self.env.get_template(fpom.path + 'pom.jnj')
+        template = self.jinja_env.get_template(fpom.path + 'pom.jnj')
 
         groupId = comp_plug.pom_attr + comp_plug.get_directory_name()
         groupId = str(groupId).replace('.'+comp_plug.name, '')
@@ -290,12 +287,13 @@ class Generator(object):
             if m.build != Component.BUILD_MVN and m.build != Component.BUILD_MVN_PYTHON3:
                 components.remove(m)
         components = sorted(components, key=lambda mod: mod.order)
-        template = self.env.get_template(fpom.path + 'pom_distrib.jnj')
+        template = self.jinja_env.get_template(fpom.path + 'pom_distrib.jnj')
         args = {"components": components, "version": version}
 
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
             target.write(template.render(args))
 
+    #TODO: RECURSIVITY ?
     def generate_plan(self, comp_plug, fplan):
         if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output+fplan.path):
             return
@@ -303,7 +301,7 @@ class Generator(object):
         if "SNAPSHOT" in comp_plug.version:
             snapshot = True
 
-        template = self.env.get_template(fplan.path+"plan_"+comp_plug.name+"_template.jnj")
+        template = self.jinja_env.get_template(fplan.path+"plan_"+comp_plug.name+"_template.jnj")
         modules = [s for s in comp_plug.list_module]
 
         for s in modules:
@@ -470,7 +468,7 @@ class Generator(object):
             json.dump(dictio, target, indent=4)
 
     #TODO : REAL RECURSIVE ALGO
-    #TODO : mail Stan
+    #TODO : use groupId + artifactId to compose maven deployable path
     def generate_lib_json(self, comp_plug, fjson):
         if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output+fjson.path):
             return
@@ -478,6 +476,7 @@ class Generator(object):
         for s in comp_plug.list_module:
             ext = s.extension
             if ext == Module.EXTENSION_JAR or ext == Module.EXTENSION_WAR:
+                #url = groupId.replace('.','/') + artifactId + version + '/'
                 url = "net/echinopsii/" + str(comp_plug.get_directory_name()).replace('.', '/') + "/"
                 url += "net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"/" + \
                        comp_plug.version+"/net.echinopsii."+comp_plug.get_directory_name() + \
@@ -511,7 +510,7 @@ class Generator(object):
             if component["type"] == Component.TYPE_ENV:
                 components_list.remove(component)
 
-        template = self.env.get_template(fvsh.path+'installer_vsh.jnj')
+        template = self.jinja_env.get_template(fvsh.path+'installer_vsh.jnj')
         args = {"components": components_list}
 
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
@@ -523,7 +522,7 @@ class Generator(object):
         v = p.version
         if "-SNAPSHOT" in p.version:
             v = str(v).replace('-', '.')
-        template = self.env.get_template(fvsh.path+'plugin_vsh.jnj')
+        template = self.jinja_env.get_template(fvsh.path+'plugin_vsh.jnj')
         args = {"plugin": {"name": p.name, "version": v}}
 
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
@@ -549,7 +548,7 @@ class Generator(object):
         # net.echinopsii.ariane.community.core.directory_0.7.2-SNAPSHOT.plan.tpl
         tplname = fplantpl.name.split("_")
         tplname = tplname[0] + ".plan.tpl.jnj"
-        template = self.env.get_template(fplantpl.path+tplname)
+        template = self.jinja_env.get_template(fplantpl.path+tplname)
         m_version = component.version
         version_point = str(m_version).replace("-", ".")
         args = {"version": m_version, "version_point": version_point}
