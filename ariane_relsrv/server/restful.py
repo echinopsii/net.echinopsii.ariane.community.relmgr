@@ -248,10 +248,10 @@ class RestPlugin(Resource):
         p = None
         if unique_key2 is None:
             if isinstance(unique_key, int):
-                p = ariane.plugin_service.get_unique({"nID": unique_key})
+                p = ariane.get_unique(ariane.plugin_service, {"nID": unique_key})
         else:
             if isinstance(unique_key, str) and isinstance(unique_key2, str):
-                p = ariane.plugin_service.get_unique({"name": unique_key, "version": unique_key2})
+                p = ariane.get_unique(ariane.plugin_service, {"name": unique_key, "version": unique_key2})
         return p
 
     def get(self, unique_key, unique_key2=None):
@@ -286,7 +286,7 @@ class RestPluginList(Resource):
     def get(self):
         args = self.reqparse.parse_args()
         if args["version"] is not None:
-            d = ariane.distribution_service.get_unique({"version": args["version"]})
+            d = ariane.get_unique(ariane.distribution_service, {"version": args["version"]})
             plist = ariane.plugin_service.get_all(d)
             if plist is not None:
                 p = [p.get_properties(gettype=True) for p in plist]
@@ -299,7 +299,7 @@ class RestPluginList(Resource):
     def post(self):
         args = self.reqparse.parse_args()
         if args["nID"] is not None and args["nID"] > 0:
-            p = ariane.plugin_service.get_unique({"nID": args["nID"]})
+            p = ariane.get_unique(ariane.plugin_service, {"nID": args["nID"]})
             if ariane.is_dev_version(p):
                 if isinstance(p, ariane_delivery.Plugin):
                     clear_args(args)
@@ -315,7 +315,7 @@ class RestPluginList(Resource):
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         elif args["plugin"] is not None:
             arg_p = json.loads(args["plugin"])
-            p = ariane.plugin_service.get_unique(arg_p)
+            p = ariane.get_unique(ariane.plugin_service, arg_p)
             if ariane.is_dev_version(p):
                 if isinstance(p, ariane_delivery.Plugin):
                     if p.update(arg_p):
@@ -331,9 +331,9 @@ class RestPluginList(Resource):
                 if key not in ["plugin", "nID"] and args[key] is None:
                     abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
                         p.get_properties().keys()))
-            plug_exists = ariane.plugin_service.get_unique({"name": args["name"], "version": args["version"]})
+            plug_exists = ariane.get_unique(ariane.plugin_service, {"name": args["name"], "version": args["version"]})
             if plug_exists is None:
-                dist = ariane.distribution_service.get_unique({"version": args["dist_version"]})
+                dist = ariane.get_unique(ariane.distribution_service, {"version": args["dist_version"]})
                 if isinstance(dist, ariane_delivery.Distribution):
                     primary_key = ['name', 'version']
                     if ariane.check_args_init(primary_key, args.copy()):
@@ -361,19 +361,19 @@ class RestModule(Resource):
     def __get_module(self, unique_key):
         s = None
         if isinstance(unique_key, int):
-            s = ariane.module_service.get_unique({"nID": unique_key})
+            s = ariane.get_unique(ariane.module_service, {"nID": unique_key})
         elif isinstance(unique_key, str):
             if unique_key.count('.') > 0:
-                s = ariane.module_service.get_unique({"artifactId": unique_key})
+                s = ariane.get_unique(ariane.module_service, {"artifactId": unique_key})
             else:
                 args = self.reqparse.parse_args()
                 if args["parent"] is not None:
                     args["parent"] = json.loads(args["parent"])
-                    par = ariane.component_service.get_unique(args["parent"])
+                    par = ariane.get_unique(ariane.component_service, args["parent"])
                     if par is None:
-                        par = ariane.plugin_service.get_unique(args["parent"])
+                        par = ariane.get_unique(ariane.plugin_service, args["parent"])
                     if par is None:
-                        par = ariane.module_service.get_unique(args["parent"])
+                        par = ariane.get_unique(ariane.module_service, args["parent"])
                     if par is not None:
                         slists = ariane.module_service.get_all(par)
                         for sub in slists:
@@ -415,11 +415,11 @@ class RestModuleList(Resource):
         args = self.reqparse.parse_args()
         if args["parent"] is not None:
             args["parent"] = json.loads(args["parent"])
-            par = ariane.component_service.get_unique(args["parent"])
+            par = ariane.get_unique(ariane.component_service, args["parent"])
             if par is None:
-                par = ariane.plugin_service.get_unique(args["parent"])
+                par = ariane.get_unique(ariane.plugin_service, args["parent"])
             if par is None:
-                par = ariane.module_service.get_unique(args["parent"])
+                par = ariane.get_unique(ariane.module_service, args["parent"])
             if par is not None:
                 slist = ariane.module_service.get_all(par)
                 slist_ret = []
@@ -434,7 +434,7 @@ class RestModuleList(Resource):
     def post(self):
         args = self.reqparse.parse_args()
         if args["nID"] is not None and args["nID"] > 0:
-            s = ariane.module_service.get_unique({"nID": args["nID"]})
+            s = ariane.get_unique(ariane.module_service, {"nID": args["nID"]})
             if ariane.is_dev_version(s):
                 if isinstance(s, ariane_delivery.Module):
                     clear_args(args)
@@ -450,7 +450,7 @@ class RestModuleList(Resource):
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         elif args["module"] is not None:
             arg_s = json.loads(args["module"])
-            s = ariane.module_service.get_unique(arg_s)
+            s = ariane.get_unique(ariane.module_service, arg_s)
             if ariane.is_dev_version(s):
                 if isinstance(s, ariane_delivery.Module):
                     if s.update(arg_s):
@@ -513,10 +513,11 @@ class RestComponent(Resource):
         m = None
         if unique_key2 is None:
             if isinstance(unique_key, int):
-                m = ariane.component_service.get_unique({"nID": unique_key})
+                m = ariane.get_unique(ariane.component_service, {"nID": unique_key})
         else:
             if isinstance(unique_key, str) and isinstance(unique_key2, str):
-                m = ariane.component_service.get_unique({"name": unique_key, "version": unique_key2})
+                m = ariane.get_unique(ariane.component_service,
+                                      {"name": unique_key, "version": unique_key2})
         return m
 
     def get(self, unique_key, unique_key2=None):
@@ -555,7 +556,7 @@ class RestComponentList(Resource):
     def get(self):
         args = self.reqparse.parse_args()
         if args["version"] is not None:
-            d = ariane.distribution_service.get_unique({"version": args["version"]})
+            d = ariane.get_unique(ariane.distribution_service, {"version": args["version"]})
             if d is not None:
                 mlist = ariane.component_service.get_all(d)
                 m = [m.get_properties(gettype=True) for m in mlist]
@@ -569,7 +570,7 @@ class RestComponentList(Resource):
     def post(self):
         args = self.reqparse.parse_args()
         if args["nID"] is not None and args["nID"] > 0:
-            m = ariane.component_service.get_unique({"nID": args["nID"]})
+            m = ariane.get_unique(ariane.component_service, {"nID": args["nID"]})
             if ariane.is_dev_version(m):
                 if isinstance(m, ariane_delivery.Component):
                     clear_args(args)
@@ -585,7 +586,7 @@ class RestComponentList(Resource):
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         elif args["component"] is not None:
             arg_m = json.loads(args["component"])
-            m = ariane.component_service.get_unique(arg_m)
+            m = ariane.get_unique(ariane.component_service, arg_m)
             if ariane.is_dev_version(m):
                 if isinstance(m, ariane_delivery.Component):
                     if m.update(arg_m):
@@ -599,9 +600,9 @@ class RestComponentList(Resource):
                 if key not in ["component", "nID"] and args[key] is None:
                     abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
                         m.get_properties().keys()))
-            mod_exists = ariane.component_service.get_unique({"name": args["name"], "version": args["version"], "type": args["type"]})
+            mod_exists = ariane.get_unique(ariane.component_service, {"name": args["name"], "version": args["version"], "type": args["type"]})
             if mod_exists is None:
-                dist = ariane.distribution_service.get_unique({"version": args["dist_version"]})
+                dist = ariane.get_unique(ariane.distribution_service, {"version": args["dist_version"]})
                 if isinstance(dist, ariane_delivery.Distribution):
                     primary_key = ['name', 'version']
                     if ariane.check_args_init(primary_key, args.copy()):
@@ -629,9 +630,9 @@ class RestDistribution(Resource):
     def __get_distrib(self, unique_key):
         d = None
         if isinstance(unique_key, str):
-            d = ariane.distribution_service.get_unique({"version": unique_key})
+            d = ariane.get_unique(ariane.distribution_service, {"version": unique_key})
         elif isinstance(unique_key, int):
-            d = ariane.distribution_service.get_unique({"nID": unique_key})
+            d = ariane.get_unique(ariane.distribution_service, {"nID": unique_key})
         return d
 
     def get(self, unique_key):
@@ -679,7 +680,7 @@ class RestDistributionList(Resource):
     def post(self):
         args = self.reqparse.parse_args()
         if args["nID"] is not None:
-            d = ariane.distribution_service.get_unique({"nID": args["nID"]})
+            d = ariane.get_unique(ariane.distribution_service, {"nID": args["nID"]})
             dev = ariane.distribution_service.get_dev_distrib()
             if d == dev:
                 if isinstance(d, ariane_delivery.Distribution):
@@ -696,7 +697,7 @@ class RestDistributionList(Resource):
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         elif args["distrib"] is not None:
             arg_d = json.loads(args["distrib"])
-            d = ariane.distribution_service.get_unique(arg_d)
+            d = ariane.get_unique(ariane.distribution_service, arg_d)
             if not isinstance(d, ariane_delivery.Distribution):
                 abort_error("BAD_REQUEST", "Given parameter {} must be a Distribution".format(d))
             dev = ariane.distribution_service.get_dev_distrib()
@@ -710,7 +711,7 @@ class RestDistributionList(Resource):
             else:
                 abort_error("BAD_REQUEST", "Can not modifiy Distribution which is not in SNAPSHOT Version")
         else:
-            dist_exists = ariane.distribution_service.get_unique({"name": args["name"], "version": args["version"]})
+            dist_exists = ariane.get_unique(ariane.distribution_service, {"name": args["name"], "version": args["version"]})
             if dist_exists is None:
                 d = ariane_delivery.Distribution("", "")
                 primary_key = ['name', 'version']
@@ -793,7 +794,7 @@ class RestDistributionManager(Resource):
             if args["distrib"] is None:
                 abort_error("BAD_REQUEST", "You must provide the 'distrib' parameter")
             arg_d = json.loads(args["distrib"])
-            d = ariane.distribution_service.get_unique(arg_d)
+            d = ariane.get_unique(ariane.distribution_service, arg_d)
             if not isinstance(d, ariane_delivery.Distribution):
                 abort_error("BAD_REQUEST", "Given parameter {} must be a Distribution".format(d))
 
@@ -908,7 +909,7 @@ class RestCheckout(Resource):
             abort_error("BAD_REQUEST", "You must provide the parameter 'version' ")
 
         version = args["version"]
-        dist = ariane.distribution_service.get_unique({"version": version})
+        dist = ariane.get_unique(ariane.distribution_service, {"version": version})
         if not isinstance(dist, ariane_delivery.Distribution):
             abort_error("BAD_REQUEST", "Given Distribution version ({})does not exists".format(version))
 

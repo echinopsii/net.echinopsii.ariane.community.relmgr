@@ -96,7 +96,7 @@ class Command(object):
         self.execute(cmd, version, name)
 
     def execute(self, cmd, version, name):
-        distrib = Command.dao_ariane.distribution_service.get_unique({"version": version})
+        distrib = Command.dao_ariane.get_unique(Command.dao_ariane.distribution_service, {"version": version})
         if isinstance(distrib, ariane_delivery.Distribution):
             if cmd in Command.commands_dist:
                 if cmd == "distribution":
@@ -136,7 +136,7 @@ class Command(object):
                                 if fnode is not None:
                                     Command.gen.generate_vsh_installer(version, components.copy(), fnode)
                         else:
-                            p = Command.dao_ariane.plugin_service.get_unique({"name": name})
+                            p = Command.dao_ariane.get_unique(Command.dao_ariane.plugin_service, {"name": name})
                             if p is not None:
                                 fvsh = Command.dao_ariane.get_one_file(p, "vsh")
                                 Command.gen.generate_vsh_plugin(p, fvsh)

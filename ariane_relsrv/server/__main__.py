@@ -17,7 +17,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import traceback
 
 __author__ = 'stan renia'
 
@@ -51,69 +51,68 @@ def setup_logging(default_path='misc/relsrv_logging_conf.json', default_level=lo
     logging.getLogger("passlib").setLevel(logging.WARNING)
 
 
-config_path = "/etc/ariane_relmgr/confsrv.json"
-
-parser = argparse.ArgumentParser()
-parser.add_argument("command", default="relmgr",
-                    help="Command choice [relmgr, passwd]")
-parser.add_argument("-c", "--configuration", default=False,
-                    help="define your Ariane ProcOS configuration file path")
-parser.add_argument("-p", "--password", default=False,
-                    help="define your Ariane ProcOS configuration file path")
-parser.add_argument("-u", "--username", default=False,
-                    help="define your Ariane ProcOS configuration file path")
-
-args = parser.parse_args()
-if args.configuration:
-    if os.path.isfile(args.configuration):
-        config_path = args.configuration
-
-RELMGR_CONFIG = None
-
-try:
-    RELMGR_CONFIG = Config()
-    RELMGR_CONFIG.parse(config_path)
-except Exception as e:
-    print('Release Manager configuration issue: ' + e.__str__())
-    exit(1)
-
-setup_logging(RELMGR_CONFIG.log_file)
-LOGGER = logging.getLogger(__name__)
-try:
-    ariane = ariane_delivery.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login, "password": RELMGR_CONFIG.neo4j_password,
-                                           "host": RELMGR_CONFIG.neo4j_host, "port": RELMGR_CONFIG.neo4j_port,
-                                           "type": "neo4j"})
-except Exception as e:
-    print('Release Manager Neo4j connection issue: ' + e.__str__())
-    exit(2)
-
-from ariane_relsrv.server import restful
-myglobals = {"conf": RELMGR_CONFIG, "delivery_tree": ariane, "logger": LOGGER, "project_path": project_path,
-             "relmgr_path": relmgr_path}
-
 if __name__ == '__main__':
-    #TODO: REMOVE LOOP DEPENDENCIES
-    if RELMGR_CONFIG.testing or args.command == "relmgr":
-        ArianeDefinitions.set_project_abs_path(project_path)
-        restful.start_relmgr(myglobals)
-    elif args.command in ["passwd", "add_user"]:
-        if args.username and args.password:
-            from ariane_relsrv.server.users_mgr import User
-            User.users_file = RELMGR_CONFIG.users_file
-            if args.command == "passwd":
-                LOGGER.info("changing "+ args.username + " password to " + args.password)
-                ret = User.changePassword(args.username, args.password)
-                if ret == 0:
-                    LOGGER.info("Password of '"+args.username+"' has been changed")
-                else:
-                    LOGGER.warn("The password has not been changed")
-            elif args.command == "add_user":
-                LOGGER.info("Adding user " + args.username)
-                ret = User.create_user(args.username, args.password)
-                if ret == 0:
-                    LOGGER.info("User '"+args.username+"' has been added")
-                else:
-                    LOGGER.warn("User has not been added")
-        else:
-            LOGGER.warn("You must provide username (-u) and password (-p) to update the user password")
-            LOGGER.warn("Example: 'relmgr.sh new_password -u myusername -p mynewpwd'")
+    config_path = "/etc/ariane_relmgr/confsrv.json"
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", default="relmgr",
+                        help="Command choice [relmgr, passwd]")
+    parser.add_argument("-c", "--configuration", default=False,
+                        help="define your Ariane ProcOS configuration file path")
+    parser.add_argument("-p", "--password", default=False,
+                        help="define your Ariane ProcOS configuration file path")
+    parser.add_argument("-u", "--username", default=False,
+                        help="define your Ariane ProcOS configuration file path")
+
+    args = parser.parse_args()
+    if args.configuration:
+        if os.path.isfile(args.configuration):
+            config_path = args.configuration
+
+    RELMGR_CONFIG = None
+
+    try:
+        RELMGR_CONFIG = Config()
+        RELMGR_CONFIG.parse(config_path)
+    except Exception as e:
+        print('Release Manager configuration issue: ' + e.__str__())
+        exit(1)
+
+    setup_logging(RELMGR_CONFIG.log_file)
+    LOGGER = logging.getLogger(__name__)
+    try:
+        ariane = ariane_delivery.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login, "password": RELMGR_CONFIG.neo4j_password,
+                                               "host": RELMGR_CONFIG.neo4j_host, "port": RELMGR_CONFIG.neo4j_port,
+                                               "type": "neo4j"})
+        from ariane_relsrv.server import restful
+        myglobals = {"conf": RELMGR_CONFIG, "delivery_tree": ariane, "logger": LOGGER, "project_path": project_path,
+                     "relmgr_path": relmgr_path}
+        # TODO: REMOVE LOOP DEPENDENCIES
+        if RELMGR_CONFIG.testing or args.command == "relmgr":
+            ArianeDefinitions.set_project_abs_path(project_path)
+            restful.start_relmgr(myglobals)
+        elif args.command in ["passwd", "add_user"]:
+            if args.username and args.password:
+                from ariane_relsrv.server.users_mgr import User
+                User.users_file = RELMGR_CONFIG.users_file
+                if args.command == "passwd":
+                    LOGGER.info("changing "+ args.username + " password to " + args.password)
+                    ret = User.changePassword(args.username, args.password)
+                    if ret == 0:
+                        LOGGER.info("Password of '"+args.username+"' has been changed")
+                    else:
+                        LOGGER.warn("The password has not been changed")
+                elif args.command == "add_user":
+                    LOGGER.info("Adding user " + args.username)
+                    ret = User.create_user(args.username, args.password)
+                    if ret == 0:
+                        LOGGER.info("User '"+args.username+"' has been added")
+                    else:
+                        LOGGER.warn("User has not been added")
+            else:
+                LOGGER.warn("You must provide username (-u) and password (-p) to update the user password")
+                LOGGER.warn("Example: 'relmgr.sh new_password -u myusername -p mynewpwd'")
+    except Exception as e:
+        traceback.print_exc()
+        print('Release Manager initialization issue: ' + e.__str__())
+        exit(2)

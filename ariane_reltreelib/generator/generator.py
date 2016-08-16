@@ -93,7 +93,7 @@ class Generator(object):
 
     def get_distrib(self, version):
         # if version not in self.distrib_dict.keys():
-        self.distrib_dict[version] = self.ariane.distribution_service.get_unique({"version": version})
+        self.distrib_dict[version] = self.ariane.get_unique(self.ariane.distribution_service, {"version": version})
         return self.distrib_dict[version]
 
     def get_components_list(self, version):
@@ -183,7 +183,7 @@ class Generator(object):
 
                     for sub in mod.list_module:
                         s_grId, s_artId = self.__generate_pom_module(sub, grId, artId)
-                        if sub.isParent():
+                        if sub.is_parent():
                             self.__generate_pom_subparent(sub, s_grId, s_artId)
 
     def generate_plugin_files(self, version):
@@ -213,7 +213,7 @@ class Generator(object):
                     grId, artId  = self.__generate_pom_comp_plug(plug, f)
                     for sub in plug.list_module:
                         s_grId, s_artId = self.__generate_pom_module(sub, grId, artId)
-                        if sub.isParent():
+                        if sub.is_parent():
                             self.__generate_pom_subparent(sub, s_grId, s_artId)
 
     def generate_pom(self, comp_plug):
@@ -237,7 +237,7 @@ class Generator(object):
 
                 for sub in comp_plug.list_module:
                     s_grId, s_artId = self.__generate_pom_module(sub, grId, artId)
-                    if sub.isParent():
+                    if sub.is_parent():
                         self.__generate_pom_subparent(sub, s_grId, s_artId)
 
     def __generate_pom_module(self, sub, grId, artId):
@@ -258,7 +258,7 @@ class Generator(object):
         sub.list_module = self.ariane.module_service.get_all(sub)
         for s in sub.list_module:
             s_grId, s_artId = self.__generate_pom_module(s, grId, artId)
-            if s.isParent():
+            if s.is_parent():
                 self.__generate_pom_subparent(s, s_grId, s_artId)
 
     def __generate_pom_comp_plug(self, comp_plug, fpom):
@@ -308,7 +308,7 @@ class Generator(object):
             self.ariane.module_service.update_arianenode_lists(s)
         # Remove each module which is not deployable.
         for s in modules.copy():
-            if s.isParent():
+            if s.is_parent():
                 modules.extend(s.list_module)
                 modules.remove(s)
             if not s.deployable:
@@ -482,7 +482,7 @@ class Generator(object):
                        comp_plug.version+"/net.echinopsii."+comp_plug.get_directory_name() + \
                        "."+s.name+"-"+comp_plug.version + "." + ext
                 list_lib.append(url)
-            elif s.isParent():
+            elif s.is_parent():
                 for s_sub in s.list_module:
                     ext = s_sub.extension
                     if ext == Module.EXTENSION_JAR or ext == Module.EXTENSION_WAR:

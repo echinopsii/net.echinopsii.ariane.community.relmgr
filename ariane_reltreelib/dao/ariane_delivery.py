@@ -18,7 +18,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
-import time
 from ariane_reltreelib.dao import graphDBFabric
 from ariane_reltreelib.devparser.devparser import DistParser, MavenParser
 from ariane_reltreelib.ariane_definitions import ArianeDefinitions
@@ -28,7 +27,6 @@ __author__ = 'stanrenia'
 
 
 class DeliveryTree(object):
-    #TODO:clean
     graph_dao = None
     dao_type = None
     module_service = None
@@ -39,42 +37,21 @@ class DeliveryTree(object):
     def __init__(self, graph_dao_args):
         DeliveryTree.dao_type, DeliveryTree.graph_dao = graphDBFabric.DaoFabric.make(graph_dao_args)
         DeliveryTree.distribution_service = DistributionService()
-        DeliveryTree.module_service = ModuleService()
         DeliveryTree.component_service = ComponentService()
+        DeliveryTree.module_service = ModuleService()
         DeliveryTree.plugin_service = PluginService()
 
-    def import_db_from_file(self, fpath):
-        return self.graph_dao.import_from_file(fpath)
+    @staticmethod
+    def import_db_from_file(fpath):
+        return DeliveryTree.graph_dao.import_from_file(fpath)
 
-    def set_db_bin_path(self, db_bin_path):
+    @staticmethod
+    def set_db_bin_path(db_bin_path):
         return DeliveryTree.graph_dao.set_db_bin_path(db_bin_path)
 
-    def reinit_subclass(self):
-        self.distribution_service = None
-        self.component_service = None
-        self.module_service = None
-        self.plugin_service = None
-
-    def delete_all(self):
-        self.graph_dao.delete_all()
-
-    def get_all(self, args):
-        """ This method is defined in each ArianeDeliveryService subclasses
-        Get all objects (of the same type as the corresponding service) related to the given node.
-        Ex: module_service.get_all(component) gets all Module object related to component, a component object
-        :param args: ArianeNode subclass object. See each ArianeDeliveryService sublcasses for more details.
-        :return: A list of ArianeNode sublass objects matching the request
-        """
-        pass
-
-    def get_relations(self, args):
-        """ This method is defined in ArianeDeliveryService subclasses
-        Get all relations of an ArianeNode object. A relation is composed of: start_node, relation, end_node
-        :param args: list of ArianeNode objects, a single Ariane object or a dictionary matching an existing node in
-                    database
-        :return: A list of ArianeRelation objects, or a list containing lists of ArianeRelation if args was list or dict
-        """
-        pass
+    @staticmethod
+    def delete_all():
+        DeliveryTree.graph_dao.delete_all()
 
     @staticmethod
     def get_files(ariane_node):
@@ -97,22 +74,23 @@ class DeliveryTree(object):
                 break
         return ret_file
 
-    def find(self, args):
+    @staticmethod
+    def find(service, args):
         found = None
-        dir = {"args_type": "dict", "label": self._get_label()}
-        if self._check_dict_properties(args) is True:
-            args.update(dir)
+        node_dir = {"args_type": "dict", "label": service.get_label()}
+        if DeliveryTree._check_dict_properties(service.node_model, args) is True:
+            args.update(node_dir)
             found = DeliveryTree.graph_dao.find(args)
         elif type(args) in ArianeNode.__subclasses__():
-            args = args._get_dir()
-            args.update(dir)
+            args = args.get_dir()
+            args.update(node_dir)
             found = DeliveryTree.graph_dao.find(args)
         elif type(args) is list:
-            if self._check_list_type(args) is True:
+            if DeliveryTree._check_list_type(service.node_model, args) is True:
                 found = []
                 for arg in args:
-                    param = arg._get_dir()
-                    param.update(dir)
+                    param = arg.get_dir()
+                    param.update(node_dir)
                     f = DeliveryTree.graph_dao.find(param)
                     if f is not None:
                         found.append(f[0])
@@ -123,7 +101,7 @@ class DeliveryTree(object):
             found_copy = found.copy()
             found = []
             for fo in found_copy:
-                found.append(self._create_ariane_node(fo))
+                found.append(service.create_ariane_node(fo))
         return found
 
     @staticmethod
@@ -146,7 +124,8 @@ class DeliveryTree(object):
                     return None
                 return listnode
 
-    def get_unique(self, args):
+    @staticmethod
+    def get_unique(service, args):
         """
        get a unique node from graph database.
        :param args: dict which contains unique node identifiers (primary key equivalent, ex: id, name+version, ...)
@@ -154,11 +133,11 @@ class DeliveryTree(object):
                If no node matches, return None
                If multiple nodes matches, return 0
        """
-        if self._check_dict_properties(args) is True:
-            args["label"] = self._get_label()
+        if DeliveryTree._check_dict_properties(service.node_model, args) is True:
+            args["label"] = service.get_label()
             node = DeliveryTree.graph_dao.get_unique(args)
             if (node is not None) and (type(node) is not int):
-                node = self._create_ariane_node(node)
+                node = service.create_ariane_node(node)
             return node
         else:
             return None
@@ -182,45 +161,50 @@ class DeliveryTree(object):
                     return False
         return True
 
-    def check_uniqueness(self):
-        count_nid = self.graph_dao.count("nID")
-        count_node = self.graph_dao.count("Node")
+    @staticmethod
+    def check_uniqueness():
+        count_nid = DeliveryTree.graph_dao.count("nID")
+        count_node = DeliveryTree.graph_dao.count("Node")
         return count_nid == count_node
 
-    def is_dev_version(self, arnode):
-        if not issubclass(type(arnode), ArianeNode):
+    @staticmethod
+    def is_dev_version(ariane_node):
+        if not issubclass(type(ariane_node), ArianeNode):
             return False
-        dev = self.distribution_service.get_dev_distrib()
-        rel = self.graph_dao.shortest_path(arnode.id, dev.id)
+        dev = DeliveryTree.distribution_service.get_dev_distrib()
+        rel = DeliveryTree.graph_dao.shortest_path(ariane_node.id, dev.id)
         if rel is None:
-            rel = self.graph_dao.shortest_path(dev.id, arnode.id)
+            rel = DeliveryTree.graph_dao.shortest_path(dev.id, ariane_node.id)
         return rel is not None
 
-    def _get_relations(self, args, relations):
+    @staticmethod
+    def get_relations_helper(service, args, ariane_node, relations):
         ret = []
         if type(args) is list:
             for arg in args:
-                if isinstance(arg, type(self._ariane_node)):
-                    ret.append(self.__search_related_nodes(arg, relations))
+                if isinstance(arg, type(ariane_node)):
+                    ret.append(DeliveryTree.__search_related_nodes(arg, relations))
         elif type(args) is dict:
-            found = self.find(args)
+            found = DeliveryTree.find(service, args)
             if found is not None:
                 for f in found:
-                    ret.append(self.__search_related_nodes(f, relations))
-        elif isinstance(args, type(self._ariane_node)):
-            return self.__search_related_nodes(args, relations)
+                    ret.append(DeliveryTree.__search_related_nodes(f, relations))
+        elif isinstance(args, type(ariane_node)):
+            return DeliveryTree.__search_related_nodes(args, relations)
 
         if len(ret) == 0:
             return None
         return ret
 
-    def __search_related_nodes(self, args, relations):
+    @staticmethod
+    def __search_related_nodes(args, relations):
         node = args
         args = {"node": node.node, "relation": relations}
         list_relation = DeliveryTree.graph_dao.get_relations(args)
-        return self.__cast_related_nodes(node, list_relation)
+        return DeliveryTree.__cast_related_nodes(node, list_relation)
 
-    def __cast_related_nodes(self, cur_node, related_nodes_list):
+    @staticmethod
+    def __cast_related_nodes(cur_node, related_nodes_list):
         """
         :param related_nodes_list:
         :return:
@@ -243,32 +227,33 @@ class DeliveryTree(object):
                     ariane_relation = ArianeRelation(start_node, rel_d["relation"], end_node,
                                                      rel_d["rel_properties"], rel_d["rel_node"])
                     if (type(start_node) is Component) and (type(end_node) is Component):
-                        start_node._set_dependency(ariane_relation)
+                        start_node.set_dependency(ariane_relation)
                     if (type(start_node) is Plugin) and (type(end_node) is Component):
-                        start_node._set_dependency(ariane_relation)
+                        start_node.set_dependency(ariane_relation)
                     relation_list.append(ariane_relation)
                 return relation_list
         return None
 
-    def _check_dict_properties(self, args):
+    @staticmethod
+    def _check_dict_properties(ariane_node, args):
         if type(args) is dict:
-            return self._ariane_node._check_properties(args)
+            return ariane_node.check_properties(args)
         else:
             return False
 
-    def _check_list_type(self, args):
+    @staticmethod
+    def _check_list_type(ariane_node, args):
         if type(args) is list:
             for arg in args:
-                if not isinstance(arg, type(self._ariane_node)):
+                if not isinstance(arg, type(ariane_node)):
                     return False
             return True
 
-class DistributionService(DeliveryTree):
 
-    #TODO: clean
+class DistributionService(object):
+
     def __init__(self):
-        self._ariane_node = Distribution("model", "model")
-        self.reinit_subclass()
+        self.node_model = Distribution("model", "model")
 
     def sync_db_from_last_dev(self, distrib):
         if self.__get_name_version_master(distrib.version) == "master.SNAPSHOT":
@@ -289,17 +274,18 @@ class DistributionService(DeliveryTree):
                             exist_already = True
                             break
                     if not exist_already:
-                        #print("New component for distrib : " + dev_component['name'])
-                        #TODO:
-                        #if pom file exist then parse file to get version
-                        #cm = Component(dev_component['name'], 0, dev_component['type'], order=0, build="none")
-                        #distrib.add_component(cm)
+                        # print("New component for distrib : " + dev_component['name'])
+                        # TODO:
+                        # if pom file exist then parse file to get version
+                        # cm = Component(dev_component['name'], 0, dev_component['type'], order=0, build="none")
+                        # distrib.add_component(cm)
                         pass
 
             for db_component in distrib.list_component:
                 DeliveryTree.component_service.sync_db_from_last_dev(db_component)
 
-    def update_arianenode_lists(self, distrib):
+    @staticmethod
+    def update_arianenode_lists(distrib):
         if isinstance(distrib, Distribution):
             distrib.list_files = DeliveryTree.get_files(distrib)
             distrib.list_component = DeliveryTree.component_service.get_all(distrib)
@@ -311,43 +297,43 @@ class DistributionService(DeliveryTree):
             DeliveryTree.distribution_service.get_relations(distrib)
             distrib._len_list_files = len(distrib.list_files)
 
-    def deep_update_arianenode_lists(self, distrib):
+    @staticmethod
+    def deep_update_arianenode_lists(distrib):
         if isinstance(distrib, Distribution):
-            self.update_arianenode_lists(distrib)
+            DistributionService.update_arianenode_lists(distrib)
             for m in distrib.list_component:
                 DeliveryTree.component_service.deep_update_arianenode_lists(m)
             for pdict in distrib.list_plugin:
                 p = pdict["Plugin"]
                 DeliveryTree.plugin_service.deep_update_arianenode_lists(p)
 
-    def get_all(self, args=None):
+    def get_all(self):
         """ Get all distributions existing in database
-        :param args:  None
         :return: a list of all Distribution objects existing in database
         """
         list_distrib = []
-        args = {"reverse": False, "label": self._ariane_node.__class__.__name__, "node": None, "relation": None}
+        args = {"reverse": False, "label": self.node_model.__class__.__name__, "node": None, "relation": None}
         list_node = DeliveryTree.graph_dao.get_all(args)
         for node in list_node:
-            list_distrib.append(self._create_ariane_node(node))
+            list_distrib.append(DistributionService.create_ariane_node(node))
 
-        if len(list_distrib) == 0:
-            list_distrib = None
+        # if len(list_distrib) == 0:
+        #     list_distrib = None
 
         return list_distrib
 
     def get_relations(self, args):
-        return self._get_relations(args, ArianeRelation.Dist_relations)
+        return DeliveryTree.get_relations_helper(self, args, self.node_model, ArianeRelation.Dist_relations)
 
     def get_dev_distrib(self):
-        dev = self.get_unique({"editable": "true"})
+        dev = DeliveryTree.get_unique(self, {"editable": "true"})
         if isinstance(dev, Distribution):
             return dev
         else:
             distribs = self.get_all()
             dev = Distribution('dev', '0.0.0')
-            if distribs is None:
-                return None
+            # if distribs is None:
+            #     return None
             for d in distribs:
                 if d.version > dev.version:
                     dev = d
@@ -358,25 +344,27 @@ class DistributionService(DeliveryTree):
         if not isinstance(dist, Distribution):
             return None
 
-        def copysubparent(sub):
-            DeliveryTree.module_service.update_arianenode_lists(sub)
-            csub = Module(sub.name, sub.version, sub.groupId, sub.artifactId,
-                          order=sub.order, deployable=sub.deployable, extension=sub.extension)
-            for sf in sub.list_files:
-                csub.add_file(FileNode(sf.name, sf.type, sf.version, sf.path))
-            for s in sub.list_module:
-                if s.isParent():
-                    ss = copysubparent(s)
-                    csub.add_module(Module(ss.name, ss.version, ss.groupId, ss.artifactId,
-                                           order=ss.order, deployable=ss.deployable, extension=ss.extension))
+        def copy_sub_parent(sub_parent):
+            DeliveryTree.module_service.update_arianenode_lists(sub_parent)
+            c_sub = Module(sub_parent.name, sub_parent.version, sub_parent.groupId, sub_parent.artifactId,
+                           order=sub_parent.order, deployable=sub_parent.deployable, extension=sub_parent.extension)
+            for sub_parent_file in sub_parent.list_files:
+                c_sub.add_file(FileNode(sub_parent_file.name, sub_parent_file.type,
+                                        sub_parent_file.version, sub_parent_file.path))
+            for module in sub_parent.list_module:
+                if module.is_parent():
+                    ss = copy_sub_parent(module)
+                    c_sub.add_module(Module(ss.name, ss.version, ss.groupId, ss.artifactId,
+                                            order=ss.order, deployable=ss.deployable, extension=ss.extension))
                 else:
-                    DeliveryTree.module_service.update_arianenode_lists(s)
-                    ss = Module(s.name, s.version, s.groupId, s.artifactId,
-                                order=s.order, deployable=s.deployable, extension=s.extension)
-                    for sf in s.list_files:
-                        ss.add_file(FileNode(sf.name, sf.type, sf.version, sf.path))
-                    csub.add_module(ss)
-            return csub
+                    DeliveryTree.module_service.update_arianenode_lists(module)
+                    ss = Module(module.name, module.version, module.groupId, module.artifactId,
+                                order=module.order, deployable=module.deployable, extension=module.extension)
+                    for sub_parent_file in module.list_files:
+                        ss.add_file(FileNode(sub_parent_file.name, sub_parent_file.type,
+                                             sub_parent_file.version, sub_parent_file.path))
+                    c_sub.add_module(ss)
+            return c_sub
 
         cd = Distribution(dist.name, dist.version, editable=dist.editable, url_repos=dist.url_repos)
         DeliveryTree.distribution_service.update_arianenode_lists(dist)
@@ -389,8 +377,8 @@ class DistributionService(DeliveryTree):
             for mf in m.list_files:
                 cm.add_file(FileNode(mf.name, mf.type, mf.version, mf.path))
             for s in m.list_module:
-                if s.isParent():
-                    sub = copysubparent(s)
+                if s.is_parent():
+                    sub = copy_sub_parent(s)
                     cm.add_module(sub)
                 else:
                     DeliveryTree.module_service.update_arianenode_lists(s)
@@ -401,22 +389,22 @@ class DistributionService(DeliveryTree):
                     cm.add_module(csub)
             cd.add_component(cm)
 
-        for mod in dist.list_component:  # Copying components dependencies
+        for mod in dist.list_component:  # copying components dependencies
             cm = [m for m in cd.list_component if m.name == mod.name][0]
             for md in mod.list_component_dependency:
                 c_md = [t for t in cd.list_component if t.name == md["component"].name][0]
                 cm.add_component_dependency({"component": c_md, "version_min": md["version_min"],
-                                          "version_max": md["version_max"], "version": md["component"].version})
+                                            "version_max": md["version_max"], "version": md["component"].version})
 
-        for plug in dist.list_plugin:  # Copying plugins and their modules and files
+        for plug in dist.list_plugin:  # copying plugins and their modules and files
             m = plug["Plugin"]
             cm = Plugin(m.name, m.version)
             DeliveryTree.plugin_service.update_arianenode_lists(m)
             for mf in m.list_files:
                 cm.add_file(FileNode(mf.name, mf.type, mf.version, mf.path))
             for s in m.list_module:
-                if s.isParent():
-                    sub = copysubparent(s)
+                if s.is_parent():
+                    sub = copy_sub_parent(s)
                     cm.add_module(sub)
                 else:
                     DeliveryTree.module_service.update_arianenode_lists(s)
@@ -434,18 +422,20 @@ class DistributionService(DeliveryTree):
             for md in plug.list_component_dependency:
                 c_md = [t for t in cd.list_component if t.name == md["component"].name][0]
                 cp.add_component_dependency({"component": c_md, "version_min": md["version_min"],
-                                          "version_max": md["version_max"], "version": md["component"].version})
+                                            "version_max": md["version_max"], "version": md["component"].version})
         cd.save()
         return cd
 
     @staticmethod
-    def _create_ariane_node(node):
+    def create_ariane_node(node):
         args = DeliveryTree.graph_dao.get_node_properties(node)
         if "editable" not in args.keys():
             args["editable"] = "false"
-        return Distribution(args["name"], args["version"], args["nID"], editable=args["editable"], url_repos=args["url_repos"])
+        return Distribution(args["name"], args["version"], args["nID"],
+                            editable=args["editable"], url_repos=args["url_repos"])
 
-    def __get_name_version_master(self, version):
+    @staticmethod
+    def __get_name_version_master(version):
         if "SNAPSHOT" in version:
             return "master.SNAPSHOT"
         else:
@@ -478,7 +468,8 @@ class DistributionService(DeliveryTree):
         fpath = distrib.get_directory_name() + '/resources/maven/'
         distrib.add_file(FileNode(fname, "pom_dist", distrib.version, fpath))
 
-    def __make_file_json_plugins(self, distrib):
+    @staticmethod
+    def __make_file_json_plugins(distrib):
         fname = 'ariane.community.plugins.json'
         fpath = distrib.get_directory_name()+"/resources/plugins/"
         distrib.add_file(FileNode(fname, "json_plugins", distrib.version, fpath))
@@ -493,14 +484,14 @@ class DistributionService(DeliveryTree):
         fpath = distrib.get_directory_name() + "/resources/sources/"
         distrib.add_file(FileNode(fname, "json_git_repos", distrib.version, fpath))
 
-    def _get_label(self):
-        return self._ariane_node.node_type
+    def get_label(self):
+        return self.node_model.node_type
 
-class ComponentService(DeliveryTree):
-    #TODO:clean
+
+class ComponentService(object):
+
     def __init__(self):
-        self._ariane_node = Component("model", "model")
-        self.reinit_subclass()
+        self.node_model = Component("model", "model")
 
     def sync_db_from_last_dev(self, component):
         if self.__get_name_version_master(component.version) == "master.SNAPSHOT":
@@ -565,7 +556,8 @@ class ComponentService(DeliveryTree):
             for submodule in component.list_module:
                 DeliveryTree.module_service.sync_db_from_last_dev(submodule)
 
-    def update_arianenode_lists(self, component):
+    @staticmethod
+    def update_arianenode_lists(component):
         if isinstance(component, Component):
             component.list_files = DeliveryTree.get_files(component)
             component.list_module = DeliveryTree.module_service.get_all(component)
@@ -576,20 +568,21 @@ class ComponentService(DeliveryTree):
             component._len_list_mod_dep = len(component.list_component_dependency)
             component._len_list_module = len(component.list_module)
 
-    def deep_update_arianenode_lists(self, component):
+    @staticmethod
+    def deep_update_arianenode_lists(component):
         if isinstance(component, Component):
-            self.update_arianenode_lists(component)
+            ComponentService.update_arianenode_lists(component)
             for s in component.list_module:
                 DeliveryTree.module_service.deep_update_arianenode_lists(s)
             for mprop in component.list_component_dependency:
                 m = mprop["component"]
                 DeliveryTree.component_service.deep_update_arianenode_lists(m)
 
-    def get_all(self, args=None):
+    @staticmethod
+    def get_all(args=None):
         """ Get all components from a given distribution
         or all components from same distrib as given component
         or all components from same distribs as give plugin
-        :param distribution: Distribution object
         :return: a list of all component objects related to the distribution
         """
         list_mod = []
@@ -597,20 +590,20 @@ class ComponentService(DeliveryTree):
             args = {"reverse": False, "node": args.node, "relation": ArianeRelation.Dist_component}
             list_node = DeliveryTree.graph_dao.get_all(args)
             for node in list_node:
-                list_mod.append(self._create_ariane_node(node))
+                list_mod.append(ComponentService.create_ariane_node(node))
         elif type(args) is Component:
             args = {"reverse": True, "node": args.node, "relation": ArianeRelation.Dist_component}
             distrib_node = DeliveryTree.graph_dao.get_all(args)[0]
             if distrib_node is not None:
                 list_mod = DeliveryTree.component_service.get_all(
-                    DeliveryTree.distribution_service._create_ariane_node(distrib_node)
+                    DeliveryTree.distribution_service.create_ariane_node(distrib_node)
                 )
         elif type(args) is Plugin:
             args = {"reverse": True, "node": args.node, "relation": ArianeRelation.Plugin_Dist}
             distribs = DeliveryTree.graph_dao.get_all(args)
             for distrib_node in distribs:
                 for component in DeliveryTree.component_service.get_all(
-                        DeliveryTree.distribution_service._create_ariane_node(distrib_node)
+                        DeliveryTree.distribution_service.create_ariane_node(distrib_node)
                 ):
                     list_mod.append(component)
         elif args is None:
@@ -630,23 +623,24 @@ class ComponentService(DeliveryTree):
         """
         list_dep = []
         if isinstance(component, Component):
-            #TODO: check label
-            #TODO: mail Stan
+            # TODO: check label
+            # TODO: mail Stan
             args = {"reverse": False, "node": component.node,
-                    "label": self._ariane_node.__class__.__name__,
+                    "label": self.node_model.__class__.__name__,
                     "relation": ArianeRelation.component_component}
             list_node = DeliveryTree.graph_dao.get_all(args)
             for node in list_node:
-                dep = self._create_ariane_node(node)
+                dep = ComponentService.create_ariane_node(node)
                 list_dep.append(dep)
         return list_dep
 
     def get_relations(self, args, rels=None):
         if rels is None:
-            return self._get_relations(args, ArianeRelation.component_relations)
-        return self._get_relations(args, rels)
+            return DeliveryTree.get_relations_helper(self, args, self.node_model, ArianeRelation.component_relations)
+        return DeliveryTree.get_relations_helper(self, args, self.node_model, rels)
 
-    def __get_name_version_master(self, version):
+    @staticmethod
+    def __get_name_version_master(version):
         if "SNAPSHOT" in version:
             return "master.SNAPSHOT"
         else:
@@ -671,37 +665,40 @@ class ComponentService(DeliveryTree):
             component.add_file(FileNode(fname, "json_build", component.version, fpath))
 
     def __make_file_plan(self, component):
-        fname = "net.echinopsii."+ component.get_directory_name() + '_' + self.__get_name_version_master(component.version) + '.plan'
+        fname = "net.echinopsii." + component.get_directory_name() + '_' + \
+                self.__get_name_version_master(component.version) + '.plan'
         fpath = component.get_directory_name()+"/distrib/db/resources/virgo/repository/ariane-core/"
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             component.add_file(FileNode(fname, "plan", component.version, fpath))
 
-    def __make_file_pom(self, component):
+    @staticmethod
+    def __make_file_pom(component):
         fname = "pom.xml"
         fpath = component.get_directory_name() + '/'
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             component.add_file(FileNode(fname, "pom", component.version, fpath))
 
-    def __make_file_vsh(self, component):
+    @staticmethod
+    def __make_file_vsh(component):
         fname = 'deploy-components.vsh'
         fpath = component.get_directory_name() + "/distrib/installer/resources/virgoscripts/"
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             component.add_file(FileNode(fname, "vsh", component.version, fpath))
 
     @staticmethod
-    def _create_ariane_node(node):
+    def create_ariane_node(node):
         args = DeliveryTree.graph_dao.get_node_properties(node)
-        return Component(args["name"], args["version"], type=args["type"], id=args["nID"],
+        return Component(args["name"], args["version"], co_type=args["type"], node_id=args["nID"],
                          build=args["build"], order=args["order"])
 
-    def _get_label(self):
-        return self._ariane_node.node_type
+    def get_label(self):
+        return self.node_model.node_type
 
-class PluginService(DeliveryTree):
-    #TODO: clean
+
+class PluginService(object):
+
     def __init__(self):
-        self._ariane_node = Plugin("model", "model")
-        self.reinit_subclass()
+        self.node_model = Plugin("model", "model")
 
     def sync_db_from_last_dev(self, plugin):
         if self.__get_name_version_master(plugin.version) == "master.SNAPSHOT":
@@ -755,7 +752,7 @@ class PluginService(DeliveryTree):
                     if not exist_already:
                         lists_distrib_component = DeliveryTree.component_service.get_all(plugin)
                         ariane_deps = [t for t in lists_distrib_component
-                                      if t.name == ariane_dep_dev[ArianeDefinitions.COMPONENT_DEPENDENCY_NAME]]
+                                       if t.name == ariane_dep_dev[ArianeDefinitions.COMPONENT_DEPENDENCY_NAME]]
                         for ariane_dep in ariane_deps:
                             plugin.add_component_dependency({
                                 "component": ariane_dep,
@@ -767,7 +764,8 @@ class PluginService(DeliveryTree):
             for submodule in plugin.list_module:
                 DeliveryTree.module_service.sync_db_from_last_dev(submodule)
 
-    def update_arianenode_lists(self, plugin):
+    @staticmethod
+    def update_arianenode_lists(plugin):
         if isinstance(plugin, Plugin):
             plugin.list_files = DeliveryTree.get_files(plugin)
             plugin.list_module = DeliveryTree.module_service.get_all(plugin)
@@ -778,18 +776,19 @@ class PluginService(DeliveryTree):
             plugin._len_list_mod_dep = len(plugin.list_component_dependency)
             plugin._len_list_module = len(plugin.list_module)
 
-    def deep_update_arianenode_lists(self, plugin):
+    @staticmethod
+    def deep_update_arianenode_lists(plugin):
         if isinstance(plugin, Plugin):
-            self.update_arianenode_lists(plugin)
+            PluginService.update_arianenode_lists(plugin)
             for s in plugin.list_module:
                 DeliveryTree.module_service.deep_update_arianenode_lists(s)
             for mprop in plugin.list_component_dependency:
                 m = mprop["component"]
                 DeliveryTree.component_service.deep_update_arianenode_lists(m)
 
-    def get_all(self, args=None, with_relation=False):
+    @staticmethod
+    def get_all(args=None, with_relation=False):
         """ Get all plugins from a given distribution
-        :param distribution: Distribution object
         :return: a list of all Plugin objects related to the distribution
         """
         list_plugin = []
@@ -798,7 +797,7 @@ class PluginService(DeliveryTree):
             args = {"reverse": True, "node": args.node, "relation": ArianeRelation.Plugin_Dist}
             list_node = DeliveryTree.graph_dao.get_all(args)
             for node in list_node:
-                plugin = self._create_ariane_node(node)
+                plugin = PluginService.create_ariane_node(node)
                 if with_relation:
                     rel = DeliveryTree.get_relation_between(plugin, distrib)
                     list_plugin.append({"Plugin": plugin, "properties": rel.properties})
@@ -821,20 +820,21 @@ class PluginService(DeliveryTree):
         """
         list_dep = []
         if isinstance(plugin, Component):
-            #TODO: check label
+            # TODO: check label
             args = {"reverse": False, "node": plugin.node,
-                    "label": self._ariane_node.__class__.__name__,
+                    "label": self.node_model.__class__.__name__,
                     "relation": ArianeRelation.component_component}
             list_node = DeliveryTree.graph_dao.get_all(args)
             for node in list_node:
-                dep = self._create_ariane_node(node)
+                dep = PluginService.create_ariane_node(node)
                 list_dep.append(dep)
         return list_dep
 
     def get_relations(self, args):
-        return self._get_relations(args, ArianeRelation.Plugin_relations)
+        return DeliveryTree.get_relations_helper(self, args, self.node_model, ArianeRelation.Plugin_relations)
 
-    def __get_name_version_master(self, version):
+    @staticmethod
+    def __get_name_version_master(version):
         if "SNAPSHOT" in version:
             return "master.SNAPSHOT"
         else:
@@ -860,34 +860,38 @@ class PluginService(DeliveryTree):
             plugin.add_file(FileNode(fname, "json_build", plugin.version, fpath))
 
     def __make_file_plan(self, plugin):
-        fname = "net.echinopsii."+ plugin.get_directory_name() + '_' + self.__get_name_version_master(plugin.version) + '.plan'
+        fname = "net.echinopsii." + plugin.get_directory_name() + '_' + \
+                self.__get_name_version_master(plugin.version) + '.plan'
         fpath = plugin.get_directory_name()+"/distrib/db/resources/virgo/repository/ariane-plugins/"
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             plugin.add_file(FileNode(fname, "plan", plugin.version, fpath))
 
-    def __make_file_pom(self, plugin):
+    @staticmethod
+    def __make_file_pom(plugin):
         fname = "pom.xml"
         fpath = plugin.get_directory_name() + '/'
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             plugin.add_file(FileNode(fname, "pom", plugin.version, fpath))
 
-    def __make_file_vsh(self, plugin):
+    @staticmethod
+    def __make_file_vsh(plugin):
         fname = 'deploy-plugin.'+plugin.name+'.vsh'
         fpath = plugin.get_directory_name() + "/distrib/installer/resources/virgoscripts/"
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             plugin.add_file(FileNode(fname, "vsh", plugin.version, fpath))
 
-    def _create_ariane_node(self, node):
+    @staticmethod
+    def create_ariane_node(node):
         args = DeliveryTree.graph_dao.get_node_properties(node)
         return Plugin(args["name"], args["version"], args["nID"])
 
-    def _get_label(self):
-        return self._ariane_node.node_type
+    def get_label(self):
+        return self.node_model.node_type
 
-class ModuleService(DeliveryTree):
+
+class ModuleService(object):
     def __init__(self):
-        self._ariane_node = Module("model", "model")
-        self.reinit_subclass()
+        self.node_model = Module("model", "model")
 
     def sync_db_from_last_dev(self, module):
         if self.__get_name_version_master(module.version) == "master.SNAPSHOT":
@@ -937,7 +941,15 @@ class ModuleService(DeliveryTree):
             for module in module.list_module:
                 DeliveryTree.module_service.sync_db_from_last_dev(module)
 
-    def update_arianenode_lists(self, module):
+    @staticmethod
+    def deep_update_arianenode_lists(module):
+        if isinstance(module, Module):
+            ModuleService.update_arianenode_lists(module)
+            for s in module.list_module:
+                DeliveryTree.module_service.deep_update_arianenode_lists(s)
+
+    @staticmethod
+    def update_arianenode_lists(module):
         if isinstance(module, Module):
             module.list_files = DeliveryTree.get_files(module)
             module.list_module = DeliveryTree.module_service.get_all(module)
@@ -957,52 +969,58 @@ class ModuleService(DeliveryTree):
         if isinstance(comp_plug_mod, Component) or isinstance(comp_plug_mod, Plugin) or \
                 isinstance(comp_plug_mod, Module):
             args = {"reverse": False, "node": comp_plug_mod.node,
-                    "label": self._ariane_node.__class__.__name__,
+                    "label": self.node_model.__class__.__name__,
                     "relation": ArianeRelation.component_Module}
             list_node = DeliveryTree.graph_dao.get_all(args)
             for node in list_node:
-                sub = self._create_ariane_node(node)
+                sub = ModuleService.create_ariane_node(node)
                 list_module.append(sub)
         return list_module
 
     def get_relations(self, args):
-        return self._get_relations(args, ArianeRelation.Module_relations)
+        return DeliveryTree.get_relations_helper(self, args, self.node_model, ArianeRelation.Module_relations)
 
-    #TODO : wtf tfinf ?
-    #TODO : mail Stan
+    # TODO : wtf tfinf ?
+    # TODO : mail Stan
     def get_parent(self, module):
-        #grid = module.groupId
-        #i = grid.rfinf('.')
-        #parent_name = grid[i+1:]
+        # grid = module.groupId
+        # i = grid.rfinf('.')
+        # parent_name = grid[i+1:]
         grid_len = len(module.groupId.split("."))
         parent_name = module.groupId.split(".")[grid_len - 1]
-        parent = DeliveryTree.component_service.get_unique({"name": parent_name, "version": module.version})
+        parent = DeliveryTree.get_unique(DeliveryTree.component_service,
+                                         {"name": parent_name, "version": module.version})
         if parent is None:
-            parent = DeliveryTree.plugin_service.get_unique({"name": parent_name, "version": module.version})
+            parent = DeliveryTree.get_unique(DeliveryTree.plugin_service,
+                                             {"name": parent_name, "version": module.version})
         if parent is None:
-            parent = DeliveryTree.module_service.get_unique({"name": parent_name, "version": module.version})
+            parent = DeliveryTree.get_unique(DeliveryTree.module_service,
+                                             {"name": parent_name, "version": module.version})
         return parent
 
-    def _create_ariane_node(self, node):
+    @staticmethod
+    def create_ariane_node(node):
         args = DeliveryTree.graph_dao.get_node_properties(node)
-        return Module(args["name"], args["version"], args["groupId"], args["artifactId"], id=args["nID"],
-                         order=args["order"], deployable=args["deployable"], extension=args["extension"])
+        return Module(args["name"], args["version"], args["groupId"], args["artifactId"], node_id=args["nID"],
+                      order=args["order"], deployable=args["deployable"], extension=args["extension"])
 
     def make_files(self, module, parent_path):
         self.__make_file_pom(module, parent_path)
         for sub in module.list_module:
             DeliveryTree.module_service.make_files(sub, parent_path + os.path.sep + module.name + os.path.sep)
 
-    def __make_file_pom(self, module, parent_path):
+    @staticmethod
+    def __make_file_pom(module, parent_path):
         fname = "pom.xml"
         fpath = parent_path + os.path.sep + module.name + os.path.sep
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + os.path.sep + fpath + fname):
             module.add_file(FileNode(fname, "pom", module.version, fpath))
 
-    def _get_label(self):
-        return self._ariane_node.node_type
+    def get_label(self):
+        return self.node_model.node_type
 
-    def __get_name_version_master(self, version):
+    @staticmethod
+    def __get_name_version_master(version):
         if "SNAPSHOT" in str(version):
             return "master.SNAPSHOT"
         else:
@@ -1010,7 +1028,7 @@ class ModuleService(DeliveryTree):
 
 
 class ArianeRelation(object):
-    #TODO: clean
+    # TODO: clean
     Dist_component = "composedBy"
     component_component = "dependency"
     component_Plugin = component_component
@@ -1048,28 +1066,37 @@ class ArianeRelation(object):
         return vmin, vmax
 
     def __repr__(self):
-        return "Relation: ("+self.start.__repr__()+")-[relation = "+self.relation+" ; "+str(self.properties)+"" \
-                                                                                                             "]->("+self.end.__repr__()+")"
+        return "Relation: (" + self.start.__repr__() + ")-[relation = " + self.relation + " ; " + \
+               str(self.properties) + "]->(" + self.end.__repr__() + ")"
+
 
 class ArianeNode(object):
 
-    def __init__(self, name, version):
-        self.name = name
+    def __init__(self, node_id, name, version, node_dir, node_type, rep):
+        self.id = node_id
         self.version = version
-        self.id = 0
+        self.name = name
         self.pom_attr = "net.echinopsii."
         self.list_files = []
+        self._len_list_files = 0
         self.list_relation = []
+        self.dir = node_dir
+        self.node_type = node_type
+        self.rep = rep
 
-    #TODO: define _get_dir and get_rest_endpoint to be reimplemented by subclass
+    def get_dir(self):
+        return self.dir
+
+    def get_rest_endpoint(self):
+        return self.rep
 
     def get_properties(self, gettype=False):
-        prop = self._get_dir()
+        prop = self.get_dir()
         if gettype:
             prop["node_type"] = self.get_rest_endpoint()
         return prop
 
-    def update_filesname(self):
+    def update_files_name(self):
         for f in self.list_files:
             f.udpdate_name(self.version)
             f.save()
@@ -1080,6 +1107,12 @@ class ArianeNode(object):
             if self._is_saved():
                 self._create_file(file_node)
                 self._len_list_files = len(self.list_files)
+
+    def check_properties(self, args):
+        for arg_key in args.keys():
+            if arg_key in self.dir.keys():
+                return True
+        return False
 
     def _create_file(self, file_node):
         link_args = {"node": self.node, "relation": "CONTAINS", "linked_node": file_node.node}
@@ -1096,13 +1129,7 @@ class ArianeNode(object):
 
     def _reset_node(self):
         self.id = 0
-        self.node = DeliveryTree.graph_dao.init_node(self.node_type, self._get_dir())
-
-    def _check_properties(self, args):
-        for arg_key in args.keys():
-            if arg_key in self.dir.keys():
-                return True
-        return False
+        self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.get_dir())
 
     def _check_current_property(self, p):
         if p in self.dir.keys():
@@ -1111,7 +1138,7 @@ class ArianeNode(object):
             return False
 
     def to_json(self):
-        return json.dumps(self._get_dir())
+        return json.dumps(self.get_dir())
 
     def from_json(self, json_obj):
         if isinstance(json_obj, str):
@@ -1135,7 +1162,8 @@ class ArianeNode(object):
             args = {"name": "", "version": "", "type": "", "groupId": "", "artifactId": ""}
 
         if node_type == "Distribution":
-            node = Distribution(args["name"], args["version"], args["nID"], editable=args["editable"], url_repos=args["url_repos"])
+            node = Distribution(args["name"], args["version"], args["nID"],
+                                editable=args["editable"], url_repos=args["url_repos"])
         elif node_type == "Component":
             node = Component(args["name"], args["version"], args["type"], args["nID"],
                              build=args["build"], order=args["order"])
@@ -1143,7 +1171,7 @@ class ArianeNode(object):
             node = Plugin(args["name"], args["version"], args["nID"], git_repos=args["git_repos"])
         elif node_type == "Module":
             node = Module(args["name"], args["version"], args["groupId"], args["artifactId"], args["nID"],
-                             order=args["order"], deployable=args["deployable"], extension=args["extension"])
+                          order=args["order"], deployable=args["deployable"], extension=args["extension"])
         else:
             return None
 
@@ -1151,9 +1179,10 @@ class ArianeNode(object):
 
     def __eq__(self, other):
         if type(other) in ArianeNode.__subclasses__():
-            dir = other._get_dir()
-            eq_args = [val for key, val in self._get_dir().items() if (key in dir.keys()) and (val == dir.get(key))]
-            if len(eq_args) == len(self._get_dir()):
+            other_dir = other.get_dir()
+            eq_args = [val for key, val in self.get_dir().items()
+                       if (key in other_dir.keys()) and (val == other_dir.get(key))]
+            if len(eq_args) == len(self.get_dir()):
                 return True
         return False
 
@@ -1168,21 +1197,30 @@ class ArianeNode(object):
 
 class Distribution(ArianeNode):
 
-    def __init__(self, name, version, id=0, editable="false", url_repos=""):
-        super().__init__(name, version)
-        self.id = id
-        self.node_type = self.__class__.__name__
+    def __init__(self, name, version, node_id=0, editable="false", url_repos=""):
         self.directory_name = ""
         self.editable = editable
         self.url_repos = url_repos
         self.list_component = []
         self.list_plugin = []
         self._old_version = version
-        self.dir = {"name": self.name, "version": self.version, "editable": self.editable, "url_repos": self.url_repos, "nID": self.id}
+        super().__init__(node_id, name, version, {
+            "name": name,
+            "version":  version,
+            "editable": self.editable,
+            "url_repos": self.url_repos,
+            "nID": node_id
+        }, self.__class__.__name__, "distrib")
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
-    def _get_dir(self):
-        self.dir = {"name": self.name, "version": self.version, "editable": self.editable, "url_repos": self.url_repos, "nID": self.id}
+    def get_dir(self):
+        self.dir = {
+            "name": self.name,
+            "version": self.version,
+            "editable": self.editable,
+            "url_repos": self.url_repos,
+            "nID": self.id
+        }
         return self.dir
 
     def update(self, args):
@@ -1211,11 +1249,12 @@ class Distribution(ArianeNode):
             for fnode in self.list_files:
                 fnode.save()
 
-            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
+            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self.get_dir())
             self._old_version = self.version
 
             for plugin_dict in self.list_plugin:
-                self.__create_relation(plugin_dict["Plugin"], ArianeRelation.Plugin_Dist, plugin_dict["properties"], reverse=False)
+                self.__create_relation(plugin_dict["Plugin"], ArianeRelation.Plugin_Dist,
+                                       plugin_dict["properties"], reverse=False)
 
             for mod in self.list_component:
                 self.__create_relation(mod, ArianeRelation.Dist_component)
@@ -1224,13 +1263,13 @@ class Distribution(ArianeNode):
                 self._create_file(fnode)
 
         else:
-            dir = self._get_dir()
-            dir["node"] = self.node
-            self.node = DeliveryTree.graph_dao.save_node(dir)
+            node_dir = self.get_dir()
+            node_dir["node"] = self.node
+            self.node = DeliveryTree.graph_dao.save_node(node_dir)
 
             if self._old_version != self.version:
                 self.list_files = DeliveryTree.get_files(self)
-                self.update_filesname()
+                self.update_files_name()
 
     def delete(self):
         if self._is_saved():
@@ -1274,12 +1313,9 @@ class Distribution(ArianeNode):
             self.directory_name = 'ariane.community.distrib'
         return self.directory_name
 
-    def get_rest_endpoint(self):
-        return "distrib"
-
     def __repr__(self):
-        out = "Distribution( name = "+self.name+", version = "+self.version+", nID = "+str(self.id)+")"
-        return out
+        return "Distribution( name = "+self.name+", version = "+self.version+", nID = "+str(self.id)+")"
+
 
 class Component(ArianeNode):
 
@@ -1292,25 +1328,28 @@ class Component(ArianeNode):
     BUILD_PYTHON3 = "python3"
     BUILD_NONE = "none"
 
-    def __init__(self, name, version, type="none", id=0, order=0, build=None):
-        super().__init__(name, version)
-        self.id = id
-        self.node_type = self.__class__.__name__
-        self.type = type
+    def __init__(self, name, version, co_type="none", node_id=0, order=0, build=None):
+        self.type = co_type
         self.order = order
         self.directory_name = ""
         self.list_module = []
         self.list_component_dependency = []
         self.build = build
-        self.dir = {"name": self.name, "version": self.version, "type": self.type,
-                    "build": self.build, "order": self.order, "nID": self.id}
-        self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
         self._len_list_mod_dep = 0
         self._len_list_module = 0
         self._len_list_files = 0
         self._old_version = version
+        super().__init__(node_id, name, version, {
+            "name": name,
+            "version": version,
+            "type": self.type,
+            "build": self.build,
+            "order": self.order,
+            "nID": node_id
+        }, self.__class__.__name__, "component")
+        self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
-    def _get_dir(self):
+    def get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "type": self.type,
                     "build": self.build, "order": self.order, "nID": self.id}
         return self.dir
@@ -1345,7 +1384,7 @@ class Component(ArianeNode):
                     fnode.version = self.version
                     fnode.save()
 
-            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
+            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self.get_dir())
             self._old_version = self.version
 
             for module in self.list_module:
@@ -1362,9 +1401,9 @@ class Component(ArianeNode):
 
         else:
             # update properties in graph database
-            dir = self._get_dir()
-            dir["node"] = self.node
-            self.node = DeliveryTree.graph_dao.save_node(dir)
+            node_dir = self.get_dir()
+            node_dir["node"] = self.node
+            self.node = DeliveryTree.graph_dao.save_node(node_dir)
 
             if len(self.list_component_dependency) > self._len_list_mod_dep:
                 for dep in self.list_component_dependency:
@@ -1390,7 +1429,7 @@ class Component(ArianeNode):
                     s.save()
                 for f in self.list_files:
                     f.version = self.version
-                self.update_filesname()
+                self.update_files_name()
                 FileNode.update_environment_filename(self.name, self.version)
                 self.__update_dependencies()
                 self._old_version = self.version
@@ -1438,7 +1477,8 @@ class Component(ArianeNode):
     def add_component_dependency(self, mod_args):
         """
         Add component to component dependency.
-        :param mod_args: dict with the following keys: "component": component object, "version_min": str, "version_max": str
+        :param mod_args: dict with the following keys:
+        "component": component object, "version_min": str, "version_max": str
         :return: Nothing
         """
         component = mod_args["component"]
@@ -1447,25 +1487,24 @@ class Component(ArianeNode):
                 self.__create_dependency(mod_args)
                 self._len_list_mod_dep = len(self.list_component_dependency)
 
-            properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"]}
-            properties["component"] = component
-            properties["version"] = component.version
+            properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"],
+                          "component": component, "version": component.version}
             self.list_component_dependency.append(properties)
 
     def __create_dependency(self, mod_args):
         properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"]}
         component = mod_args["component"]
-        link_args = {"node": self.node, "relation": ArianeRelation.component_component, "linked_node": component.node, "properties": properties.copy()}
+        link_args = {"node": self.node, "relation": ArianeRelation.component_component,
+                     "linked_node": component.node, "properties": properties.copy()}
 
         nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
 
         if nid is not None:
             component.id = nid
 
-    def _set_dependency(self, rel):
-        properties = {"version_min": rel.properties["version_min"], "version_max": rel.properties["version_max"]}
-        properties["component"] = rel.end
-        properties["version"] = rel.end.version
+    def set_dependency(self, rel):
+        properties = {"version_min": rel.properties["version_min"], "version_max": rel.properties["version_max"],
+                      "component": rel.end, "version": rel.end.version}
         if properties not in self.list_component_dependency:
             self.list_component_dependency.append(properties)
 
@@ -1474,7 +1513,10 @@ class Component(ArianeNode):
         Updates component relationships properties. This function is called after component's version edition.
         :return:
         """
-        rels = DeliveryTree.component_service.get_relations(self, [ArianeRelation.component_component, ArianeRelation.Dist_component])
+        rels = DeliveryTree.component_service.get_relations(self, [
+            ArianeRelation.component_component,
+            ArianeRelation.Dist_component
+        ])
         for rel in rels:
             if not isinstance(rel, ArianeRelation):
                 continue
@@ -1492,13 +1534,11 @@ class Component(ArianeNode):
             self.directory_name = dname + self.name
         return self.directory_name
 
-    def get_rest_endpoint(self):
-        return "component"
-
     def __repr__(self):
         out = "component( name = "+self.name+", version = "+self.version+", type = "+self.type + \
               ", build = " + self.build + ", nID = "+str(self.id)+")"
         return out
+
 
 class Module(ArianeNode):
 
@@ -1507,24 +1547,28 @@ class Module(ArianeNode):
     EXTENSION_POM = "pom"
     EXTENSION_NONE = "none"
 
-    def __init__(self, name, version,  groupId="none", artifactId="none", id=0, order=0, deployable=True,
+    def __init__(self, name, version, group_id="none", artifact_id="none", node_id=0, order=0, deployable=True,
                  extension="jar"):
-        super().__init__(name, version)
-        self.node_type = self.__class__.__name__
-        self.id = id
-        self.groupId = groupId
-        self.artifactId = artifactId
+        self.groupId = group_id
+        self.artifactId = artifact_id
         self.order = order
         self.list_module = []
-        self._old_version = self.version
+        self._old_version = version
         self.deployable = deployable if deployable is not None else True
         self.extension = extension if extension is not None else Module.EXTENSION_NONE
-        self.dir = {"name": self.name, "version": self.version, "groupId": self.groupId,
-                    "artifactId": self.artifactId, "order": self.order, "nID": self.id,
-                    "deployable": self.deployable, "extension": self.extension}
+        super().__init__(node_id, name, version, {
+            "name": name,
+            "version": version,
+            "groupId": self.groupId,
+            "artifactId": self.artifactId,
+            "order": self.order,
+            "nID": node_id,
+            "deployable": self.deployable,
+            "extension": self.extension
+        }, self.__class__.__name__, "module")
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
-    def _get_dir(self):
+    def get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "groupId": self.groupId,
                     "artifactId": self.artifactId, "order": self.order, "nID": self.id,
                     "deployable": self.deployable, "extension": self.extension}
@@ -1532,7 +1576,7 @@ class Module(ArianeNode):
 
     def update(self, args):
         flag = False
-        #print(args)
+        # print(args)
         for key in args.keys():
             if self._check_current_property(key):
                 if key == "name" and self.name != args[key]:
@@ -1562,7 +1606,7 @@ class Module(ArianeNode):
             for fnode in self.list_files:
                 fnode.save()
 
-            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
+            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self.get_dir())
             self._old_version = self.version
 
             for module in self.list_module:
@@ -1572,15 +1616,15 @@ class Module(ArianeNode):
                 self._create_file(fnode)
 
         else:
-            dir = self._get_dir()
-            dir["node"] = self.node
-            self.node = DeliveryTree.graph_dao.save_node(dir)
+            node_dir = self.get_dir()
+            node_dir["node"] = self.node
+            self.node = DeliveryTree.graph_dao.save_node(node_dir)
             if self._old_version != self.version:
                 DeliveryTree.module_service.update_arianenode_lists(self)
                 for s in self.list_module:
                     s.version = self.version
                     s.save()
-                self.update_filesname()
+                self.update_files_name()
 
     def delete(self):
         """
@@ -1613,14 +1657,13 @@ class Module(ArianeNode):
         if nid is not None:
             module.id = nid
 
-    def isParent(self):
+    def is_parent(self):
         ret = DeliveryTree.graph_dao.get_relation_between(self.id, label="Module") is not None
         if ret:
             self.list_module = DeliveryTree.module_service.get_all(self)
         return ret
 
-    def set_groupid_artifact(self, mod_plug, sub_parent=None):
-        grid_sufix = ""
+    def set_groupid_artifact(self, mod_plug):  # , sub_parent=None):
         if isinstance(mod_plug, Component) or isinstance(mod_plug, Plugin):
             grid_sufix = self.pom_attr + mod_plug.get_directory_name()
         elif isinstance(mod_plug, Module):
@@ -1640,9 +1683,6 @@ class Module(ArianeNode):
         #     self.groupId = '' + self.pom_attr + mod_plug.get_directory_name()
         #     self.artifactId = self.groupId + '.' + self.name
 
-    def get_rest_endpoint(self):
-        return "module"
-
     def get_properties(self, gettype=False):
         """
         @Overriding
@@ -1652,7 +1692,7 @@ class Module(ArianeNode):
         :return: "prop": Dict containing database properties + "node_type" (used by UserInterface on client-side) +
                          "list_module" (empty or not)
         """
-        prop = self._get_dir()
+        prop = self.get_dir()
         if gettype:
             prop["node_type"] = self.get_rest_endpoint()
             mod_list_prop = []
@@ -1664,17 +1704,16 @@ class Module(ArianeNode):
         return prop
 
     def __repr__(self):
-        out = "Module(name = " + str(self.name) + ", version = " + str(self.version) + ", groupId = " + str(self.groupId) + ", " \
+        out = "Module(name = " + str(self.name) + ", version = " + str(self.version) + \
+              ", groupId = " + str(self.groupId) + ", " \
               "artifactId = " + str(self.artifactId) + ", nID = "+str(self.id) + \
               ", deployable = " + str(self.deployable) + ", extension =  " + str(self.extension) + ")"
         return out
 
+
 class Plugin(ArianeNode):
 
-    def __init__(self, name, version, id=0, git_repos=""):
-        super().__init__(name, version)
-        self.node_type = self.__class__.__name__
-        self.id = id
+    def __init__(self, name, version, node_id=0, git_repos=""):
         self.type = "plugin"
         self.git_repos = self.__set_git_repos(git_repos)
         self.directory_name = ""
@@ -1683,10 +1722,15 @@ class Plugin(ArianeNode):
         self._len_list_module = 0
         self._len_list_mod_dep = 0
         self._old_version = version
-        self.dir = {"name": self.name, "version": self.version, "git_repos": self.git_repos, "nID": self.id}
+        super().__init__(node_id, name, version, {
+            "name": name,
+            "version": version,
+            "git_repos": self.git_repos,
+            "nID": node_id
+        }, self.__class__.__name__, "plugin")
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
-    def _get_dir(self):
+    def get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "git_repos": self.git_repos, "nID": self.id}
         return self.dir
 
@@ -1713,7 +1757,7 @@ class Plugin(ArianeNode):
             for fnode in self.list_files:
                 fnode.save()
 
-            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
+            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self.get_dir())
             self._old_version = self.version
 
             for module in self.list_module:
@@ -1728,9 +1772,9 @@ class Plugin(ArianeNode):
                 self._create_file(fnode)
 
         else:
-            dir = self._get_dir()
-            dir["node"] = self.node
-            self.node = DeliveryTree.graph_dao.save_node(dir)
+            node_dir = self.get_dir()
+            node_dir["node"] = self.node
+            self.node = DeliveryTree.graph_dao.save_node(node_dir)
 
             if len(self.list_component_dependency) > self._len_list_mod_dep:
                 for dep in self.list_component_dependency:
@@ -1749,7 +1793,7 @@ class Plugin(ArianeNode):
                     s.save()
                 for f in self.list_files:
                     f.version = self.version
-                self.update_filesname()
+                self.update_files_name()
                 self._old_version = self.version
 
     def delete(self):
@@ -1789,7 +1833,8 @@ class Plugin(ArianeNode):
     def add_component_dependency(self, mod_args):
         """
         Add component to Plugin dependency.
-        :param mod_args: dict with the following keys: "component": component object, "version_min": str, "version_max": str
+        :param mod_args: dict with the following keys:
+        "component": component object, "version_min": str, "version_max": str
         :return: Nothing
         """
         component = mod_args["component"]
@@ -1798,29 +1843,29 @@ class Plugin(ArianeNode):
                 self.__create_dependency(mod_args)
                 self._len_list_mod_dep = len(self.list_component_dependency)
 
-            properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"]}
-            properties["component"] = component
-            properties["version"] = component.version
+            properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"],
+                          "component": component, "version": component.version}
             self.list_component_dependency.append(properties)
 
     def __create_dependency(self, mod_args):
         properties = {"version_min": mod_args["version_min"], "version_max": mod_args["version_max"]}
         component = mod_args["component"]
-        link_args = {"node": self.node, "relation": ArianeRelation.Plugin_component, "linked_node": component.node, "properties": properties.copy()}
+        link_args = {"node": self.node, "relation": ArianeRelation.Plugin_component,
+                     "linked_node": component.node, "properties": properties.copy()}
 
         nid, rel = DeliveryTree.graph_dao.create_relation(link_args)
 
         if nid is not None:
             component.id = nid
 
-    def _set_dependency(self, rel):
-        properties = {"version_min": rel.properties["version_min"], "version_max": rel.properties["version_max"]}
-        properties["component"] = rel.end
-        properties["version"] = rel.end.version
+    def set_dependency(self, rel):
+        properties = {"version_min": rel.properties["version_min"], "version_max": rel.properties["version_max"],
+                      "component": rel.end, "version": rel.end.version}
         if properties not in self.list_component_dependency:
             self.list_component_dependency.append(properties)
 
-    def __set_git_repos(self, newrepos=""):
+    @staticmethod
+    def __set_git_repos(newrepos=""):
         if newrepos == "":
             repos = "https://github.com/echinopsii/net.echinopsii."
         else:
@@ -1832,9 +1877,6 @@ class Plugin(ArianeNode):
             self.directory_name = 'ariane.community.plugin.' + self.name
         return self.directory_name
 
-    def get_rest_endpoint(self):
-        return "plugin"
-
     def __repr__(self):
         out = "Plugin( name = "+self.name+", version = "+self.version+", nID = "+str(self.id)+")"
         return out
@@ -1842,12 +1884,12 @@ class Plugin(ArianeNode):
 
 class FileNode(object):
 
-    def __init__(self, name, type, version, path, id=0):
+    def __init__(self, name, file_type, version, path, node_id=0):
         self.name = name
         self.version = version
         self.node_type = self.__class__.__name__
-        self.id = id
-        self.type = type
+        self.id = node_id
+        self.type = file_type
         self.path = path
         self.dir = {"name": self.name, "version": self.version, "type": self.type,
                     "path": self.path, "nID": self.id}
@@ -1856,7 +1898,7 @@ class FileNode(object):
         self.list_relation = []
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
-    def _get_dir(self):
+    def get_dir(self):
         self.dir = {"name": self.name, "version": self.version, "type": self.type,
                     "path": self.path, "nID": self.id}
         return self.dir
@@ -1887,11 +1929,11 @@ class FileNode(object):
 
     def save(self):
         if self.id == 0:
-            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self._get_dir())
+            self.node, self.id = DeliveryTree.graph_dao.create_node(self.node_type, self.get_dir())
         else:
-            dir = self._get_dir()
-            dir["node"] = self.node
-            self.node = DeliveryTree.graph_dao.save_node(dir)
+            node_dir = self.get_dir()
+            node_dir["node"] = self.node
+            self.node = DeliveryTree.graph_dao.save_node(node_dir)
 
     def delete(self):
         """
@@ -1906,11 +1948,11 @@ class FileNode(object):
                 DeliveryTree.graph_dao.delete(rel)
             DeliveryTree.graph_dao.delete(self.node)
             self.id = 0
-            self.node = DeliveryTree.graph_dao.init_node(self.node_type, self._get_dir())
+            self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.get_dir())
 
     @staticmethod
     def get_file_by_nid(nid):
-        fnode = FileNode("", "", "", "", id=nid)
+        fnode = FileNode("", "", "", "", node_id=nid)
         f = DeliveryTree.graph_dao.get_by_nid(nid)
         if f is not None:
             if DeliveryTree.graph_dao.get_node_label(f) == fnode.node_type:
@@ -1989,10 +2031,11 @@ class FileNode(object):
             raise "Error, incorrect file name for {}".format(file)
 
     def is_versioned(self):
-        return self.type in ["json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_git_repos", "plan", "plantpl"]
+        return self.type in ["json_build", "json_dist", "json_plugin_dist",
+                             "pom_dist", "json_git_repos", "plan", "plantpl"]
 
     def get_properties(self, gettype=False):
-        prop = self._get_dir()
+        prop = self.get_dir()
         if gettype:
             prop["node_type"] = self.get_rest_endpoint()
         return prop
@@ -2000,10 +2043,11 @@ class FileNode(object):
     def __get_relation(self):
         return DeliveryTree.graph_dao.get_relations({"relation": ["CONTAINS"], "node": self.node})
 
-    def get_rest_endpoint(self):
+    @staticmethod
+    def get_rest_endpoint():
         return "filenode"
 
     def __repr__(self):
-        out = "FileNode(name = "+self.name+", version = "+self.version+", type = "+self.type+", path = "+self.path+"," \
-                                                                                                                   " nID = "+str(self.id)+")"
+        out = "FileNode(name = " + self.name + ", version = " + self.version+", type = " + \
+              self.type + ", path = " + self.path + ", nID = "+str(self.id)+")"
         return out

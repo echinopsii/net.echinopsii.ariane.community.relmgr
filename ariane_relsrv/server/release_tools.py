@@ -266,7 +266,7 @@ class DatabaseManager(object):
                     c.delete()
             else:
                 return -1
-        dist = ariane.distribution_service.get_unique({"nID": ReleaseTools.distrib_copy_id})
+        dist = ariane.get_unique(ariane.distribution_service, {"nID": ReleaseTools.distrib_copy_id})
         if isinstance(dist, ariane_delivery.Distribution):
             dist.name = dist.name[len("copyTemp"):]
             dist.version = dist.version[len("copyTemp"):]

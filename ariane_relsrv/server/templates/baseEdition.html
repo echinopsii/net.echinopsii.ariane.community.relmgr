@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
 <hr class="separateur">
+<!--
 <div class="listRoot">
     <button class="btn btn-sm btnExtend sectionTitle" ng-click="togglePlugList()">
         <i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i> Plugins
@@ -39,11 +40,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <ul class="blockList" ng-repeat="plugSet in pluginsDict.PluginSet" ng-show="plugName.show">
                 <li ng-class="plugSet.selected ? 'active' : ''" ng-if="plugSet.name == plugName.name" ng-click="clickPlug(plugSet)">
                     {{ plugSet.version }} <!--Plugin Delete button-->
+<!--
                 </li>
             </ul>
         </li>
     </ul>
 </div>
+-->
 <p class="infolog" ng-show="info.release.exists">
     {{ info.release.msg }} <input type="checkbox" ng-model="info.release.exists">
 </p>
