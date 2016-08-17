@@ -37,16 +37,16 @@ class DaoFabric(object):
             if args["type"] == "neo4j":
                 args.pop("type")
                 dao = DaoFabric.new_neo_dao(args)
-                type = "neo4j"
-            elif args["type"] == "orientdb":
-                dao = DaoFabric.new_orientdb_dao(args)
-                type = "orientdb"
+                db_type = "neo4j"
+            # elif args["type"] == "orientdb":
+            #     dao = DaoFabric.new_orientdb_dao(args)
+            #     type = "orientdb"
             else:
                 raise exceptions.GraphFabricError()
         else:
             raise exceptions.GraphFabricError()
 
-        return type, dao
+        return db_type, dao
 
     @staticmethod
     def new_neo_dao(args):
@@ -71,24 +71,23 @@ class DaoFabric(object):
 
         host_port = host + ":" + port
 
-        def connect(login, password, host_port):
+        def connect(login_, password_, host_port_):
             # global graph allows to get the same graph every time init_db() is called
-            graph = None
-            authenticate(host_port, login, password)
+            authenticate(host_port_, login_, password_)
 
-            if host_port == "localhost:7474":
-                graph = Graph()
+            if host_port_ == "localhost:7474":
+                graph_con = Graph()
             else:
-                graph = Graph("http://"+host_port+"/db/data/")
+                graph_con = Graph("http://"+host_port_+"/db/data/")
 
             node = Node("TestNodeToRemove", name="Alice", age="23", eyes="blue")
             try:
-                graph.create(node)
-                graph.delete(node)
+                graph_con.create(node)
+                graph_con.delete(node)
             except Unauthorized:
-                graph = None
+                graph_con = None
 
-            return graph
+            return graph_con
 
         graph = connect(login, password, host_port)
         if graph is not None:

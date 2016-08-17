@@ -18,11 +18,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import json
-import xml.etree.ElementTree as xml
+import xml.etree.ElementTree as ELTree
 import os
-from ariane_reltreelib.ariane_definitions import ArianeDefinitions
+from ariane_reltreelib.arianeDefinitions import ArianeDefinitions
 
 __author__ = 'mffrench'
+
 
 class MavenParser(object):
 
@@ -32,14 +33,14 @@ class MavenParser(object):
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + pom_file_path):
             module_definition = {}
             ns = ArianeDefinitions.MAVEN_NS
-            tree = xml.ElementTree()
+            tree = ELTree.ElementTree()
             tree.parse(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + pom_file_path)
             if tree.getroot().find(("{%s}" + ArianeDefinitions.MAVEN_MODULE_GROUPID) % ns) is not None:
                 module_definition[ArianeDefinitions.MODULE_GROUPID] = tree.getroot().find(
                     ("{%s}" + ArianeDefinitions.MAVEN_MODULE_GROUPID) % ns
                 ).text
             else:
-                #VERSION PROBABLY DEFINED IN PARENT
+                # VERSION PROBABLY DEFINED IN PARENT
                 p = tree.getroot().find(("{%s}" + ArianeDefinitions.MAVEN_PARENT) % ns)
                 if p is not None:
                     if p.find(("{%s}" + ArianeDefinitions.MAVEN_MODULE_GROUPID) % ns) is not None:
@@ -57,7 +58,7 @@ class MavenParser(object):
                     ("{%s}" + ArianeDefinitions.MAVEN_MODULE_VERSION) % ns
                 ).text
             else:
-                #VERSION PROBABLY DEFINED IN PARENT
+                # VERSION PROBABLY DEFINED IN PARENT
                 p = tree.getroot().find(("{%s}" + ArianeDefinitions.MAVEN_PARENT) % ns)
                 if p is not None:
                     if p.find(("{%s}" + ArianeDefinitions.MAVEN_MODULE_VERSION) % ns) is not None:
@@ -81,28 +82,25 @@ class MavenParser(object):
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + pom_file_path):
             submodules_list = []
             ns = ArianeDefinitions.MAVEN_NS
-            parent_tree = xml.ElementTree()
+            parent_tree = ELTree.ElementTree()
             parent_tree.parse(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + pom_file_path)
             modules = parent_tree.getroot().find(("{%s}" + ArianeDefinitions.MAVEN_MODULES) % ns)
             if modules is not None:
                 for child in modules:
-                    submodule_pom_file_path = pom_file_path.split('pom.xml')[0] + child.text + os.sep + "pom.xml"
-                    submodule = MavenParser.get_module_definition_from_pom(submodule_pom_file_path)
-                    if submodule is None:
-                        submodule = {}
-                        submodule[ArianeDefinitions.MODULE_GROUPID] = ""
-                        submodule[ArianeDefinitions.MODULE_ARTIFACTID] = ""
-                        submodule[ArianeDefinitions.MODULE_VERSION] = ""
-                        submodule[ArianeDefinitions.MODULE_EXTENSION] = ""
-                    submodule[ArianeDefinitions.MODULE_NAME] = child.text
-                    if ArianeDefinitions.MODULE_EXTENSION not in submodule or \
-                        submodule[ArianeDefinitions.MODULE_EXTENSION] == "" or \
-                        submodule[ArianeDefinitions.MODULE_EXTENSION] == "none" or \
-                        submodule[ArianeDefinitions.MODULE_EXTENSION] == "pom":
-                        submodule[ArianeDefinitions.MODULE_DEPLOYABLE] = False
+                    sub_module_pom_file_path = pom_file_path.split('pom.xml')[0] + child.text + os.sep + "pom.xml"
+                    sub_module = MavenParser.get_module_definition_from_pom(sub_module_pom_file_path)
+                    if sub_module is None:
+                        sub_module = {ArianeDefinitions.MODULE_GROUPID: "", ArianeDefinitions.MODULE_ARTIFACTID: "",
+                                      ArianeDefinitions.MODULE_VERSION: "", ArianeDefinitions.MODULE_EXTENSION: ""}
+                    sub_module[ArianeDefinitions.MODULE_NAME] = child.text
+                    if ArianeDefinitions.MODULE_EXTENSION not in sub_module or \
+                            sub_module[ArianeDefinitions.MODULE_EXTENSION] == "" or \
+                            sub_module[ArianeDefinitions.MODULE_EXTENSION] == "none" or \
+                            sub_module[ArianeDefinitions.MODULE_EXTENSION] == "pom":
+                        sub_module[ArianeDefinitions.MODULE_DEPLOYABLE] = False
                     else:
-                        submodule[ArianeDefinitions.MODULE_DEPLOYABLE] = True
-                    submodules_list.append(submodule)
+                        sub_module[ArianeDefinitions.MODULE_DEPLOYABLE] = True
+                    submodules_list.append(sub_module)
         return submodules_list
 
     @staticmethod
@@ -111,7 +109,7 @@ class MavenParser(object):
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + pom_file_path):
             dependencies_list = []
             ns = ArianeDefinitions.MAVEN_NS
-            tree = xml.ElementTree()
+            tree = ELTree.ElementTree()
             tree.parse(ArianeDefinitions.PROJECT_ABS_PATH + os.sep + pom_file_path)
             properties = tree.getroot().find(("{%s}" + ArianeDefinitions.MAVEN_PROPERTIES) % ns)
             if properties is not None:

@@ -18,11 +18,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, shutil, argparse, subprocess, json
+import os
+import argparse
 
-#module_name = '/ariane.community.relmgr'
-#project_path = str(os.getcwd())
-#if not os.path.exists(project_path + module_name):
+# module_name = '/ariane.community.relmgr'
+# project_path = str(os.getcwd())
+# if not os.path.exists(project_path + module_name):
 #    if module_name in project_path:
 #        project_path = project_path[:project_path.index(module_name)]
 #        if not os.path.exists(project_path + module_name):
@@ -32,14 +33,16 @@ import sys, os, shutil, argparse, subprocess, json
 #     if project_path + module_name not in sys.path:
 #         sys.path.append(project_path + module_name)
 from ariane_reltreelib.generator import generator
-from ariane_reltreelib.dao import ariane_delivery
+from ariane_reltreelib.dao import modelAndServices
 from ariane_reltreelib import exceptions as err
-from ariane_reltreelib.ariane_definitions import ArianeDefinitions
+from ariane_reltreelib.arianeDefinitions import ArianeDefinitions
 
 __author__ = 'stanrenia'
 # Liste commandes: distribution, distrib_only, modules_only, plugins_only: -version
 # commandes: pom_dist, json_plugins, json_plugin_dist, json_git, json_dist: -version
-# commandes: pom -version -Mod/Plug, plan -version -Mod/Plug, lib -version -Mod/Plug, vsh -version installer, vsh -verison -plugin
+# commandes: pom -version -Mod/Plug, plan -version -Mod/Plug, lib -version -Mod/Plug, vsh -version installer,
+# vsh -verison -plugin
+
 
 class Command(object):
     dao_ariane = None
@@ -58,7 +61,8 @@ class Command(object):
             #     Command.conf = json.load(target)
             # if Command.conf is None:
             #     raise err.CommandError("GraphDB login file can not be read. It should be '(GraphDB_name)_login.json")
-            # Command.ariane = ariane_delivery.DeliveryTree({"login": Command.conf["NEO4J_LOGIN"], "password": Command.conf["NEO4J_PASSWORD"], "type": "neo4j"})
+            # Command.ariane = ariane_delivery.DeliveryTree({"login": Command.conf["NEO4J_LOGIN"],
+            # "password": Command.conf["NEO4J_PASSWORD"], "type": "neo4j"})
             # Command.g = generator.Generator(Command.ariane, {"outputs": project_path, "templates": project_path})
         else:
             if project_path is None:
@@ -67,13 +71,18 @@ class Command(object):
             else:
                 Command.dao_ariane = dao_ariane
                 Command.project_path = project_path
-                Command.gen = generator.Generator(Command.dao_ariane, {"outputs": project_path, "templates": project_path})
+                Command.gen = generator.Generator(Command.dao_ariane, {
+                    "outputs": project_path, "templates": project_path
+                })
                 ArianeDefinitions.set_project_abs_path(project_path)
 
-    def import_all_distribs(self):
-        os.system(Command.conf["NEO4J_PATH"]+"/bin/neo4j-shell -file " + Command.project_path + Command.conf["EXPORT_DB"] + "all.cypher")
+    @staticmethod
+    def import_all_distribs():
+        os.system(Command.conf["NEO4J_PATH"]+"/bin/neo4j-shell -file " + Command.project_path +
+                  Command.conf["EXPORT_DB"] + "all.cypher")
 
-    def get_number_of_distribs(self):
+    @staticmethod
+    def get_number_of_distribs():
         fnames = []
         for (dirpath, dirnames, filenames) in os.walk('dependency_db'):
             fnames = filenames
@@ -97,7 +106,7 @@ class Command(object):
 
     def execute(self, cmd, version, name):
         distrib = Command.dao_ariane.get_unique(Command.dao_ariane.distribution_service, {"version": version})
-        if isinstance(distrib, ariane_delivery.Distribution):
+        if isinstance(distrib, modelAndServices.Distribution):
             if cmd in Command.commands_dist:
                 if cmd == "distribution":
                     Command.gen.generate_all_distribution(version)
@@ -153,7 +162,7 @@ class Command(object):
                             m = plug[0]
                         if m is not None:
                             # Call method if get succededed
-                            if isinstance(m, ariane_delivery.Component):
+                            if isinstance(m, modelAndServices.Component):
                                 Command.dao_ariane.component_service.update_arianenode_lists(m)
                             else:
                                 Command.dao_ariane.plugin_service.update_arianenode_lists(m)
@@ -165,21 +174,26 @@ class Command(object):
                                 if fnode is not None:
                                     Command.gen.generate_plan(m, fnode)
                                 else:
-                                    raise err.CommandError("Component or Plugin named:{} does not have a .plan file".format(m.name))
+                                    raise err.CommandError(
+                                        "Component or Plugin named:{} does not have a .plan file".format(m.name)
+                                    )
                             elif cmd == "lib_json":
                                 fnode = Command.dao_ariane.get_one_file(m, "json_build")
                                 if fnode is not None:
                                     Command.gen.generate_plan(m, fnode)
                                 else:
-                                    raise err.CommandError("Component or Plugin named:{} does not have a .json build file".format(m.name))
+                                    raise err.CommandError(
+                                        "Component or Plugin named:{} does not have a .json build file".format(m.name)
+                                    )
                         else:
-                            raise err.CommandError("Given Component or Plugin named: {} was not found in DB".format(name))
+                            raise err.CommandError(
+                                "Given Component or Plugin named: {} was not found in DB".format(name)
+                            )
 
             else:
                 raise err.CommandError("Wrong command")
         else:
             raise err.CommandError("Distribution not found in database")
-
 
 # if __name__ == '__main__':
 #     cmd = Command()

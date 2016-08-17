@@ -18,10 +18,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from py2neo import Node, Relationship, Graph
+from py2neo import Node, Relationship
 import os
 
 __author__ = 'stanrenia'
+
 
 class NeoGraph(object):
 
@@ -65,10 +66,13 @@ class NeoGraph(object):
         # .one is an RecordList attribute. Here it represents the count result
         return value.one
 
-    def get_node_properties(self, node):
+    @staticmethod
+    def get_node_properties(node):
         return node.properties
 
-    def get_node_label(self, node):
+    @staticmethod
+    def get_node_label(node):
+        label = None
         for l in node.labels:
             label = l
             break
@@ -134,10 +138,11 @@ class NeoGraph(object):
         self.graph.create(node)
         return node, cur_nid
 
-    def save_node(self, args):
+    @staticmethod
+    def save_node(args):
         """
         Save node in Database. If node doesn't exist, a new one is created. If it does already exist, it is updated.
-        :param node: The node to save. node is an ArianeNode subclass (Distribution, Component, Module, Plugin)
+        :param args: The node to save. node is an ArianeNode subclass (Distribution, Component, Module, Plugin)
         :return: "created" or "updated" or None.
         """
         node = args["node"]
@@ -156,7 +161,8 @@ class NeoGraph(object):
     # WITH r
     # DELETE r
 
-    def save_relation(self, args):
+    @staticmethod
+    def save_relation(args):
         if ("start_nID" in args.keys()) and ("relation" in args.keys()) and ("end_nID" in args.keys()) and\
            ("properties" in args.keys()):
             if (args["start_nID"] > 0) and (args["end_nID"] > 0) and (args["relation"] != ""):
@@ -229,7 +235,8 @@ class NeoGraph(object):
         get all nodes depending on args parameters.
         :param args: dictionary with keys ('reverse', 'relation', 'node', ('label'))
         :return: If args contains 'label' and 'node' is None: return all nodes with this label
-                 If args contains 'node', 'reverse' and 'relation': return all nodes related to this node and this relation
+                 If args contains 'node', 'reverse' and 'relation': return all nodes related to this node and
+                 this relation
                  If args contains every keys, return all nodes with this label related to this node and this relation.
         """
         # print(args)
@@ -338,16 +345,15 @@ class NeoGraph(object):
         return unique_node
 
     def shortest_path(self, start_id, end_id=0, label=""):
-        listrecord = []
+        list_record = []
 
         if end_id != 0:
-            listrecord = self.graph.cypher.execute("MATCH (s {nID:"+str(start_id)+"}), (e {nID:"+str(end_id)+" }),"
-                                            "p = shortestPath((s)-[*..10]-(e)) RETURN p")
+            list_record = self.graph.cypher.execute("MATCH (s {nID:"+str(start_id)+"}), (e {nID:"+str(end_id)+" }),"
+                                                    "p = shortestPath((s)-[*..10]-(e)) RETURN p")
         elif label != "":
-            listrecord = self.graph.cypher.execute("MATCH (s {nID:"+str(start_id)+"}), (e:"+str(label)+"),"
-                                                   "p = shortestPath((s)-[*..10]-(e)) RETURN p")
+            list_record = self.graph.cypher.execute("MATCH (s {nID:"+str(start_id)+"}), (e:"+str(label)+"),"
+                                                    "p = shortestPath((s)-[*..10]-(e)) RETURN p")
         path = None
-        for rec in listrecord:
+        for rec in list_record:
             path = rec.p
         return path
-

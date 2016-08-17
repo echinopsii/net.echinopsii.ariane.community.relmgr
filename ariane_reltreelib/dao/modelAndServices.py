@@ -19,8 +19,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 from ariane_reltreelib.dao import graphDBFabric
-from ariane_reltreelib.devparser.devparser import DistParser, MavenParser
-from ariane_reltreelib.ariane_definitions import ArianeDefinitions
+from ariane_reltreelib.devparser.devParser import DistParser, MavenParser
+from ariane_reltreelib.arianeDefinitions import ArianeDefinitions
 import json
 
 __author__ = 'stanrenia'
@@ -256,7 +256,7 @@ class DistributionService(object):
         self.node_model = Distribution("model", "model")
 
     def sync_db_from_last_dev(self, distrib):
-        if self.__get_name_version_master(distrib.version) == "master.SNAPSHOT":
+        if self.__get_name_version_master(distrib.version) == "SNAPSHOT":
             distrib.list_files = DeliveryTree.get_files(distrib)
             distrib.list_component = DeliveryTree.component_service.get_all(distrib)
 
@@ -331,12 +331,12 @@ class DistributionService(object):
             return dev
         else:
             distribs = self.get_all()
-            dev = Distribution('dev', '0.0.0')
+            # dev = Distribution('dev', '0.0.0')
             # if distribs is None:
             #     return None
-            for d in distribs:
-                if d.version > dev.version:
-                    dev = d
+            for dev in distribs:
+                if "SNAPSHOT" in dev.version:
+                    return dev
             return dev
 
     @staticmethod
@@ -369,6 +369,7 @@ class DistributionService(object):
         cd = Distribution(dist.name, dist.version, editable=dist.editable, url_repos=dist.url_repos)
         DeliveryTree.distribution_service.update_arianenode_lists(dist)
         for df in dist.list_files:  # Copying dist files
+            print("File to copy: " + df.name)
             cd.add_file(FileNode(df.name, df.type, df.version, df.path))
 
         for m in dist.list_component:  # Copying components and their modules and files
@@ -437,7 +438,7 @@ class DistributionService(object):
     @staticmethod
     def __get_name_version_master(version):
         if "SNAPSHOT" in version:
-            return "master.SNAPSHOT"
+            return "SNAPSHOT"
         else:
             return version
 
@@ -459,12 +460,14 @@ class DistributionService(object):
         self.__make_file_json_git_repos(distrib)
 
     def __make_file_json_dist(self, distrib):
-        fname = distrib.get_directory_name() + '-' + self.__get_name_version_master(distrib.version) + '.json'
-        fpath = distrib.get_directory_name()+"/resources/distrib/"
+        fname = distrib.get_directory_name() + '-' + distrib.dist_dep_type + "-" + \
+            self.__get_name_version_master(distrib.version) + '.json'
+        fpath = distrib.get_directory_name() + "/resources/distrib/"
         distrib.add_file(FileNode(fname, "json_dist", distrib.version, fpath))
 
     def __make_file_pom_dist(self, distrib):
-        fname = "pom-"+distrib.get_directory_name()+'-' + self.__get_name_version_master(distrib.version) + '.xml'
+        fname = "pom-" + distrib.get_directory_name() + '-' + distrib.dist_dep_type + '-' + \
+            self.__get_name_version_master(distrib.version) + '.xml'
         fpath = distrib.get_directory_name() + '/resources/maven/'
         distrib.add_file(FileNode(fname, "pom_dist", distrib.version, fpath))
 
@@ -494,7 +497,7 @@ class ComponentService(object):
         self.node_model = Component("model", "model")
 
     def sync_db_from_last_dev(self, component):
-        if self.__get_name_version_master(component.version) == "master.SNAPSHOT":
+        if self.__get_name_version_master(component.version) == "SNAPSHOT":
             component.list_module = DeliveryTree.module_service.get_all(component)
             component.list_component_dependency = DeliveryTree.component_service.get_all_dep(component)
             component.list_files = DeliveryTree.get_files(component)
@@ -642,7 +645,7 @@ class ComponentService(object):
     @staticmethod
     def __get_name_version_master(version):
         if "SNAPSHOT" in version:
-            return "master.SNAPSHOT"
+            return "SNAPSHOT"
         else:
             return version
 
@@ -701,7 +704,7 @@ class PluginService(object):
         self.node_model = Plugin("model", "model")
 
     def sync_db_from_last_dev(self, plugin):
-        if self.__get_name_version_master(plugin.version) == "master.SNAPSHOT":
+        if self.__get_name_version_master(plugin.version) == "SNAPSHOT":
             plugin.list_module = DeliveryTree.plugin_service.get_all(plugin)
             plugin.list_component_dependency = DeliveryTree.plugin_service.get_all_dep(plugin)
             plugin.list_files = DeliveryTree.get_files(plugin)
@@ -836,7 +839,7 @@ class PluginService(object):
     @staticmethod
     def __get_name_version_master(version):
         if "SNAPSHOT" in version:
-            return "master.SNAPSHOT"
+            return "SNAPSHOT"
         else:
             return version
 
@@ -894,7 +897,7 @@ class ModuleService(object):
         self.node_model = Module("model", "model")
 
     def sync_db_from_last_dev(self, module):
-        if self.__get_name_version_master(module.version) == "master.SNAPSHOT":
+        if self.__get_name_version_master(module.version) == "SNAPSHOT":
             module.list_module = DeliveryTree.module_service.get_all(module)
             module.list_files = DeliveryTree.get_files(module)
 
@@ -1022,7 +1025,7 @@ class ModuleService(object):
     @staticmethod
     def __get_name_version_master(version):
         if "SNAPSHOT" in str(version):
-            return "master.SNAPSHOT"
+            return "SNAPSHOT"
         else:
             return version
 
@@ -1072,11 +1075,12 @@ class ArianeRelation(object):
 
 class ArianeNode(object):
 
-    def __init__(self, node_id, name, version, node_dir, node_type, rep):
+    def __init__(self, node_id, name, version, node_dir, node_type, rep, dist_dep_type="mno"):
         self.id = node_id
         self.version = version
         self.name = name
         self.pom_attr = "net.echinopsii."
+        self.dist_dep_type = dist_dep_type
         self.list_files = []
         self._len_list_files = 0
         self.list_relation = []
@@ -1882,20 +1886,21 @@ class Plugin(ArianeNode):
         return out
 
 
-class FileNode(object):
+class FileNode(ArianeNode):
 
-    def __init__(self, name, file_type, version, path, node_id=0):
-        self.name = name
-        self.version = version
-        self.node_type = self.__class__.__name__
-        self.id = node_id
+    def __init__(self, name, file_type, version, path, node_id=0, dist_dep_type="mno"):
         self.type = file_type
         self.path = path
-        self.dir = {"name": self.name, "version": self.version, "type": self.type,
-                    "path": self.path, "nID": self.id}
         self.list_type = ["pom", "plan", "json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_plugins",
                           "vsh", "json_git_repos", "plantpl"]
         self.list_relation = []
+        super().__init__(node_id, name, version, {
+            "name": name,
+            "version": version,
+            "type": self.type,
+            "path": self.path,
+            "nID": node_id
+        }, self.__class__.__name__, "filenode")
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
     def get_dir(self):
@@ -1965,7 +1970,7 @@ class FileNode(object):
         self.version = version
         if self.type not in ["plantpl"]:
             if "SNAPSHOT" in version:
-                version = "master.SNAPSHOT"
+                version = "SNAPSHOT"
             if "-" in version:
                 version = str(version).replace('-', '.')
             if "_" in version:

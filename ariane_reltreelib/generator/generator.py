@@ -18,15 +18,20 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from jinja2 import Environment, PackageLoader, TemplateNotFound, BaseLoader
-from ariane_reltreelib.dao import ariane_delivery
-import os, json, ariane_reltreelib
-from os.path import join, exists, getmtime, realpath
+import os
+import json
+from os.path import join, exists, getmtime
 from collections import OrderedDict
 import subprocess
-from ariane_reltreelib.dao.ariane_delivery import Module, Component
+
+from jinja2 import Environment, TemplateNotFound, BaseLoader
+
+from ariane_reltreelib.dao import modelAndServices
+import ariane_reltreelib
+from ariane_reltreelib.dao.modelAndServices import Module, Component
 
 __author__ = 'stanrenia'
+
 
 class MyLoader(BaseLoader):
 
@@ -37,10 +42,11 @@ class MyLoader(BaseLoader):
         path = join(self.path, template)
         if not exists(path):
             raise TemplateNotFound(template)
-        mtime = getmtime(path)
+        m_time = getmtime(path)
         with open(path) as f:
             source = f.read()
-        return source, path, lambda: mtime == getmtime(path)
+        return source, path, lambda: m_time == getmtime(path)
+
 
 class GitTagHandler(object):
 
@@ -66,20 +72,22 @@ class GitTagHandler(object):
 
     @staticmethod
     def get_last_tag(path=None):
+        tags = None
         if path is not None:
             if os.path.exists(path):
                 tags = subprocess.check_output("git tag", shell=True, cwd=path)
         else:
             tags = subprocess.check_output("git tag", shell=True)
         # check_output gives the command output in bytes format, so we decode it.
-        if (isinstance(tags, bytes)) and (len(tags) > 0):
+        if (tags is not None and isinstance(tags, bytes)) and (len(tags) > 0):
             tags = (tags.decode()).split('\n')
             if tags[-1] == '':
                 tags = tags[:-1]
             return tags[len(tags)-1]
 
+
 class Generator(object):
-    #TODO:clean
+    # TODO:clean
     ariane_deliverytool_module_path = os.path.dirname(ariane_reltreelib.__file__)
 
     # TODO Modifiy MyLoader path when release.
@@ -106,12 +114,14 @@ class Generator(object):
             self.plugin_dict[version] = self.ariane.plugin_service.get_all(self.get_distrib(version))
         return [p for p in self.plugin_dict[version]]
 
-    def __refactor_path(self, arg_path):
+    @staticmethod
+    def __refactor_path(arg_path):
         if not str(arg_path).endswith('/'):
             arg_path += '/'
         return arg_path
 
-    def __make_vmin_vmax(self, version):
+    @staticmethod
+    def __make_vmin_vmax(version):
         v = version.split('.')
         v[-1] = '0'
         vmin = '.'.join(v)
@@ -151,7 +161,7 @@ class Generator(object):
             elif df.type == "json_plugin_dist":
                 self.generate_json_plugin_dist(version, df)
 
-    #TODO: RECURSIVITY ?
+    # TODO: RECURSIVITY ?
     def generate_component_files(self, version):
         components = self.get_components_list(version)
         is_snapshot_version = "SNAPSHOT" in version
@@ -179,27 +189,27 @@ class Generator(object):
                             flag_clean_env = False
                         self.generate_plan_tpl(version, f)
                 elif f.type == "pom":
-                    grId, artId = self.__generate_pom_comp_plug(mod, f)
+                    gr_id, art_id = self.__generate_pom_comp_plug(mod, f)
 
                     for sub in mod.list_module:
-                        s_grId, s_artId = self.__generate_pom_module(sub, grId, artId)
+                        s_gr_id, s_art_id = self.__generate_pom_module(sub, gr_id, art_id)
                         if sub.is_parent():
-                            self.__generate_pom_subparent(sub, s_grId, s_artId)
+                            self.__generate_pom_subparent(sub, s_gr_id, s_art_id)
 
     def generate_plugin_files(self, version):
         """ Generate all files for each plugin in the given distribution.
         :param version:
         :return:
         """
-        isSNAPSHOT = "SNAPSHOT" in version
+        is_dev = "SNAPSHOT" in version
         plugins = self.get_plugins_list(version)
 
         for plug in plugins:
-            if not isSNAPSHOT:
+            if not is_dev:
                 if GitTagHandler.is_git_tagged(plug.version, path=self.dir_output+plug.get_directory_name()):
                     continue
-            #if plug.name in self.exception_release_plug:
-            #    continue
+            # if plug.name in self.exception_release_plug:
+            #     continue
             self.ariane.plugin_service.update_arianenode_lists(plug)
             plug_files = self.ariane.get_files(plug)
             for f in plug_files:
@@ -210,11 +220,11 @@ class Generator(object):
                 elif f.type == "vsh":
                     self.generate_vsh_plugin(plug, f)
                 elif f.type == "pom":
-                    grId, artId  = self.__generate_pom_comp_plug(plug, f)
+                    gr_id, art_id = self.__generate_pom_comp_plug(plug, f)
                     for sub in plug.list_module:
-                        s_grId, s_artId = self.__generate_pom_module(sub, grId, artId)
+                        s_gr_id, s_art_id = self.__generate_pom_module(sub, gr_id, art_id)
                         if sub.is_parent():
-                            self.__generate_pom_subparent(sub, s_grId, s_artId)
+                            self.__generate_pom_subparent(sub, s_gr_id, s_art_id)
 
     def generate_pom(self, comp_plug):
         """ Generate all poms (parent and children) for a given component or plugin.
@@ -224,76 +234,77 @@ class Generator(object):
         if comp_plug.build == Component.BUILD_MVN or comp_plug.build == Component.BUILD_MVN_PYTHON3:
             if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output+comp_plug.get_directory_name()):
                 return
-            if type(comp_plug) is ariane_delivery.Component:
+            if type(comp_plug) is modelAndServices.Component:
                 self.ariane.component_service.get_relations(comp_plug)
-            elif type(comp_plug) is ariane_delivery.Plugin:
+            elif type(comp_plug) is modelAndServices.Plugin:
                 self.ariane.plugin_service.get_relations(comp_plug)
 
             mf = self.ariane.get_one_file(comp_plug, "pom")
-            if not isinstance(mf, ariane_delivery.FileNode):
+            if not isinstance(mf, modelAndServices.FileNode):
                 return
             if mf.type == "pom":
-                grId, artId = self.__generate_pom_comp_plug(comp_plug, mf)
+                gr_id, art_id = self.__generate_pom_comp_plug(comp_plug, mf)
 
                 for sub in comp_plug.list_module:
-                    s_grId, s_artId = self.__generate_pom_module(sub, grId, artId)
+                    s_gr_id, s_art_id = self.__generate_pom_module(sub, gr_id, art_id)
                     if sub.is_parent():
-                        self.__generate_pom_subparent(sub, s_grId, s_artId)
+                        self.__generate_pom_subparent(sub, s_gr_id, s_art_id)
 
-    def __generate_pom_module(self, sub, grId, artId):
+    def __generate_pom_module(self, sub, gr_id, art_id):
         fpom = self.ariane.get_one_file(sub, 'pom')
         template = self.jinja_env.get_template(fpom.path + 'pom.jnj')
 
-        args = {"version": sub.version, "groupId": grId, "artifactId": artId, "name": sub.name}
+        args = {"version": sub.version, "groupId": gr_id, "artifactId": art_id, "name": sub.name}
 
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
             target.write(template.render(args))
 
-        groupId = artId
-        artifactId = artId + '.' + sub.name
+        group_id = art_id
+        artifact_id = art_id + '.' + sub.name
 
-        return groupId, artifactId
+        return group_id, artifact_id
 
-    def __generate_pom_subparent(self, sub, grId, artId):
+    def __generate_pom_subparent(self, sub, gr_id, art_id):
         sub.list_module = self.ariane.module_service.get_all(sub)
         for s in sub.list_module:
-            s_grId, s_artId = self.__generate_pom_module(s, grId, artId)
+            s_gr_id, s_art_id = self.__generate_pom_module(s, gr_id, art_id)
             if s.is_parent():
-                self.__generate_pom_subparent(s, s_grId, s_artId)
+                self.__generate_pom_subparent(s, s_gr_id, s_art_id)
 
     def __generate_pom_comp_plug(self, comp_plug, fpom):
         template = self.jinja_env.get_template(fpom.path + 'pom.jnj')
 
-        groupId = comp_plug.pom_attr + comp_plug.get_directory_name()
-        groupId = str(groupId).replace('.'+comp_plug.name, '')
-        artifactId = groupId + "." + comp_plug.name
+        group_id = comp_plug.pom_attr + comp_plug.get_directory_name()
+        group_id = str(group_id).replace('.'+comp_plug.name, '')
+        artifact_id = group_id + "." + comp_plug.name
         version = comp_plug.version
         packaging = "pom"
         comp_plug.list_module = sorted(comp_plug.list_module, key=lambda module: module.order)
-        args = {"groupId": groupId, "artifactId": artifactId, "version": version,
+        args = {"groupId": group_id, "artifactId": artifact_id, "version": version,
                 "packaging": packaging, "components": comp_plug.list_module,
                 "dependencies": comp_plug.list_component_dependency}
 
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
             target.write(template.render(args))
 
-        return groupId, artifactId
+        return group_id, artifact_id
 
-    def generate_pom_dist(self, version, fpom):
-        if GitTagHandler.is_git_tagged(version, path=self.dir_output+fpom.path):
+    def generate_pom_dist(self, version, f_pom):
+        if GitTagHandler.is_git_tagged(version, path=self.dir_output+f_pom.path):
             return
         components = self.get_components_list(version)
         for m in components.copy():
             if m.build != Component.BUILD_MVN and m.build != Component.BUILD_MVN_PYTHON3:
                 components.remove(m)
         components = sorted(components, key=lambda mod: mod.order)
-        template = self.jinja_env.get_template(fpom.path + 'pom_distrib.jnj')
+        template = self.jinja_env.get_template(f_pom.path + 'pom_distrib.jnj')
         args = {"components": components, "version": version}
 
-        with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
+        print(f_pom.name)
+        with open(self.dir_output+f_pom.path+f_pom.name, 'w') as target:
             target.write(template.render(args))
 
-    #TODO: RECURSIVITY ?
+    # TODO: RECURSIVITY ?
     def generate_plan(self, comp_plug, fplan):
         if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output+fplan.path):
             return
@@ -314,7 +325,7 @@ class Generator(object):
             if not s.deployable:
                 modules.remove(s)
         modules = sorted(modules, key=lambda module: module.order)
-        vmin, vmax = ariane_delivery.ArianeRelation.make_vmin_vmax(comp_plug.version)
+        vmin, vmax = modelAndServices.ArianeRelation.make_vmin_vmax(comp_plug.version)
         if snapshot:
             m_version = comp_plug.version
             m_version = str(m_version).replace("-", ".")
@@ -356,7 +367,7 @@ class Generator(object):
 
         for e in elements:
             key = e.get_directory_name()
-            if type(e) is ariane_delivery.Component:
+            if type(e) is modelAndServices.Component:
                 if snapshot:
                     dictio[key] = "master.SNAPSHOT"
                 else:
@@ -390,7 +401,7 @@ class Generator(object):
                     flag_new_version = True
                     flag_append = False
                     rel = self.ariane.get_relation_between(p, d)
-                    max, min = 0, 0
+                    v_max, v_min = 0, 0
                     for sub_d in plugin_dict[p_name]:
                         flag_append = False
                         if sub_d["pluginVersion"] == p.version:
@@ -399,10 +410,10 @@ class Generator(object):
                         elif len(rel.properties) > 0:
                             if rel.properties["version_min"] == sub_d["pluginVersion"]:
                                 flag_append = True
-                                min += 1
+                                v_min += 1
                             elif rel.properties["version_max"] == sub_d["pluginVersion"]:
                                 flag_append = True
-                                max += 1
+                                v_max += 1
                         if flag_append:
                             if type(sub_d["distVersion"]) is not list:
                                 sub_d["distVersion"] = [d.version]
@@ -410,11 +421,15 @@ class Generator(object):
                                 sub_d["distVersion"].append(d.version)
 
                     if len(rel.properties) > 0:
-                        if (flag_append is False) and (max == 0):
-                            plugin_dict[p_name].append({"pluginVersion": rel.properties["version_max"], "distVersion": [d.version]})
+                        if (flag_append is False) and (v_max == 0):
+                            plugin_dict[p_name].append({
+                                "pluginVersion": rel.properties["version_max"], "distVersion": [d.version]
+                            })
                             version_order.append(rel.properties["version_max"])
-                        elif (flag_append is False) and (min == 0):
-                            plugin_dict[p_name].append({"pluginVersion": rel.properties["version_min"], "distVersion": [d.version]})
+                        elif (flag_append is False) and (v_min == 0):
+                            plugin_dict[p_name].append({
+                                "pluginVersion": rel.properties["version_min"], "distVersion": [d.version]
+                            })
                             version_order.append((rel.properties["version_min"]))
                     if flag_new_version:
                         plugin_dict[p_name].append({"pluginVersion": p.version, "distVersion": [d.version]})
@@ -426,15 +441,15 @@ class Generator(object):
         for dic in plugin_dict.keys():
             new_list = [v for v in version_order]
             ele_list = plugin_dict[dic]
-            for ldict in ele_list:
+            for l_dict in ele_list:
                 tuple_list = []
-                pversion = ""
-                for key, value in ldict.items():
+                p_version = ""
+                for key, value in l_dict.items():
                     if key == "pluginVersion":
-                        pversion = value
+                        p_version = value
                     tuple_list.append((key, value))
                 tuple_list = sorted(tuple_list, key=lambda t: t[0], reverse=True)
-                new_list[version_order.index(pversion)] = OrderedDict(tuple_list)
+                new_list[version_order.index(p_version)] = OrderedDict(tuple_list)
             plugin_dict_order[dic] = new_list
 
         with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
@@ -453,7 +468,7 @@ class Generator(object):
         url = dist.url_repos
         for m in components:
             key = m.get_directory_name()
-            #TODO: clear
+            # TODO: clear
             if m.type == "none":
                 typ = Component.TYPE_CORE
             else:
@@ -467,8 +482,8 @@ class Generator(object):
         with open(self.dir_output+fjson.path+fjson.name, 'w') as target:
             json.dump(dictio, target, indent=4)
 
-    #TODO : REAL RECURSIVE ALGO
-    #TODO : use groupId + artifactId to compose maven deployable path
+    # TODO : REAL RECURSIVE ALGO
+    # TODO : use groupId + artifactId to compose maven deployable path
     def generate_lib_json(self, comp_plug, fjson):
         if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output+fjson.path):
             return
@@ -476,7 +491,7 @@ class Generator(object):
         for s in comp_plug.list_module:
             ext = s.extension
             if ext == Module.EXTENSION_JAR or ext == Module.EXTENSION_WAR:
-                #url = groupId.replace('.','/') + artifactId + version + '/'
+                # url = groupId.replace('.','/') + artifactId + version + '/'
                 url = "net/echinopsii/" + str(comp_plug.get_directory_name()).replace('.', '/') + "/"
                 url += "net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"/" + \
                        comp_plug.version+"/net.echinopsii."+comp_plug.get_directory_name() + \
@@ -556,7 +571,8 @@ class Generator(object):
         with open(self.dir_output+fplantpl.path+fplantpl.name, 'w') as target:
             target.write(template.render(args))
 
-    def __clean_environment_files(self, envpath):
+    @staticmethod
+    def __clean_environment_files(envpath):
         if os.path.exists(envpath):
             envfiles = []
             for (df, dp, fn) in os.walk(envpath):
@@ -579,7 +595,8 @@ class Generator(object):
                 else:
                     pass
 
-    def compare_json(self, file1, file2):
+    @staticmethod
+    def compare_json(file1, file2):
         data1 = json.load(file1)
         data2 = json.load(file2)
         if (type(data1) is list) and (type(data2) is list):
@@ -587,7 +604,8 @@ class Generator(object):
             data2.sort()
         return data1 == data2
 
-    def compare_complex_json(self, file1, file2):
+    @staticmethod
+    def compare_complex_json(file1, file2):
         """
         Compare json files both composed of the following elements: {"key": [ {}, {}, ...], "key2": [{}, {}, ...], ...}
         a dictionary with list of dictionaries as values
@@ -611,7 +629,8 @@ class Generator(object):
 
         return False
 
-    def compare_xml(self, file1, file2):
+    @staticmethod
+    def compare_xml(file1, file2):
         model = file1.read()
         flag = True
         for line in(l.strip() for l in file2.readlines()):
