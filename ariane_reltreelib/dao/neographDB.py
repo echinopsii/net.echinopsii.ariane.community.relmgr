@@ -176,7 +176,7 @@ class NeoGraph(object):
                 rel.push()
 
     def create_relation(self, args):
-        LOGGER.debug("create_relation: " + str(args))
+        LOGGER.debug("NeoGraph.create_relation - " + str(args))
         node = args["node"]
         linked_node = args["linked_node"]
         relation = args["relation"]
@@ -240,7 +240,7 @@ class NeoGraph(object):
                  this relation
                  If args contains every keys, return all nodes with this label related to this node and this relation.
         """
-        LOGGER.debug("get_all: " + str(args))
+        LOGGER.debug("NeoGraph.get_all - " + str(args))
         node = args["node"]
         if ("label" in args.keys()) and (node is None):
                 listrecord = self.graph.cypher.execute("MATCH (n:"+args['label']+") RETURN n")

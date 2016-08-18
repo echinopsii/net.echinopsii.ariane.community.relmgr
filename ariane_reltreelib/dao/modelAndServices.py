@@ -59,16 +59,15 @@ class DeliveryTree(object):
 
     @staticmethod
     def get_files(ariane_node):
-        LOGGER.debug("get_files")
         list_fnode = None
         if isinstance(ariane_node, ArianeNode):
             args = {"node": ariane_node.node, "reverse": False, "relation": "CONTAINS"}
-            LOGGER.debug(args)
+            LOGGER.debug("DeliveryTree.get_files - " + str(args))
             list_fnode = DeliveryTree.graph_dao.get_all(args)
             for i, fnode in enumerate(list_fnode.copy()):
                 prop = DeliveryTree.graph_dao.get_node_properties(fnode)
                 list_fnode[i] = FileNode.create(prop)
-        LOGGER.debug(str(list_fnode))
+        LOGGER.debug("DeliveryTree.get_files - " + str(list_fnode))
         return list_fnode
 
     @staticmethod
@@ -281,7 +280,7 @@ class DistributionService(object):
                             exist_already = True
                             break
                     if not exist_already:
-                        LOGGER.debug("New component for distrib : " + dev_component['name'])
+                        LOGGER.debug("DistributionService.sync_db_from_last_dev - New component for distrib : " + dev_component['name'])
                         # TODO:
                         # if pom file exist then parse file to get version
                         # cm = Component(dev_component['name'], 0, dev_component['type'], order=0, build="none")
@@ -376,7 +375,7 @@ class DistributionService(object):
         cd = Distribution(dist.name, dist.version, editable=dist.editable, url_repos=dist.url_repos)
         DeliveryTree.distribution_service.update_arianenode_lists(dist)
         for df in dist.list_files:  # Copying dist files
-            LOGGER.debug("File to copy: " + df.name)
+            LOGGER.debug("DistributionService.copy_distrib - File to copy: " + df.name)
             cd.add_file(FileNode(df.name, df.type, df.version, df.path))
 
         for m in dist.list_component:  # Copying components and their modules and files
@@ -735,7 +734,7 @@ class PluginService(object):
                             exist_already = True
                             break
                     if not exist_already:
-                        LOGGER.debug("New submodule " + str(submodule_dev) + " for " + plugin.name)
+                        LOGGER.debug("PluginService.sync_db_from_last_dev - New submodule " + str(submodule_dev) + " for " + plugin.name)
                         psub = Module(
                             submodule_dev[ArianeDefinitions.MODULE_NAME],
                             submodule_dev[ArianeDefinitions.MODULE_VERSION],
@@ -937,7 +936,7 @@ class ModuleService(object):
                             exist_already = True
                             break
                     if not exist_already:
-                        LOGGER.debug("New submodule " + str(submodule_dev) + " for " + module.name)
+                        LOGGER.debug("ModuleService.sync_db_from_last_dev - New submodule " + str(submodule_dev) + " for " + module.name)
                         msub = Module(
                             submodule_dev[ArianeDefinitions.MODULE_NAME],
                             submodule_dev[ArianeDefinitions.MODULE_VERSION],
@@ -1591,7 +1590,7 @@ class Module(ArianeNode):
 
     def update(self, args):
         flag = True
-        LOGGER.debug(args)
+        LOGGER.debug("Module.update - " + str(args))
         for key in args.keys():
             if self._check_current_property(key):
                 if key == "name" and self.name != args[key]:

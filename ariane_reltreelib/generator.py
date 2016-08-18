@@ -59,9 +59,9 @@ class GitTagHandler(object):
         tags = []
         if path is not None:
             if os.path.exists(path):
-                LOGGER.debug("is_git_tagged: " + path)
+                LOGGER.debug("GitTagHandler.is_git_tagged - " + path)
                 tags = subprocess.check_output("git tag", shell=True, cwd=path)
-                LOGGER.debug("is_git_tagged: " + str(tags))
+                LOGGER.debug("GitTagHandler.is_git_tagged - " + str(tags))
         else:
             tags = subprocess.check_output("git tag", shell=True)
         # check_output gives the command output in bytes format, so we decode it.
@@ -173,15 +173,15 @@ class Generator(object):
         flag_clean_env = True
 
         for mod in components:
-            LOGGER.debug("generate component " + mod.name + " " + mod.version + " files")
+            LOGGER.debug("Generator.generate_component_files - " + mod.name + " " + mod.version + " files")
             if not is_snapshot_version:
                 if GitTagHandler.is_git_tagged(mod.version, path=self.dir_output+mod.get_directory_name()):
-                    LOGGER.debug("git tagged !")
+                    LOGGER.debug("Generator.generate_component_files - git tagged !")
                     continue
             self.ariane.component_service.update_arianenode_lists(mod)
             mod_files = self.ariane.get_files(mod)
             for f in mod_files:
-                LOGGER.debug(f.name)
+                LOGGER.debug("Generator.generate_component_files - " + f.name)
                 if "SNAPSHOT" in f.name and not is_snapshot_version:
                     continue
                 elif f.type == "plan":
@@ -308,7 +308,7 @@ class Generator(object):
         template = self.jinja_env.get_template(f_pom.path + 'pom_distrib.jnj')
         args = {"components": components, "version": version}
 
-        LOGGER.debug(f_pom.name)
+        LOGGER.debug("Generator.generate_pom_dist - " + f_pom.name)
         with open(self.dir_output+f_pom.path+f_pom.name, 'w') as target:
             target.write(template.render(args))
 
@@ -367,7 +367,7 @@ class Generator(object):
         if GitTagHandler.is_git_tagged(version, path=self.dir_output+fjson.path):
             return
         elements = self.get_components_list(version)
-        LOGGER.debug(elements)
+        LOGGER.debug("Generator.generate_json_dist - " + str(elements))
         dictio = {}
         snapshot = False
         if "SNAPSHOT" in version:
