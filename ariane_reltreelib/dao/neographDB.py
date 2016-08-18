@@ -17,11 +17,14 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import logging
 
 from py2neo import Node, Relationship
 import os
 
 __author__ = 'stanrenia'
+
+LOGGER = logging.getLogger(__name__)
 
 
 class NeoGraph(object):
@@ -173,7 +176,7 @@ class NeoGraph(object):
                 rel.push()
 
     def create_relation(self, args):
-        # print(args)
+        LOGGER.debug("create_relation: " + str(args))
         node = args["node"]
         linked_node = args["linked_node"]
         relation = args["relation"]
@@ -194,8 +197,6 @@ class NeoGraph(object):
             self.graph.create(rel)
 
         return nid, rel
-        # print(relation)
-        # self.graph.create(Relationship.cast(node, (relation, properties), linked_node))
 
     def get_relation_between(self, start_id, end_id=0, label=""):
         if end_id != 0:
@@ -239,7 +240,7 @@ class NeoGraph(object):
                  this relation
                  If args contains every keys, return all nodes with this label related to this node and this relation.
         """
-        # print(args)
+        LOGGER.debug("get_all: " + str(args))
         node = args["node"]
         if ("label" in args.keys()) and (node is None):
                 listrecord = self.graph.cypher.execute("MATCH (n:"+args['label']+") RETURN n")

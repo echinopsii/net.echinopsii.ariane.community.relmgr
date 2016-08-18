@@ -17,9 +17,12 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import logging
 
 import os
 import argparse
+
+LOGGER = logging.getLogger(__name__)
 
 # module_name = '/ariane.community.relmgr'
 # project_path = str(os.getcwd())
@@ -99,13 +102,11 @@ class Command(object):
         cmd = args.command
         version = args.version
         name = args.name
-        # print(cmd, version)
-        # shutil.copy(project_path+"/ariane.community.distrib/resources/maven/plan_module_parent_tpl.xml",
-        #             project_path)
+        LOGGER.debug("execute_parse: {cmd: " + cmd + ",  version: " + version + "}")
         self.execute(cmd, version, name)
 
     def execute(self, cmd, version, name):
-        # print("cmd: " + str(cmd) + " ;version: " + str(version) + " ; name: " + str(name))
+        LOGGER.debug("execute: {cmd: " + str(cmd) + " ;version: " + str(version) + " ; name: " + str(name) + "}")
         distrib = Command.dao_ariane.get_unique(Command.dao_ariane.distribution_service, {"version": version})
         if isinstance(distrib, modelAndServices.Distribution):
             if cmd in Command.commands_dist:
@@ -114,7 +115,7 @@ class Command(object):
                 else:
                     if "only" in cmd:
                         method = 'generate_'+str(cmd).replace('_only', '_files')
-                        # print(method)
+                        LOGGER.debug("execute: " + method)
                         method = getattr(Command.gen, method)
                         method(version)
                     else:
@@ -126,8 +127,6 @@ class Command(object):
                                 if len(distribs) > 0:
                                     Command.dao_ariane.delete_all()
                                 self.import_all_distribs()
-                            # if self.import_data():
-                            #     print("Importing missing data")
                             if not Command.dao_ariane.check_uniqueness():
                                 raise err.CommandError("Error while importing missing Distributions")
                             Command.gen.generate_json_plugins(version, fnode)
