@@ -37,6 +37,7 @@ from ariane_reltreelib.dao import modelAndServices
 from ariane_reltreelib.arianeDefinitions import ArianeDefinitions
 from ariane_relsrv.server.config import Config
 
+
 def setup_logging(default_path='misc/relsrv_logging_conf.json', default_level=logging.INFO):
     path = default_path
     if os.path.exists(path):
@@ -81,9 +82,11 @@ if __name__ == '__main__':
     setup_logging(RELMGR_CONFIG.log_file)
     LOGGER = logging.getLogger(__name__)
     try:
-        ariane = modelAndServices.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login, "password": RELMGR_CONFIG.neo4j_password,
-                                               "host": RELMGR_CONFIG.neo4j_host, "port": RELMGR_CONFIG.neo4j_port,
-                                               "type": "neo4j"})
+        ariane = modelAndServices.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login,
+                                                "password": RELMGR_CONFIG.neo4j_password,
+                                                "host": RELMGR_CONFIG.neo4j_host,
+                                                "port": RELMGR_CONFIG.neo4j_port,
+                                                "type": "neo4j"})
         from ariane_relsrv.server import restful
         myglobals = {"conf": RELMGR_CONFIG, "delivery_tree": ariane, "logger": LOGGER, "project_path": project_path,
                      "relmgr_path": relmgr_path}
@@ -93,11 +96,11 @@ if __name__ == '__main__':
             restful.start_relmgr(myglobals)
         elif args.command in ["passwd", "add_user"]:
             if args.username and args.password:
-                from ariane_relsrv.server.users_mgr import User
+                from ariane_relsrv.server.usersMgr import User
                 User.users_file = RELMGR_CONFIG.users_file
                 if args.command == "passwd":
-                    LOGGER.info("changing "+ args.username + " password to " + args.password)
-                    ret = User.changePassword(args.username, args.password)
+                    LOGGER.info("changing " + args.username + " password to " + args.password)
+                    ret = User.change_password(args.username, args.password)
                     if ret == 0:
                         LOGGER.info("Password of '"+args.username+"' has been changed")
                     else:

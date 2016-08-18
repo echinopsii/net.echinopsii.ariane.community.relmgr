@@ -51,6 +51,7 @@ class InitReleaseTools(object):
         relmgr_path = myglobals["relmgr_path"]
         BuildManager.path_zip = project_path + "/artifacts/"
 
+
 class ReleaseTools(object):
     distrib_copy_id = 0
 
@@ -60,8 +61,13 @@ class ReleaseTools(object):
         dpath = dfile.path.split('/')[0] + '/'
         return dpath
 
+    # noinspection PyTypeChecker
     @staticmethod
     def set_distrib_url_repos(dist):
+        if project_path is None:
+            LOGGER.error("Initialization problem (set_distrib_url_repos:project_path is None)!")
+            return 1
+
         dpath = ReleaseTools.get_distrib_path(dist)
         dpath = os.path.join(project_path, dpath)
         if os.path.exists(dpath):
@@ -69,25 +75,36 @@ class ReleaseTools(object):
             if os.path.isfile(fpath):
                 with open(fpath, 'r') as target:
                     fdata = json.load(target)
+                    url = None
                     for key, val in fdata.items():
                         url = fdata[key]["url"]
                         break
-                    url = url[:url.index("ariane.")]
-                    if dist.url_repos != url:
-                        dist.url_repos = url
-                        dist.save()
-                        LOGGER.info("Repository URL was changed to '{}'for Distribution ({})".format(url, dist))
+                    if url is not None:
+                        url = url[:url.index("ariane.")]
+                        if dist.url_repos != url:
+                            dist.url_repos = url
+                            dist.save()
+                            LOGGER.info("Repository URL was changed to '{}'for Distribution ({})".format(url, dist))
+                    else:
+                        LOGGER.error("URL not found from source repositories definition !")
+                        return
             else:
                 LOGGER.warn("Distribution({}) repository URL was set to default: "
                             "'https://github.com/echinopsii/'".format(dist))
 
+    # noinspection PyTypeChecker
     @staticmethod
     def make_components_to_tag_list():
+        if project_path is None:
+            LOGGER.error("Initialization problem (make_components_to_tag_list:project_path is None)!")
+            return 1
+
         dist = ariane.distribution_service.get_dev_distrib()
         if dist.editable == "true":
             ariane.distribution_service.update_arianenode_lists(dist)
             for m in dist.list_component:
                 mpath = os.path.join(project_path, m.get_directory_name())
+
                 last_tag = GitTagHandler.get_last_tag(path=mpath)
                 mversion = m.version
                 if "-SNAPSHOT" in mversion:
@@ -107,13 +124,20 @@ class ReleaseTools(object):
 
         return version
 
+    # noinspection PyTypeChecker
     @staticmethod
     def export_new_distrib(erase_genuine_file=False):
         """
-        :param erase_genuine_file: if True, erase the 'all.cypher' file located in ariane.community.relmgr/bootstrap/dependency_db/
-            Knowing that this file is used for resetting the Database by calling ResetReset's POST (click on 'Reset' button from the UI)
+        :param erase_genuine_file: if True, erase the 'all.cypher' file located in
+        ariane.community.relmgr/bootstrap/dependency_db/
+            Knowing that this file is used for resetting the Database by calling ResetReset's POST
+            (click on 'Reset' button from the UI)
         :return:
         """
+        if relmgr_path is None:
+            LOGGER.error("Initialization problem (export_new_distrib:relmgr_path is None)!")
+            return 1
+
         todaydate = date.today().strftime("%d%m%y")
         path = RELMGR_CONFIG.db_export_path
         backp = os.getcwd()
@@ -141,8 +165,9 @@ class ReleaseTools(object):
 
             os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(path, "all.cypher"))
             if erase_genuine_file:
-                os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(relmgr_path, "bootstrap",
-                                                                                                "dependency_db", "all.cypher"))
+                os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(
+                    relmgr_path, "bootstrap", "dependency_db", "all.cypher"
+                ))
             os.chdir(backp)
             LOGGER.info("IN "+path+": file 'all.cypher' was copied to '"+fname+"'. New all.cypher was "
                                                                                "created from the new Distribution")
@@ -159,6 +184,7 @@ class ReleaseTools(object):
                 return run_mode["UI_RUNNING_MODE"]
             else:
                 return 'test'
+
 
 class DatabaseManager(object):
 
@@ -200,7 +226,8 @@ class DatabaseManager(object):
     @staticmethod
     def create_dev_distrib():
         """
-        :return 0: success, 1: interal error, can not find the actual DEV Distribution, 2 | 3: The actual DEV Distribution is already in a '-SNAPSHOT' version
+        :return 0: success, 1: interal error, can not find the actual DEV Distribution, 2 | 3:
+        The actual DEV Distribution is already in a '-SNAPSHOT' version
         """
         snapshot = "-SNAPSHOT"
         dev = ariane.distribution_service.get_dev_distrib()
@@ -341,9 +368,11 @@ class DatabaseManager(object):
         newdevcp = DatabaseManager.create_distrib_copy(newdev)
         if not isinstance(newdev, modelAndServices.Distribution):
             if newdevcp == -1:
-                return 3  # "Error occured while copying the New DEV Distribution into the "
-                          # "database: A copy already exists."
-            return 4  # "Error occured while copying the New DEV Distribution into the database"
+                # "Error occurred while copying the New DEV Distribution into the "
+                # "database: A copy already exists."
+                return 3
+            # "Error occurred while copying the New DEV Distribution into the database"
+            return 4
 
         LOGGER.info("New DEV Distribution copy was created. Now working on this copy")
         ReleaseTools.export_new_distrib()
@@ -362,10 +391,17 @@ class DatabaseManager(object):
         ariane.distribution_service.sync_db_from_last_dev(dev)
         return 0
 
+    # noinspection PyTypeChecker
     @staticmethod
     def reset_database():
+        if relmgr_path is None:
+            LOGGER.error("Initialization problem (reset_database:relmgr_path is None)!")
+            return 1
+
         alldistrib_file = "all.cypher"
+
         fpath = os.path.join(relmgr_path, "bootstrap", "dependency_db", alldistrib_file)
+
         if os.path.isfile(fpath):
             ariane.delete_all()
             os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -file " + fpath)
@@ -373,6 +409,7 @@ class DatabaseManager(object):
             return 0, ""
         else:
             return 1, fpath  # "Error while importing '"+fpath+"', file was not found "
+
 
 class GitManager(object):
     COMPONENTS_TO_TAG = []
@@ -405,8 +442,8 @@ class GitManager(object):
                         LOGGER.warn("warning_on_tag("+m.name+" "+m.version+"): "+line+"; ")
                         break
                     if "error" in line:
-                        LOGGER.error("error_on_commit("+m.name+"): "+task + " "+ comment + ""+line+"; ")
-                        errs += "error_on_commit("+m.name+"): "+task + " "+ comment + ""+line+"; "
+                        LOGGER.error("error_on_commit("+m.name+"): "+task + " " + comment + ""+line+"; ")
+                        errs += "error_on_commit("+m.name+"): "+task + " " + comment + ""+line+"; "
                         break
                 if errs == "":
                     if subprocess.call("git push ", shell=True) != 0:
@@ -432,8 +469,13 @@ class GitManager(object):
         rets["warns"] = warns
         return rets
 
+    # noinspection PyTypeChecker
     @staticmethod
     def commit_distrib(args):
+
+        if project_path is None:
+            LOGGER.error("Initialization problem (commit_distrib:project_path is None)!")
+            return 1
 
         isdistrib = args["isdistrib"]
         isplugin = args["isplugin"]
@@ -449,7 +491,7 @@ class GitManager(object):
         if not isinstance(dist, modelAndServices.Distribution):
             return 1, "", ""  # "Server can not find the current Distribution to commit"
 
-        LOGGER.info("Start " + mode + " Distribution("+dist.version+") commit-tag-push ...")
+        LOGGER.info("Start " + mode + " Distribution(" + dist.version + ") commit-tag-push ...")
         errs = ""
         warns = ""
         path_errs = []
@@ -457,7 +499,10 @@ class GitManager(object):
         commit = "git commit -m \""+GitManager.commit_comment+"\" ./"
 
         if isdistrib:
-            rets = GitManager.commit_element(dist, os.path.join(project_path, ReleaseTools.get_distrib_path(dist)), commit, task, comment, mode)
+            rets = GitManager.commit_element(dist, os.path.join(
+                project_path, ReleaseTools.get_distrib_path(dist)
+            ), commit, task, comment, mode)
+
             errs += rets["errs"]
             warns += rets["warns"]
             if rets["path_errs"] != "":
@@ -499,8 +544,13 @@ class GitManager(object):
         LOGGER.info(message)
         return 0, message, warns
 
+    # noinspection PyTypeChecker
     @staticmethod
     def checkout_distrib(dist, isplugin=False):
+        if project_path is None:
+            LOGGER.error("Initialization problem (checkout_distrib:project_path is None)!")
+            return 1
+
         if not isinstance(dist, modelAndServices.Distribution):
             return 1
 
@@ -525,8 +575,13 @@ class GitManager(object):
             LOGGER.info(m.name + " clean and checkout")
         return 0
 
+    # noinspection PyTypeChecker
     @staticmethod
     def pull_checkout_distrib(dist, isplugin=False):
+        if project_path is None:
+            LOGGER.error("Initialization problem (pull_checkout_distrib:project_path is None)!")
+            return 1
+
         LOGGER.info("Start repositories git checkout and git pull")
         paths = [ReleaseTools.get_distrib_path(dist)]
         components = ariane.component_service.get_all(dist)
@@ -547,8 +602,13 @@ class GitManager(object):
             LOGGER.info("Git Checkout done")
         return 0, errs
 
+    # noinspection PyTypeChecker
     @staticmethod
     def checkout_tags(isdistrib=False, isplugin=False):
+        if project_path is None:
+            LOGGER.error("Initialization problem (checkout_tags:project_path is None)!")
+            return 1
+
         # git tag -d version_component
         # git push origin :refs/tags/version_component
         # if git log -1 --pretty=%B | grep "last commit ticket + last commit comment" == 0
@@ -576,8 +636,8 @@ class GitManager(object):
                     if subprocess.call("git push origin :refs/tags/" + dist.version, shell=True) != 0:
                         errs += "error_on_push_origin: distrib( " + dist.version + "); "
                     else:
-                        if subprocess.call("git log -1 --pretty=%B | grep '" +
-                                                   re.escape(GitManager.commit_comment) + "'", shell=True) != 0:
+                        if subprocess.call("git log -1 --pretty=%B | grep '" + re.escape(GitManager.commit_comment) +
+                                           "'", shell=True) != 0:
                             LOGGER.info("No need to reset last commit in distrib repository")
                         else:
                             if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
@@ -605,7 +665,7 @@ class GitManager(object):
                             errs += "error_on_push_origin: "+m.name+"(" + m.version + "); "
                         else:
                             if subprocess.call("git log -1 --pretty=%B | grep '" +
-                                                       re.escape(GitManager.commit_comment) + "'",
+                                               re.escape(GitManager.commit_comment) + "'",
                                                shell=True) != 0:
                                 LOGGER.info("No need to reset last commit in "+m.name+" repository")
                             else:
@@ -629,6 +689,7 @@ class GitManager(object):
             message = "Tags reset done."
         LOGGER.info(message)
         return 0, message
+
 
 class BuildManager(object):
     path_zip = ""
@@ -692,8 +753,14 @@ class BuildManager(object):
     @staticmethod
     def do_mvn_clean_install():
         timeout = RELMGR_CONFIG.build_timeout["REMOTE"]
-        child = subprocess.Popen("mvn clean install", shell=True, cwd=project_path)
-        streamdata = child.communicate(timeout=timeout)[0]
+        child = subprocess.Popen("mvn clean install -DskipTests", shell=True, cwd=project_path)
+
+        try:
+            child.communicate(timeout=timeout)[0]
+        except subprocess.TimeoutExpired:
+            os.killpg(os.getpgid(child.pid), signal.SIGTERM)
+            child.communicate()
+
         mvn_done = False
         rc = child.returncode
         if rc == 0:
@@ -736,6 +803,7 @@ class BuildManager(object):
         else:
             return 1
 
+
 class FileGenManager(object):
 
     @staticmethod
@@ -746,15 +814,20 @@ class FileGenManager(object):
             return 1, None  # "There is no copy of the master SNAPSHOT Distribution"
 
         cmd = command.Command(dao_ariane=ariane, project_path=project_path)
-        #cmd.gen.set_release_component_exceptions(GitManager.COMPONENTS_EXCEPTIONS)
+        # cmd.gen.set_release_component_exceptions(GitManager.COMPONENTS_EXCEPTIONS)
         try:
             cmd.execute(cmd_str, version, name)
             return 0, None
         except err.CommandError as cmderr:
-           return 2, cmderr
+            return 2, cmderr
 
+    # noinspection PyTypeChecker
     @staticmethod
     def get_file_diff(nid):
+        if project_path is None:
+            LOGGER.error("Initialization problem (get_file_diff:project_path is None)!")
+            return 1
+
         f = ariane.find_without_label({"nID": nid})
         if f is not None:
             full_path = os.path.join(project_path, f.path)

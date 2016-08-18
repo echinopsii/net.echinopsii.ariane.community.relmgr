@@ -300,7 +300,7 @@ class Generator(object):
         template = self.jinja_env.get_template(f_pom.path + 'pom_distrib.jnj')
         args = {"components": components, "version": version}
 
-        print(f_pom.name)
+        # print(f_pom.name)
         with open(self.dir_output+f_pom.path+f_pom.name, 'w') as target:
             target.write(template.render(args))
 
@@ -359,7 +359,7 @@ class Generator(object):
         if GitTagHandler.is_git_tagged(version, path=self.dir_output+fjson.path):
             return
         elements = self.get_components_list(version)
-        print(elements)
+        # print(elements)
         dictio = {}
         snapshot = False
         if "SNAPSHOT" in version:
@@ -637,8 +637,8 @@ class Generator(object):
             if line in model:
                 continue
             else:
-                if "<!--" not in line:
-                    print(file2.name)
-                    print(line)
+                # if "<!--" not in line:
+                #     print(file2.name)
+                #     print(line)
                 flag = False
         return flag

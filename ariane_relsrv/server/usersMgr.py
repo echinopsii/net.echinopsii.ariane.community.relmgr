@@ -1,8 +1,28 @@
+# Ariane Release Manager
+# Ariane Release Server
+# User Mgr
+#
+# Copyright (C) 2015 echinopsii
+# Author: Stan Renia
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __author__ = 'ikito'
 
 from passlib.apps import custom_app_context as pwd_context
 import os
 import argparse
+
 
 class User(object):
     id = 0
@@ -10,8 +30,8 @@ class User(object):
     password_hash = ""
     users_file = ""
 
-    def __init__(self, id, username, pwd):
-        self.id = id
+    def __init__(self, id_, username, pwd):
+        self.id = id_
         self.username = username
         self.password_hash = pwd
 
@@ -28,7 +48,7 @@ class User(object):
             user_file = ""
             with open(User.users_file, "r") as target:
                 user_file = target.read()
-                isempty = user_file == ''
+                isempty = (user_file == '')
                 if isempty:
                     user_file = str(username) + ":" + str(User.hash_password(pwd))
                 else:
@@ -62,8 +82,8 @@ class User(object):
                 return 0
 
     @staticmethod
-    def changePassword(username, newpwd):
-        isChanged = False
+    def change_password(username, newpwd):
+        is_changed = False
         lines = []
         with open(User.users_file, "r") as target:
             lines = target.readlines()
@@ -76,19 +96,19 @@ class User(object):
                     if len(tmp) == 2:
                         tmp[1] = User.hash_password(newpwd)
                         newline = tmp[0] + ":" + tmp[1]
-                        isChanged = True
+                        is_changed = True
                     break
                 newline_id += 1
             lines[newline_id] = newline
 
-        if isChanged:
+        if is_changed:
             with open(User.users_file, "w") as target:
                 target.writelines(lines)
             return 0
         return None
 
     @staticmethod
-    def getUser(username):
+    def get_user(username):
         if os.path.isfile(User.users_file):
             with open(User.users_file, "r") as target:
                 # user_file = json.load(target)
@@ -112,7 +132,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.command == "new_password":
         if args.password and args.username:
-            ret = User.changePassword(args.username, args.password)
+            ret = User.change_password(args.username, args.password)
             if ret == 0:
                 print("Password of '"+args.username+"' has been changed")
             else:

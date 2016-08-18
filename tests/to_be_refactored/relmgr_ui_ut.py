@@ -27,7 +27,7 @@ from datetime import date
 from ariane_reltreelib.dao import modelAndServices
 from ariane_relsrv.server.config import Config
 # from ariane_relsrv.server.__main__ import ariane, project_path
-from ariane_relsrv.server.release_tools import ReleaseTools, InitReleaseTools, DatabaseManager
+from ariane_relsrv.server.releaseTools import ReleaseTools, InitReleaseTools, DatabaseManager
 import logging
 
 relmgr_path = __file__

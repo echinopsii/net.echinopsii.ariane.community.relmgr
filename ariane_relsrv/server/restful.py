@@ -23,8 +23,8 @@ import json
 from flask import Flask, make_response, render_template, send_from_directory
 from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import modelAndServices
-from ariane_relsrv.server.users_mgr import User
-from ariane_relsrv.server.release_tools import DatabaseManager, GitManager, InitReleaseTools, BuildManager, \
+from ariane_relsrv.server.usersMgr import User
+from ariane_relsrv.server.releaseTools import DatabaseManager, GitManager, InitReleaseTools, BuildManager, \
                                                 FileGenManager, ReleaseTools
 
 app = Flask(__name__)

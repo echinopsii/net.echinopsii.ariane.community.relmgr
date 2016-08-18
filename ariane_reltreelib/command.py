@@ -99,7 +99,7 @@ class Command(object):
         cmd = args.command
         version = args.version
         name = args.name
-        print(cmd, version)
+        # print(cmd, version)
         # shutil.copy(project_path+"/ariane.community.distrib/resources/maven/plan_module_parent_tpl.xml",
         #             project_path)
         self.execute(cmd, version, name)

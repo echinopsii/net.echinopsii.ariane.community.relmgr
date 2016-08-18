@@ -26,6 +26,7 @@ import ariane_reltreelib.exceptions as err
 import logging
 import logging.config
 
+
 class Config(object):
     def __init__(self):
         self.config_file_path = None

@@ -729,7 +729,7 @@ class PluginService(object):
                             exist_already = True
                             break
                     if not exist_already:
-                        print("New submodule " + str(submodule_dev) + " for " + plugin.name)
+                        # print("New submodule " + str(submodule_dev) + " for " + plugin.name)
                         psub = Module(
                             submodule_dev[ArianeDefinitions.MODULE_NAME],
                             submodule_dev[ArianeDefinitions.MODULE_VERSION],
@@ -931,7 +931,7 @@ class ModuleService(object):
                             exist_already = True
                             break
                     if not exist_already:
-                        print("New submodule " + str(submodule_dev) + " for " + module.name)
+                        # print("New submodule " + str(submodule_dev) + " for " + module.name)
                         msub = Module(
                             submodule_dev[ArianeDefinitions.MODULE_NAME],
                             submodule_dev[ArianeDefinitions.MODULE_VERSION],
