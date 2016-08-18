@@ -19,7 +19,7 @@
 from py2neo import env
 
 from ariane_relsrv.server.config import Config
-from ariane_reltreelib.dao import ariane_delivery
+from ariane_reltreelib.dao import modelAndServices
 import unittest, os
 from create_db_from_file import create_db_file
 from ariane_relsrv.server import restful
@@ -79,7 +79,7 @@ class AppTest(unittest.TestCase):
         cls.RELMGR_CONFIG.parse(cls.config_path)
 
         # Connection to neo4j database
-        cls.ariane = ariane_delivery.DeliveryTree({"login": cls.RELMGR_CONFIG.neo4j_login,
+        cls.ariane = modelAndServices.DeliveryTree({"login": cls.RELMGR_CONFIG.neo4j_login,
                                                    "password": cls.RELMGR_CONFIG.neo4j_password,
                                                    "host": cls.RELMGR_CONFIG.neo4j_host,
                                                    "port": cls.RELMGR_CONFIG.neo4j_port,
@@ -100,25 +100,25 @@ class AppTest(unittest.TestCase):
         # for line in self.dockerClient.exec_start(exec_id=exec_dict.get("Id"), stream=True):
         #     print((bytes(line).decode("utf-8")))
 
-        self.sub = ariane_delivery.Module("arti", "0.2", "oyo", "oyo.arti")
-        self.sub2 = ariane_delivery.Module("marti", "0.2", "aya", "aya.marti")
-        self.sub2.add_file(ariane_delivery.FileNode("ael", "ald", "aeda", "/dad/ae"))
-        self.subpar = ariane_delivery.Module("papa", "0.3")
-        self.sub4 = ariane_delivery.Module("fils", "0.3", "son", "son.fils")
-        self.mod = ariane_delivery.Component("My", "0.2.2", "other")
-        self.mod2 = ariane_delivery.Component("idm", "0.3.2", "core")
-        self.plugin = ariane_delivery.Plugin("RabbitMQ", "0.2.2")
-        self.sub3 = ariane_delivery.Module("rab", "0.3", "rabitt", "rab.rabitt")
-        self.distrib = ariane_delivery.Distribution("community", "0.6.1")
+        self.sub = modelAndServices.Module("arti", "0.2", "oyo", "oyo.arti")
+        self.sub2 = modelAndServices.Module("marti", "0.2", "aya", "aya.marti")
+        self.sub2.add_file(modelAndServices.FileNode("ael", "ald", "aeda", "/dad/ae"))
+        self.subpar = modelAndServices.Module("papa", "0.3")
+        self.sub4 = modelAndServices.Module("fils", "0.3", "son", "son.fils")
+        self.mod = modelAndServices.Component("My", "0.2.2", "other")
+        self.mod2 = modelAndServices.Component("idm", "0.3.2", "core")
+        self.plugin = modelAndServices.Plugin("RabbitMQ", "0.2.2")
+        self.sub3 = modelAndServices.Module("rab", "0.3", "rabitt", "rab.rabitt")
+        self.distrib = modelAndServices.Distribution("community", "0.6.1")
         self.subpar.add_module(self.sub4)
-        self.subpar.add_file(ariane_delivery.FileNode("lxla", "al", "00.", "/ala/eer"))
+        self.subpar.add_file(modelAndServices.FileNode("lxla", "al", "00.", "/ala/eer"))
         self.mod.add_module(self.subpar)
         self.mod.add_module(self.sub)
         self.mod.add_module(self.sub2)
-        self.mod.add_file(ariane_delivery.FileNode("bbb.xml", "xml", "0.1", "/AA"))
+        self.mod.add_file(modelAndServices.FileNode("bbb.xml", "xml", "0.1", "/AA"))
         self.plugin.add_module(self.sub3)
-        self.plugin.add_file(ariane_delivery.FileNode("plugFile", "xml", ":", "/aez/fef"))
-        self.fnode = ariane_delivery.FileNode("dodo.json", "json", "0.6.2", "/la/lala")
+        self.plugin.add_file(modelAndServices.FileNode("plugFile", "xml", ":", "/aez/fef"))
+        self.fnode = modelAndServices.FileNode("dodo.json", "json", "0.6.2", "/la/lala")
         self.distrib.add_file(self.fnode)
         self.distrib.add_component(self.mod)
         self.distrib.add_component(self.mod2)
@@ -132,7 +132,7 @@ class AppTest(unittest.TestCase):
         print("neo4j docker started")
 
     def test_save_file(self):
-        fnode_dodo = ariane_delivery.FileNode("dodo.json", "json", "0.6.2", "/la/lala")
+        fnode_dodo = modelAndServices.FileNode("dodo.json", "json", "0.6.2", "/la/lala")
         self.mod.add_file(fnode_dodo)
         list_fnode = self.ariane.get_files(self.mod)
         self.assertEqual(len(list_fnode), 2)
@@ -151,12 +151,12 @@ class AppTest(unittest.TestCase):
         dist = self.ariane.distribution_service.get_all()[0]
         mods = self.ariane.component_service.get_all(dist)
         portal = [m for m in mods if m.name == "portal"][0]
-        self.assertTrue(isinstance(portal, ariane_delivery.Component))
+        self.assertTrue(isinstance(portal, modelAndServices.Component))
         portal.version = "0.7.0"
         portal.save()
         relations = self.ariane.component_service.get_relations(portal, ["DEPENDS ON"])
         for r in relations:
-            if r.end == portal and (isinstance(r.start, ariane_delivery.Component) or isinstance(r.start, ariane_delivery.Plugin)):
+            if r.end == portal and (isinstance(r.start, modelAndServices.Component) or isinstance(r.start, modelAndServices.Plugin)):
                 self.assertEqual(r.properties["version_min"], "0.7.0")
                 self.assertEqual(r.properties["version_max"], "0.8.0")
 
@@ -197,7 +197,7 @@ class AppTest(unittest.TestCase):
         self.assertEquals(self.distrib, my_distrib)
 
     def test_update_relation(self):
-        mod_d = ariane_delivery.Component('dedo', "0.5.6", "test")
+        mod_d = modelAndServices.Component('dedo', "0.5.6", "test")
         mod_d.save()
         mod_d.add_component_dependency({"component": self.mod2, "version_min": "", "version_max": ""})
         rel = self.ariane.get_relation_between(mod_d, self.mod2)
@@ -250,13 +250,13 @@ class AppTest(unittest.TestCase):
         related_nodes = self.ariane.module_service.get_relations(self.sub)
         self.assertGreater(len(related_nodes), 0)
         for rel in related_nodes:
-            self.assertIsInstance(rel, ariane_delivery.ArianeRelation)
+            self.assertIsInstance(rel, modelAndServices.ArianeRelation)
 
         related_nodes = self.ariane.module_service.get_relations([self.sub, self.sub2])
         self.assertGreater(len(related_nodes), 1)
         for relation_list in related_nodes:
             for rel in relation_list:
-                self.assertIsInstance(rel, ariane_delivery.ArianeRelation)
+                self.assertIsInstance(rel, modelAndServices.ArianeRelation)
 
     def test_ModuleServiceWithParent(self):
         #   Save a modified module
@@ -281,7 +281,7 @@ class AppTest(unittest.TestCase):
         unique = self.ariane.module_service.get_unique({"name": "bob"})
         self.assertIsNone(unique)
 
-        self.mod2.add_module(ariane_delivery.Module("daddy", "0.4"))
+        self.mod2.add_module(modelAndServices.Module("daddy", "0.4"))
 
         unique = self.ariane.module_service.get_unique({"version": "0.4"})
         self.assertEqual(unique, 0)
@@ -290,10 +290,10 @@ class AppTest(unittest.TestCase):
         related_nodes = self.ariane.module_service.get_relations(self.subpar)
         self.assertGreater(len(related_nodes), 0)
         for rel in related_nodes:
-            self.assertIsInstance(rel, ariane_delivery.ArianeRelation)
+            self.assertIsInstance(rel, modelAndServices.ArianeRelation)
 
-        newchild = ariane_delivery.Module("child", "testme")
-        newpar = ariane_delivery.Module("bigpar", "testme")
+        newchild = modelAndServices.Module("child", "testme")
+        newpar = modelAndServices.Module("bigpar", "testme")
         newpar.save()
         self.assertFalse(newpar.is_parent())
         newpar.add_module(newchild)
@@ -346,7 +346,7 @@ class AppTest(unittest.TestCase):
         assert (self.mod in listmod) and (self.mod2 in listmod)
 
         #       create new component and add it to distrib
-        self.mod3 = ariane_delivery.Component("portal", "0.3.2", "core")
+        self.mod3 = modelAndServices.Component("portal", "0.3.2", "core")
         self.distrib.add_component(self.mod3)
         listfound = self.ariane.component_service.find({"version": "0.3.2"})
 
@@ -359,7 +359,7 @@ class AppTest(unittest.TestCase):
         listfound = self.ariane.component_service.find(self.mod3)
         self.assertEqual(self.mod3.version, listfound[0].version)
 
-        sub = ariane_delivery.Module("toto", "tata")
+        sub = modelAndServices.Module("toto", "tata")
         self.mod.add_module(sub)
         self.mod.save()
         listmod = self.ariane.component_service.get_all(self.distrib)
@@ -381,11 +381,11 @@ class AppTest(unittest.TestCase):
         self.mod.add_component_dependency({"component": self.mod2, "version_min": "0.3.0", "version_max": "0.4.0"})
         related_nodes = self.ariane.component_service.get_relations(self.mod)
         for rel in related_nodes:
-            self.assertIsInstance(rel, ariane_delivery.ArianeRelation)
+            self.assertIsInstance(rel, modelAndServices.ArianeRelation)
 
     def test_PluginService(self):
         self.plugin.save()
-        self.plugin.add_file(ariane_delivery.FileNode("toto", "ad", "carry", "/r/s/q"))
+        self.plugin.add_file(modelAndServices.FileNode("toto", "ad", "carry", "/r/s/q"))
         # PluginService():
         listplug = self.ariane.plugin_service.get_all(self.distrib)
         self.assertEqual(self.plugin, listplug[0])
@@ -397,7 +397,7 @@ class AppTest(unittest.TestCase):
         self.assertEqual(listfound2, listfound3)
         self.assertEqual(self.plugin, listfound[0])
 
-        plugin2 = ariane_delivery.Plugin("Daffy", "Duck")
+        plugin2 = modelAndServices.Plugin("Daffy", "Duck")
         self.distrib.add_plugin(plugin2)
         listfound = self.ariane.plugin_service.find([self.plugin, plugin2])
         assert self.plugin in listfound and plugin2 in listfound
@@ -408,7 +408,7 @@ class AppTest(unittest.TestCase):
         listplug = self.ariane.plugin_service.get_all(self.distrib)
         self.assertGreater(len(listplug), 1)
 
-        plugin3 = ariane_delivery.Plugin("Buggz", "Duck")
+        plugin3 = modelAndServices.Plugin("Buggz", "Duck")
         self.distrib.add_plugin(plugin3)
         unique = self.ariane.plugin_service.get_unique({"name": "Daffy"})
         self.assertEqual(plugin2, unique)
@@ -426,16 +426,16 @@ class AppTest(unittest.TestCase):
 
         related_nodes = self.ariane.plugin_service.get_relations(self.plugin)
         for rel in related_nodes:
-            self.assertIsInstance(rel, ariane_delivery.ArianeRelation)
+            self.assertIsInstance(rel, modelAndServices.ArianeRelation)
 
     def test_DistributionService(self):
         #   distrib2 is a single node
-        self.distrib2 = ariane_delivery.Distribution("echinopsii", "0.7.0")
+        self.distrib2 = modelAndServices.Distribution("echinopsii", "0.7.0")
         self.distrib2.save()
-        self.distrib.add_file(ariane_delivery.FileNode("dfg", "botrk", "bf", "/e/z"))
-        self.distrib.add_component(ariane_delivery.Component("Ari", "Orbital"))
+        self.distrib.add_file(modelAndServices.FileNode("dfg", "botrk", "bf", "/e/z"))
+        self.distrib.add_component(modelAndServices.Component("Ari", "Orbital"))
         self.distrib.save()
-        self.distrib.add_plugin(ariane_delivery.Plugin("Gnar", "Gnaaar"))
+        self.distrib.add_plugin(modelAndServices.Plugin("Gnar", "Gnaaar"))
         listdistrib = self.ariane.distribution_service.get_all()
         self.assertGreater(len(listdistrib), 1)
         assert ((listdistrib[0] == self.distrib) or (listdistrib[0] == self.distrib2) and
@@ -449,7 +449,7 @@ class AppTest(unittest.TestCase):
 
         related_nodes = self.ariane.distribution_service.get_relations(self.distrib)
         for rel in related_nodes:
-            self.assertIsInstance(rel, ariane_delivery.ArianeRelation)
+            self.assertIsInstance(rel, modelAndServices.ArianeRelation)
 
     def test_file_updatename(self):
         self.ariane.delete_all()
@@ -476,7 +476,7 @@ class AppTest(unittest.TestCase):
                         print(m, f)
                     self.assertTrue(m.version in f.name)
             for s in m.list_module:
-                if isinstance(s, ariane_delivery.Module):
+                if isinstance(s, modelAndServices.Module):
                     self.ariane.module_service.update_arianenode_lists(m)
                 else:
                     self.ariane.module_service.update_arianenode_lists(m)
@@ -493,7 +493,7 @@ class AppTest(unittest.TestCase):
                 if f.type in ["json_build", "json_dist", "json_plugin_dist", "pom_dist", "json_git_repos", "plan"]:
                     self.assertTrue(p.version in f.name)
             for s in p.list_module:
-                if isinstance(s, ariane_delivery.Module):
+                if isinstance(s, modelAndServices.Module):
                     self.ariane.module_service.update_arianenode_lists(p)
                 else:
                     self.ariane.module_service.update_arianenode_lists(p)
@@ -531,7 +531,7 @@ class AppTest(unittest.TestCase):
         self.assertIsNone(notfound)
 
     def test_distrib_delete(self):
-        self.distrib2 = ariane_delivery.Distribution("echinopsii", "0.7.0")
+        self.distrib2 = modelAndServices.Distribution("echinopsii", "0.7.0")
         self.distrib2.save()
         found = self.ariane.distribution_service.find(self.distrib2)
         self.assertIsNotNone(found)
@@ -546,7 +546,7 @@ class AppTest(unittest.TestCase):
         self.assertIsNone(d)
 
     def test_delete_error(self):
-        mymod = ariane_delivery.Component("def", "epic")
+        mymod = modelAndServices.Component("def", "epic")
         mymod.delete()
 
     def test_delete_after_import(self):
@@ -564,11 +564,11 @@ class AppTest(unittest.TestCase):
         self.assertIsNone(self.ariane.module_service.find({"nID": 1}))
 
     def notest_add_error(self):
-        A = ariane_delivery.Component("A", "myversion")
+        A = modelAndServices.Component("A", "myversion")
         A.save()
-        B = ariane_delivery.Module("B", "B_version")
+        B = modelAndServices.Module("B", "B_version")
         A.add_module(B)
-        d = ariane_delivery.Distribution("d", "epic")
+        d = modelAndServices.Distribution("d", "epic")
         A.add_module(d)
 
     def export_eachfile(self):
@@ -607,16 +607,16 @@ class AppTest(unittest.TestCase):
         create_db_file('inputs/create_0.6.1.txt')
         # create_db_file('inputs/create_0.6.4_test.txt')
         d = self.ariane.distribution_service.get_unique({"version": "0.6.3"})
-        p = ariane_delivery.Plugin("Gyoza", "Nip2.0")
-        p.add_file(ariane_delivery.FileNode("gyoFile", "pom", "2.0", "/gyoza/files"))
-        subpar = ariane_delivery.Module('Papu', 'Daddy', "net.dady", "net.dady.papu")
-        subpar2 = ariane_delivery.Module('Yapu', 'Daddy', 'net.dady.papu', 'net.dady.papu.yapu')
-        subpar2.add_module(ariane_delivery.Module('aaa', "2", "r.2", "r.2.aaa"))
-        subpar2.add_module(ariane_delivery.Module('bbb', '2', "r.2", "r.2.bbb"))
+        p = modelAndServices.Plugin("Gyoza", "Nip2.0")
+        p.add_file(modelAndServices.FileNode("gyoFile", "pom", "2.0", "/gyoza/files"))
+        subpar = modelAndServices.Module('Papu', 'Daddy', "net.dady", "net.dady.papu")
+        subpar2 = modelAndServices.Module('Yapu', 'Daddy', 'net.dady.papu', 'net.dady.papu.yapu')
+        subpar2.add_module(modelAndServices.Module('aaa', "2", "r.2", "r.2.aaa"))
+        subpar2.add_module(modelAndServices.Module('bbb', '2', "r.2", "r.2.bbb"))
         subpar.add_module(subpar2)
-        subpar.add_module(ariane_delivery.Module('ciao', 'beborn', 'ciao.su', 'ciao.su.ciao'))
+        subpar.add_module(modelAndServices.Module('ciao', 'beborn', 'ciao.su', 'ciao.su.ciao'))
         p.add_module(subpar)
-        p.add_module(ariane_delivery.Module('Suchi', 'NipponDaisuki', "net.nippondaisuki", "net.nippondaisuki.suchi"))
+        p.add_module(modelAndServices.Module('Suchi', 'NipponDaisuki', "net.nippondaisuki", "net.nippondaisuki.suchi"))
         p.save()
         d.add_plugin(p)
 
@@ -643,40 +643,40 @@ class AppTest(unittest.TestCase):
         create_db_file('inputs/create_0.6.3.txt')
         count = self.ariane.graph_dao.count("Node")
         d = self.ariane.distribution_service.get_unique({"version": "0.6.3"})
-        self.assertTrue(isinstance(d, ariane_delivery.Distribution))
-        cd = ariane_delivery.DistributionService.copy_distrib(d)
+        self.assertTrue(isinstance(d, modelAndServices.Distribution))
+        cd = modelAndServices.DistributionService.copy_distrib(d)
         self.assertTrue(self.ariane.check_uniqueness())
         dlist = self.ariane.distribution_service.find({"version": "0.6.3"})
         self.assertEqual(len(dlist), 2)
         d = dlist[0]
         d2 = dlist[1]
-        self.assertTrue(isinstance(d, ariane_delivery.Distribution))
-        self.assertTrue(isinstance(d2, ariane_delivery.Distribution))
+        self.assertTrue(isinstance(d, modelAndServices.Distribution))
+        self.assertTrue(isinstance(d2, modelAndServices.Distribution))
         self.assertNotEqual(d, d2)
         count2 = self.ariane.graph_dao.count("Node")
         self.assertEqual(2*count, count2)
 
     def notest_credibility(self):
         args = {"login": "neo4j", "password":"admin", "type": "neo4j"}
-        ariane = ariane_delivery.DeliveryTree(args)
-        dist_srv = ariane_delivery.DistributionService()
+        ariane = modelAndServices.DeliveryTree(args)
+        dist_srv = modelAndServices.DistributionService()
         print(ariane.distribution_service)
-        print(ariane_delivery.DeliveryTree.distribution_service)
+        print(modelAndServices.DeliveryTree.distribution_service)
         files = dist_srv.get_files(self.mod)
         print(files)
-        distribs = ariane_delivery.DeliveryTree.distribution_service.get_all()
+        distribs = modelAndServices.DeliveryTree.distribution_service.get_all()
         print(distribs)
 
     def notest_image(self):
         self.ariane.delete_all()
-        dist = ariane_delivery.Distribution("community", "0.5.2")
-        mod = ariane_delivery.Component("idm", "0.1.0")
-        mod2 = ariane_delivery.Component("mapping", "0.2.0")
-        p = ariane_delivery.Plugin("RabbitMQ", "0.3.0")
-        sub = ariane_delivery.Module("base", "0.1.0")
-        sub2 = ariane_delivery.Module("wat", "0.1.0")
-        sub2.add_file(ariane_delivery.FileNode("pom", "pom", "0.1.1", "/a"))
-        subpar = ariane_delivery.Module("par", "0.1.0")
+        dist = modelAndServices.Distribution("community", "0.5.2")
+        mod = modelAndServices.Component("idm", "0.1.0")
+        mod2 = modelAndServices.Component("mapping", "0.2.0")
+        p = modelAndServices.Plugin("RabbitMQ", "0.3.0")
+        sub = modelAndServices.Module("base", "0.1.0")
+        sub2 = modelAndServices.Module("wat", "0.1.0")
+        sub2.add_file(modelAndServices.FileNode("pom", "pom", "0.1.1", "/a"))
+        subpar = modelAndServices.Module("par", "0.1.0")
         subpar.add_module(sub)
         mod2.add_module(subpar)
         mod.add_module(sub2)

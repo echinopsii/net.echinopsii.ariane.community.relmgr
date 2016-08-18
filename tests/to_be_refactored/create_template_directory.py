@@ -19,7 +19,7 @@
 
 import os
 import unittest
-from ariane_reltreelib.dao import ariane_delivery
+from ariane_reltreelib.dao import modelAndServices
 from tests import create_db_from_file
 
 __author__ = 'stanrenia'
@@ -28,7 +28,7 @@ __author__ = 'stanrenia'
 
 class MakeDir(object):
     def __init__(self):
-        self.ariane = ariane_delivery.DeliveryTree({"login": "neo4j", "password": "admin", "type": "neo4j"})
+        self.ariane = modelAndServices.DeliveryTree({"login": "neo4j", "password": "admin", "type": "neo4j"})
 
     def make(self):
         d = self.ariane.distribution_service.get_unique({"version": '0.6.2'})

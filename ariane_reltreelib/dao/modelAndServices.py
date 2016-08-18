@@ -18,10 +18,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
-from ariane_reltreelib.dao import graphDBFabric
-from ariane_reltreelib.devparser.devParser import DistParser, MavenParser
-from ariane_reltreelib.arianeDefinitions import ArianeDefinitions
 import json
+
+from ariane_reltreelib.dao import graphDBFabric
+from ariane_reltreelib.devParser import DistParser, MavenParser
+from ariane_reltreelib.arianeDefinitions import ArianeDefinitions
 
 __author__ = 'stanrenia'
 
@@ -369,7 +370,7 @@ class DistributionService(object):
         cd = Distribution(dist.name, dist.version, editable=dist.editable, url_repos=dist.url_repos)
         DeliveryTree.distribution_service.update_arianenode_lists(dist)
         for df in dist.list_files:  # Copying dist files
-            print("File to copy: " + df.name)
+            # print("File to copy: " + df.name)
             cd.add_file(FileNode(df.name, df.type, df.version, df.path))
 
         for m in dist.list_component:  # Copying components and their modules and files
@@ -1228,7 +1229,7 @@ class Distribution(ArianeNode):
         return self.dir
 
     def update(self, args):
-        flag = False
+        flag = True
         for key in args.keys():
             if self._check_current_property(key):
                 if key == "name" and self.name != args[key]:
@@ -1239,7 +1240,9 @@ class Distribution(ArianeNode):
                     self.url_repos = args[key]
                 else:
                     continue
-                flag = True
+            else:
+                flag = False
+                break
         return flag
 
     def save(self):
@@ -1359,7 +1362,7 @@ class Component(ArianeNode):
         return self.dir
 
     def update(self, args):
-        flag = False
+        flag = True
         for key in args.keys():
             if self._check_current_property(key):
                 if key == "name" and self.name != args[key]:
@@ -1374,7 +1377,9 @@ class Component(ArianeNode):
                     self.build = args[key]
                 else:
                     continue
-                flag = True
+            else:
+                flag = False
+                break
         return flag
 
     def save(self):
@@ -1579,7 +1584,7 @@ class Module(ArianeNode):
         return self.dir
 
     def update(self, args):
-        flag = False
+        flag = True
         # print(args)
         for key in args.keys():
             if self._check_current_property(key):
@@ -1599,7 +1604,9 @@ class Module(ArianeNode):
                     self.extension = args[key]
                 else:
                     continue
-                flag = True
+            else:
+                flag = False
+                break
         return flag
 
     def save(self):
@@ -1739,7 +1746,7 @@ class Plugin(ArianeNode):
         return self.dir
 
     def update(self, args):
-        flag = False
+        flag = True
         for key in args.keys():
             if self._check_current_property(key):
                 if key == "name" and self.name != args[key]:
@@ -1750,7 +1757,9 @@ class Plugin(ArianeNode):
                     self.git_repos = args[key]
                 else:
                     continue
-                flag = True
+            else:
+                flag = False
+                break
         return flag
 
     def save(self):
@@ -1917,19 +1926,23 @@ class FileNode(ArianeNode):
         return FileNode(args["name"], args["type"], args["version"], args["path"], args["nID"])
 
     def update(self, args):
-        flag = False
+        flag = True
         for key in args.keys():
-            if key == "name" and self.name != args[key]:
-                self.name = args[key]
-            elif key == "version" and self.version != args[key]:
-                self.version = args[key]
-            elif key == "type" and self.type != args[key]:
-                self.type = args[key]
-            elif key == "path" and self.path != args[key]:
-                self.path = args[key]
+            if self._check_current_property(key):
+                if key == "name" and self.name != args[key]:
+                    self.name = args[key]
+                elif key == "version" and self.version != args[key]:
+                    self.version = args[key]
+                elif key == "type" and self.type != args[key]:
+                    self.type = args[key]
+                elif key == "path" and self.path != args[key]:
+                    self.path = args[key]
+                else:
+                    continue
             else:
-                continue
-            flag = True
+                flag = False
+                break
+
         return flag
 
     def save(self):

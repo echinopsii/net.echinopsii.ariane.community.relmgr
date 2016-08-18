@@ -1,0 +1,17 @@
+{
+    "DB_EXPORT_PATH": "/tmp/",
+    "NEO4J_PATH": "<Some Path To Neo4J install>",
+    "NEO4J_LOGIN": "<Neo4J Login User>",
+    "NEO4J_PASSWORD": "<Neo4J Login Password>",
+    "NEO4J_HOST": "localhost",
+    "NEO4J_PORT": "7575",
+    "BUILD_TIMEOUT": {"LOCAL": 300, "REMOTE": 900},
+    "UI_RUNNING_MODE": "release",
+    "URL_SLACK": "<SLACK URL TO SEND BUILD NOTIFICATION>",
+    "LOG_CONFIG_FILE_PATH": "<PATH TO RELMGR>/bootstrap/misc/relsrv_logging_conf.json",
+    "RELMGR_PASSWD_FILE_PATH": "<PATH TO RELMGR>/bootstrap/misc/relmgr_passwd",
+    "TESTING": true,
+    "RELMGR_HOST": "0.0.0.0",
+    "RELMGR_PORT": 5000,
+    "RELMGR_URL": "localhost"
+}

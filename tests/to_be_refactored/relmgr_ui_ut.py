@@ -24,7 +24,7 @@ import requests
 import subprocess
 import os, shutil
 from datetime import date
-from ariane_reltreelib.dao import ariane_delivery
+from ariane_reltreelib.dao import modelAndServices
 from ariane_relsrv.server.config import Config
 # from ariane_relsrv.server.__main__ import ariane, project_path
 from ariane_relsrv.server.release_tools import ReleaseTools, InitReleaseTools, DatabaseManager
@@ -37,7 +37,7 @@ config_path = "/etc/ariane_relmgr/confsrv.json"
 RELMGR_CONFIG = Config()
 RELMGR_CONFIG.parse(config_path)
 # Init variables:
-ariane = ariane_delivery.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login,
+ariane = modelAndServices.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login,
                                        "password": RELMGR_CONFIG.neo4j_password,
                                        "host": RELMGR_CONFIG.neo4j_host,
                                        "port": RELMGR_CONFIG.neo4j_port,
@@ -98,7 +98,7 @@ class TestREST(unittest.TestCase):
             typ = ""
             if m in mcore:
                 typ = "core"
-            mod = ariane_delivery.Component(m, "0.7.1", typ)
+            mod = modelAndServices.Component(m, "0.7.1", typ)
             versions = ["0.7.1", "0.4.3"] #, "0.7.1", "0.7.2", "0.7.3"]
             path = os.path.join(project_path, mod.get_directory_name())
             if not os.path.exists(path):
@@ -155,7 +155,7 @@ class TestREST(unittest.TestCase):
 
     def test_create_dev_distrib(self):
         mdist = ariane.distribution_service.get_unique({"version": "0.6.4-SNAPSHOT"})
-        if not isinstance(mdist, ariane_delivery.Distribution):
+        if not isinstance(mdist, modelAndServices.Distribution):
             print("ERROR: mdist is not distribution")
             return
         ReleaseTools.create_distrib_copy(mdist)
@@ -173,7 +173,7 @@ class TestREST(unittest.TestCase):
                 rabit = pl["Plugin"]
         rabit.version = "0.2.4"
         rabit.save()
-        p = ariane_delivery.Plugin("procos", "0.1.0")
+        p = modelAndServices.Plugin("procos", "0.1.0")
         d.add_plugin(p)
         d.save()
 
@@ -185,7 +185,7 @@ class TestREST(unittest.TestCase):
                 rabit2 = pl["Plugin"]
         rabit2.version = "0.2.5-SNAPSHOT"
         rabit2.save()
-        p = ariane_delivery.Plugin("procos", "0.1.1-b01")
+        p = modelAndServices.Plugin("procos", "0.1.1-b01")
         d2.add_plugin(p)
         d2.save()
 

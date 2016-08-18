@@ -17,12 +17,15 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from ariane_relsrv.server.config import Config
-from ariane_reltreelib.dao import ariane_delivery
-from ariane_reltreelib.generator import generator
-from tests import create_db_from_file
-import unittest, os
+import unittest
+import os
+
 import wget
+
+from ariane_relsrv.server.config import Config
+from ariane_reltreelib.dao import modelAndServices
+import generator
+from tests import create_db_from_file
 
 __author__ = 'stanrenia'
 # TODO remake every test functions following the model of test_generate_pom_maven()
@@ -39,7 +42,7 @@ class GeneratorTest(unittest.TestCase):
         cls.RELMGR_CONFIG.parse(cls.config_path)
 
         # Connection to neo4j database
-        cls.ariane = ariane_delivery.DeliveryTree({"login": cls.RELMGR_CONFIG.neo4j_login,
+        cls.ariane = modelAndServices.DeliveryTree({"login": cls.RELMGR_CONFIG.neo4j_login,
                                                    "password": cls.RELMGR_CONFIG.neo4j_password,
                                                    "host": cls.RELMGR_CONFIG.neo4j_host,
                                                    "port": cls.RELMGR_CONFIG.neo4j_port,
@@ -111,9 +114,9 @@ class GeneratorTest(unittest.TestCase):
             self.assertIsNotNone(fpath)
             self.assertEqual(self.ariane.import_db_from_file(fpath), 0)
             distrib = self.ariane.distribution_service.get_unique({"version": version})
-            self.assertTrue(isinstance(distrib, ariane_delivery.Distribution))
+            self.assertTrue(isinstance(distrib, modelAndServices.Distribution))
             fpom = self.ariane.get_one_file(distrib, "pom_dist")
-            self.assertTrue(isinstance(fpom, ariane_delivery.FileNode))
+            self.assertTrue(isinstance(fpom, modelAndServices.FileNode))
 
             # TODO get template file from github and place it into tests/templates/
 
@@ -159,7 +162,7 @@ class GeneratorTest(unittest.TestCase):
             for sub in mod.list_module:
                 self.g.compare_files('xml', self.dir_output+mod.get_directory_name()+'/'+sub.name+'/pom.xml',
                                    'models/'+mod.get_directory_name()+'/'+sub.name+'/pom.xml')
-                if type(sub) is ariane_delivery.ModuleParent:
+                if type(sub) is modelAndServices.ModuleParent:
                     for s in sub.list_module:
                         self.g.compare_files('xml', self.dir_output+mod.get_directory_name()+'/'+sub.name+'/'+s.name+'/pom.xml',
                                            'models/'+mod.get_directory_name()+'/'+sub.name+'/'+s.name+'/pom.xml')

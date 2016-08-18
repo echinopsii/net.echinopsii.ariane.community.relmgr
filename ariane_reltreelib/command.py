@@ -32,7 +32,7 @@ import argparse
 # else:
 #     if project_path + module_name not in sys.path:
 #         sys.path.append(project_path + module_name)
-from ariane_reltreelib.generator import generator
+from ariane_reltreelib.generator import Generator
 from ariane_reltreelib.dao import modelAndServices
 from ariane_reltreelib import exceptions as err
 from ariane_reltreelib.arianeDefinitions import ArianeDefinitions
@@ -71,7 +71,7 @@ class Command(object):
             else:
                 Command.dao_ariane = dao_ariane
                 Command.project_path = project_path
-                Command.gen = generator.Generator(Command.dao_ariane, {
+                Command.gen = Generator(Command.dao_ariane, {
                     "outputs": project_path, "templates": project_path
                 })
                 ArianeDefinitions.set_project_abs_path(project_path)

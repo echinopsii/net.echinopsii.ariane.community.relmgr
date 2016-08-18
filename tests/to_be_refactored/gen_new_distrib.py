@@ -22,11 +22,11 @@ import sys
 
 sys.path.append('/ECHINOPSII/srenia/ariane.community.relmgr')
 
-from ariane_reltreelib.dao import ariane_delivery
-from ariane_reltreelib.generator import generator
+from ariane_reltreelib.dao import modelAndServices
+import generator
 
 args = {"login": "neo4j", "password": "admin", "type": "neo4j"}
-ariane = ariane_delivery.DeliveryTree(args)
+ariane = modelAndServices.DeliveryTree(args)
 output_directory = "/ECHINOPSII/srenia/"
 templates_directory = "/ECHINOPSII/srenia/"
 g = generator.Generator(ariane, {"outputs": output_directory, "templates": templates_directory})

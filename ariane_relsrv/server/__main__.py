@@ -33,8 +33,8 @@ sys.path.append(project_path)
 sys.path.append(relmgr_path)
 import logging
 import argparse
-from ariane_reltreelib.dao import ariane_delivery
-from ariane_reltreelib.ariane_definitions import ArianeDefinitions
+from ariane_reltreelib.dao import modelAndServices
+from ariane_reltreelib.arianeDefinitions import ArianeDefinitions
 from ariane_relsrv.server.config import Config
 
 def setup_logging(default_path='misc/relsrv_logging_conf.json', default_level=logging.INFO):
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     setup_logging(RELMGR_CONFIG.log_file)
     LOGGER = logging.getLogger(__name__)
     try:
-        ariane = ariane_delivery.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login, "password": RELMGR_CONFIG.neo4j_password,
+        ariane = modelAndServices.DeliveryTree({"login": RELMGR_CONFIG.neo4j_login, "password": RELMGR_CONFIG.neo4j_password,
                                                "host": RELMGR_CONFIG.neo4j_host, "port": RELMGR_CONFIG.neo4j_port,
                                                "type": "neo4j"})
         from ariane_relsrv.server import restful

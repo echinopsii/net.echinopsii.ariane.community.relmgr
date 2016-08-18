@@ -22,7 +22,7 @@
 import json
 from flask import Flask, make_response, render_template, send_from_directory
 from flask_restful import reqparse, abort, Api, Resource
-from ariane_reltreelib.dao import ariane_delivery
+from ariane_reltreelib.dao import modelAndServices
 from ariane_relsrv.server.users_mgr import User
 from ariane_relsrv.server.release_tools import DatabaseManager, GitManager, InitReleaseTools, BuildManager, \
                                                 FileGenManager, ReleaseTools
@@ -51,7 +51,6 @@ def start_relmgr(myglobals, test=False):
         app.run(host=RELMGR_CONFIG.relmgr_host, port=RELMGR_CONFIG.relmgr_port, debug=True)
     else:
         app.run(host=RELMGR_CONFIG.relmgr_host, port=RELMGR_CONFIG.relmgr_port)
-
 
 # import this after config declarations
 from ariane_relsrv.server import auth as relmgrAuth
@@ -83,39 +82,57 @@ def after_request(response):
 headers_json = {'Content-Type': 'application/json'}
 headers_html = {'Content-Type': 'text/html'}
 
+
 class UI(Resource):
     @relmgrAuth.requires_auth
     def get(self):
         return make_response(render_template('index.html', url=RELMGR_CONFIG.relmgr_url, port=RELMGR_CONFIG.relmgr_port,
                                              mode=RELMGR_CONFIG.ui_running_mode), 200, headers_html)
+
 class TempBaseEdit(Resource):
     def get(self):
         return make_response(render_template('baseEdition.html'), 200, headers_html)
+
+
 class TempBaseRelA(Resource):
     def get(self):
         return make_response(render_template('baseReleaseA.html'), 200, headers_html)
+
+
 class TempBaseRelB(Resource):
     def get(self):
         return make_response(render_template('baseReleaseB.html'), 200, headers_html)
+
+
 class TempBaseRelC(Resource):
     def get(self):
         return make_response(render_template('baseReleaseC.html'), 200, headers_html)
+
+
 class TempBaseRelD(Resource):
     def get(self):
         return make_response(render_template('baseReleaseD.html'), 200, headers_html)
+
+
 class TempBaseRelE(Resource):
     def get(self):
         return make_response(render_template('baseReleaseE.html'), 200, headers_html)
+
+
 class TempEditViewEdit(Resource):
     def get(self):
         return make_response(render_template('editionViewEdit.html'), 200, headers_html)
+
+
 class TempEditDiff(Resource):
     def get(self):
         return make_response(render_template('editionDiff.html'), 200, headers_html)
 
+
 class TempErr(Resource):
     def get(self):
         return make_response(render_template('err.html'), 200, headers_html)
+
 
 class RestFileNode(Resource):
     def __init__(self):
@@ -127,14 +144,14 @@ class RestFileNode(Resource):
     def __get_file(self, unique_key):
         f = None
         if isinstance(unique_key, int):
-            f = ariane_delivery.FileNode.get_file_by_nid(unique_key)
+            f = modelAndServices.FileNode.get_file_by_nid(unique_key)
         else:
             if isinstance(unique_key, str):
                 args = self.reqparse.parse_args()
                 if args["parent"] is not None:
                     parent = json.loads(args["parent"])
                     parent = ariane.find_without_label(parent)
-                    if issubclass(parent.__class__, ariane_delivery.ArianeNode):
+                    if issubclass(parent.__class__, modelAndServices.ArianeNode):
                         f = ariane.get_one_file(parent, unique_key)
         return f
 
@@ -170,7 +187,7 @@ class RestFileNodeList(Resource):
         if args["parent"] is not None:
             parent = json.loads(args["parent"])
             parent = ariane.find_without_label(parent)
-            if issubclass(parent.__class__, ariane_delivery.ArianeNode):
+            if issubclass(parent.__class__, modelAndServices.ArianeNode):
                 flist = ariane.get_files(parent)
                 flist = [f.get_properties(gettype=True) for f in flist]
                 return make_response(json.dumps({"filenodes": flist}), 200, headers_json)
@@ -182,9 +199,9 @@ class RestFileNodeList(Resource):
     def post(self):
         args = self.reqparse.parse_args()
         if args["nID"] is not None and args["nID"] > 0:
-            f = ariane_delivery.FileNode.get_file_by_nid(args["nID"])
+            f = modelAndServices.FileNode.get_file_by_nid(args["nID"])
             if ariane.is_dev_version(f):
-                if isinstance(f, ariane_delivery.FileNode):
+                if isinstance(f, modelAndServices.FileNode):
                     clear_args(args)
                     if f.update(args):
                         f.save()
@@ -198,9 +215,9 @@ class RestFileNodeList(Resource):
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         elif args["filenode"] is not None and args["parent"] is None:
             arg_p = json.loads(args["filenode"])
-            f = ariane_delivery.FileNode.get_file_by_nid(arg_p["nID"])
+            f = modelAndServices.FileNode.get_file_by_nid(arg_p["nID"])
             if ariane.is_dev_version(f):
-                if isinstance(f, ariane_delivery.FileNode):
+                if isinstance(f, modelAndServices.FileNode):
                     if f.update(arg_p):
                         f.save()
 
@@ -212,7 +229,7 @@ class RestFileNodeList(Resource):
             else:
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         else:
-            fmodel = ariane_delivery.FileNode("", "", "", "")
+            fmodel = modelAndServices.FileNode("", "", "", "")
             for key in args.keys():
                 if key not in ["filenode", "nID"] and args[key] is None:
                     abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
@@ -222,12 +239,12 @@ class RestFileNodeList(Resource):
             if file_exists is None:
                 parent = json.loads(args["parent"])
                 parent = ariane.find_without_label({"nID": parent["nID"]})
-                if issubclass(parent.__class__, ariane_delivery.ArianeNode):
+                if issubclass(parent.__class__, modelAndServices.ArianeNode):
                     args.pop("parent")
                     primary_key = ['name', 'version', 'type', 'path']
                     if ariane.check_args_init(primary_key, args.copy()):
                         args["nID"] = 0
-                        f = ariane_delivery.FileNode.create(args)
+                        f = modelAndServices.FileNode.create(args)
                         parent.add_file(f)
                         parent.save()
                         return make_response(json.dumps({"filenode": f.get_properties(gettype=True)}), 201, headers_json)
@@ -236,6 +253,7 @@ class RestFileNodeList(Resource):
                                     fmodel.get_properties().keys()))
             else:
                 abort_error("BAD_REQUEST", "FileNode {} already exists".format(args))
+
 
 class RestPlugin(Resource):
     def __init__(self):
@@ -256,7 +274,7 @@ class RestPlugin(Resource):
 
     def get(self, unique_key, unique_key2=None):
         p = self.__get_plugin(unique_key, unique_key2)
-        if isinstance(p, ariane_delivery.Plugin):
+        if isinstance(p, modelAndServices.Plugin):
             return make_response(json.dumps({"plugin": p.get_properties(gettype=True)}), 200, headers_json)
         else:
             if unique_key2 is None:
@@ -271,6 +289,7 @@ class RestPlugin(Resource):
             return make_response(json.dumps({}), 200, headers_json)
         else:
             abort_error("NOT_FOUND", "Error, Wrong URL")
+
 
 class RestPluginList(Resource):
     def __init__(self):
@@ -301,7 +320,7 @@ class RestPluginList(Resource):
         if args["nID"] is not None and args["nID"] > 0:
             p = ariane.get_unique(ariane.plugin_service, {"nID": args["nID"]})
             if ariane.is_dev_version(p):
-                if isinstance(p, ariane_delivery.Plugin):
+                if isinstance(p, modelAndServices.Plugin):
                     clear_args(args)
                     if p.update(args):
                         p.save()
@@ -317,7 +336,7 @@ class RestPluginList(Resource):
             arg_p = json.loads(args["plugin"])
             p = ariane.get_unique(ariane.plugin_service, arg_p)
             if ariane.is_dev_version(p):
-                if isinstance(p, ariane_delivery.Plugin):
+                if isinstance(p, modelAndServices.Plugin):
                     if p.update(arg_p):
                         p.save()
                         return make_response(json.dumps({"plugin": p.get_properties(gettype=True)}), 200, headers_json)
@@ -326,7 +345,7 @@ class RestPluginList(Resource):
             else:
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         else:
-            p = ariane_delivery.Plugin("", "")
+            p = modelAndServices.Plugin("", "")
             for key in args.keys():
                 if key not in ["plugin", "nID"] and args[key] is None:
                     abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
@@ -334,11 +353,11 @@ class RestPluginList(Resource):
             plug_exists = ariane.get_unique(ariane.plugin_service, {"name": args["name"], "version": args["version"]})
             if plug_exists is None:
                 dist = ariane.get_unique(ariane.distribution_service, {"version": args["dist_version"]})
-                if isinstance(dist, ariane_delivery.Distribution):
+                if isinstance(dist, modelAndServices.Distribution):
                     primary_key = ['name', 'version']
                     if ariane.check_args_init(primary_key, args.copy()):
                         args["nID"] = 0
-                        p = ariane_delivery.ArianeNode.create_subclass("Plugin", args)
+                        p = modelAndServices.ArianeNode.create_subclass("Plugin", args)
                         dist.add_plugin(p)
                         dist.save()
                         p = p.get_properties(gettype=True)
@@ -351,6 +370,7 @@ class RestPluginList(Resource):
                                 "Given parameter 'dist_version' does not match any Distribution's version")
             else:
                 abort_error("BAD_REQUEST", "Plugin {} already exists".format(args))
+
 
 class RestModule(Resource):
     def __init__(self):
@@ -396,6 +416,7 @@ class RestModule(Resource):
         else:
             abort_error("NOT_FOUND", "Error, Wrong URL")
 
+
 class RestModuleList(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
@@ -436,7 +457,7 @@ class RestModuleList(Resource):
         if args["nID"] is not None and args["nID"] > 0:
             s = ariane.get_unique(ariane.module_service, {"nID": args["nID"]})
             if ariane.is_dev_version(s):
-                if isinstance(s, ariane_delivery.Module):
+                if isinstance(s, modelAndServices.Module):
                     clear_args(args)
                     if s.update(args):
                         s.save()
@@ -452,7 +473,7 @@ class RestModuleList(Resource):
             arg_s = json.loads(args["module"])
             s = ariane.get_unique(ariane.module_service, arg_s)
             if ariane.is_dev_version(s):
-                if isinstance(s, ariane_delivery.Module):
+                if isinstance(s, modelAndServices.Module):
                     if s.update(arg_s):
                         s.save()
                         sp = s.get_properties(gettype=True)
@@ -481,7 +502,7 @@ class RestModuleList(Resource):
                     abort_error("BAD_REQUEST", "Given Module named '{}' already exists in parent '{}'".format(
                                 args["name"], args["parent"]))
 
-            sub = ariane_delivery.Module(args["name"], par.version, order=args["order"])
+            sub = modelAndServices.Module(args["name"], par.version, order=args["order"])
             sub.set_groupid_artifact(par)
             # if str(args["isModuleParent"]).lower() == "yes":
             #     sub = ariane_delivery.ModuleParent(args["name"], par.version, order=args["order"])
@@ -501,6 +522,7 @@ class RestModuleList(Resource):
             # else:
             #     s["issubparent"] = False
             return make_response(json.dumps({"module": s}), 201, headers_json)
+
 
 class RestComponent(Resource):
     def __init__(self):
@@ -538,6 +560,7 @@ class RestComponent(Resource):
         else:
             abort_error("NOT_FOUND", "Error, Wrong URL")
 
+
 class RestComponentList(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
@@ -572,7 +595,7 @@ class RestComponentList(Resource):
         if args["nID"] is not None and args["nID"] > 0:
             m = ariane.get_unique(ariane.component_service, {"nID": args["nID"]})
             if ariane.is_dev_version(m):
-                if isinstance(m, ariane_delivery.Component):
+                if isinstance(m, modelAndServices.Component):
                     clear_args(args)
                     if m.update(args):
                         m.save()
@@ -588,14 +611,14 @@ class RestComponentList(Resource):
             arg_m = json.loads(args["component"])
             m = ariane.get_unique(ariane.component_service, arg_m)
             if ariane.is_dev_version(m):
-                if isinstance(m, ariane_delivery.Component):
+                if isinstance(m, modelAndServices.Component):
                     if m.update(arg_m):
                         m.save()
                         return make_response(json.dumps({"component": m.get_properties(gettype=True)}), 200, headers_json)
             else:
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         else:
-            m = ariane_delivery.Component("", "", "")
+            m = modelAndServices.Component("", "", "")
             for key in args.keys():
                 if key not in ["component", "nID"] and args[key] is None:
                     abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
@@ -603,11 +626,11 @@ class RestComponentList(Resource):
             mod_exists = ariane.get_unique(ariane.component_service, {"name": args["name"], "version": args["version"], "type": args["type"]})
             if mod_exists is None:
                 dist = ariane.get_unique(ariane.distribution_service, {"version": args["dist_version"]})
-                if isinstance(dist, ariane_delivery.Distribution):
+                if isinstance(dist, modelAndServices.Distribution):
                     primary_key = ['name', 'version']
                     if ariane.check_args_init(primary_key, args.copy()):
                         args["nID"] = 0
-                        m = ariane_delivery.ArianeNode.create_subclass("Component", args)
+                        m = modelAndServices.ArianeNode.create_subclass("Component", args)
                         dist.add_component(m)
                         dist.save()
                         m = m.get_properties(gettype=True)
@@ -619,6 +642,7 @@ class RestComponentList(Resource):
                     abort_error("BAD_REQUEST", "Given parameter 'version' does not match any Distribution versions")
             else:
                 abort_error("BAD_REQUEST", "component {} already exists".format(args))
+
 
 class RestDistribution(Resource):
     def __init__(self):
@@ -649,6 +673,7 @@ class RestDistribution(Resource):
             return make_response(json.dumps({"distrib": {}}), 200, headers_json)
         else:
             abort_error("NOT_FOUND", "Error, Wrong URL")
+
 
 class RestDistributionList(Resource):
     def __init__(self):
@@ -683,7 +708,7 @@ class RestDistributionList(Resource):
             d = ariane.get_unique(ariane.distribution_service, {"nID": args["nID"]})
             dev = ariane.distribution_service.get_dev_distrib()
             if d == dev:
-                if isinstance(d, ariane_delivery.Distribution):
+                if isinstance(d, modelAndServices.Distribution):
                     args.pop("nID")
                     if d.update(args):
                         d.save()
@@ -698,14 +723,12 @@ class RestDistributionList(Resource):
         elif args["distrib"] is not None:
             arg_d = json.loads(args["distrib"])
             d = ariane.get_unique(ariane.distribution_service, arg_d)
-            if not isinstance(d, ariane_delivery.Distribution):
+            if not isinstance(d, modelAndServices.Distribution):
                 abort_error("BAD_REQUEST", "Given parameter {} must be a Distribution".format(d))
             dev = ariane.distribution_service.get_dev_distrib()
             if dev == d:
                 arg_d.pop("nID")
                 if d.update(arg_d):
-                    if (d.version == dev.version):
-                        abort_error("BAD_REQUEST", "Can not save this Distribution. The version: {} already exists".format(d.version))
                     d.save()
                     return make_response(json.dumps({"distrib": d.get_properties(gettype=True)}), 200, headers_json)
             else:
@@ -713,11 +736,11 @@ class RestDistributionList(Resource):
         else:
             dist_exists = ariane.get_unique(ariane.distribution_service, {"name": args["name"], "version": args["version"]})
             if dist_exists is None:
-                d = ariane_delivery.Distribution("", "")
+                d = modelAndServices.Distribution("", "")
                 primary_key = ['name', 'version']
                 if ariane.check_args_init(primary_key, args.copy()):
                     args["nID"] = 0
-                    d = ariane_delivery.ArianeNode.create_subclass("Distribution", args)
+                    d = modelAndServices.ArianeNode.create_subclass("Distribution", args)
                     d.save()
                     d = d.get_properties(gettype=True)
                     return make_response(json.dumps({"distrib": d}), 201, headers_json)
@@ -795,7 +818,7 @@ class RestDistributionManager(Resource):
                 abort_error("BAD_REQUEST", "You must provide the 'distrib' parameter")
             arg_d = json.loads(args["distrib"])
             d = ariane.get_unique(ariane.distribution_service, arg_d)
-            if not isinstance(d, ariane_delivery.Distribution):
+            if not isinstance(d, modelAndServices.Distribution):
                 abort_error("BAD_REQUEST", "Given parameter {} must be a Distribution".format(d))
 
             err, cd = DatabaseManager.make_release_distrib(d)
@@ -806,7 +829,7 @@ class RestDistributionManager(Resource):
 
         elif action == "getDEV":
             dev = ariane.distribution_service.get_dev_distrib()
-            if not isinstance(dev, ariane_delivery.Distribution):
+            if not isinstance(dev, modelAndServices.Distribution):
                 abort_error("BAD_REQUEST", "No DEV Distribution in database")
             return make_response(json.dumps({"distrib": dev.get_properties(gettype=True)}), 200, headers_json)
 
@@ -839,6 +862,7 @@ class RestDistributionManager(Resource):
 
         else:
             abort_error("BAD_REQUEST", "Given parameter 'mode' is invalid")
+
 
 class RestReset(Resource):
     def post(self):
@@ -890,6 +914,7 @@ class RestCommit(Resource):
         else:
             return make_response(json.dumps({"message": message + warns}), 200, headers_json)
 
+
 class RestCheckout(Resource):
     """
     Do a 'git checkout' on each generated file in order to go back to the last clean version.
@@ -910,7 +935,7 @@ class RestCheckout(Resource):
 
         version = args["version"]
         dist = ariane.get_unique(ariane.distribution_service, {"version": version})
-        if not isinstance(dist, ariane_delivery.Distribution):
+        if not isinstance(dist, modelAndServices.Distribution):
             abort_error("BAD_REQUEST", "Given Distribution version ({})does not exists".format(version))
 
         if args["isdistrib"] is None:
@@ -968,6 +993,7 @@ class RestCheckout(Resource):
             else:
                 return make_response(json.dumps({"message": message}), 200, headers_json)
 
+
 class RestFileDiff(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
@@ -986,6 +1012,7 @@ class RestFileDiff(Resource):
                 return make_response(json.dumps({"diff": out, "isDiff": flag_diff}), 200, headers_json)
         else:
             abort_error("BAD_REQUEST", "You must provide the 'filenode' parameter")
+
 
 class RestGetDelZip(Resource):
     def __init__(self):
@@ -1018,6 +1045,7 @@ class RestGetDelZip(Resource):
             LOGGER.warn(msg)
             return make_response(json.dumps({"message": msg, "zip": zipfile}), 200, headers_json)
         return make_response(json.dumps({"message": "Zip file {} has been removed".format(zipfile), "zip": zipfile}), 200, headers_json)
+
 
 class RestBuildZip(Resource):
     def __init__(self):
@@ -1061,6 +1089,7 @@ class RestBuildZip(Resource):
                 abort_error("INTERNAL_ERROR", "Error while running 'mvn clean install'")
             else:
                 return make_response(json.dumps({"message": "mvn clean install succeeded"}), 200, headers_json)
+
 
 class RestGeneration(Resource):
 

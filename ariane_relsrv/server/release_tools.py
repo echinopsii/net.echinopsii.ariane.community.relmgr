@@ -17,6 +17,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import signal
 
 __author__ = 'stan renia'
 
@@ -28,9 +29,9 @@ import re
 from datetime import date
 
 from ariane_reltreelib import command
-from ariane_reltreelib.dao import ariane_delivery
+from ariane_reltreelib.dao import modelAndServices
 from ariane_reltreelib import exceptions as err
-from ariane_reltreelib.generator.generator import GitTagHandler
+from ariane_reltreelib.generator import GitTagHandler
 
 ariane = None
 RELMGR_CONFIG = None
@@ -186,7 +187,7 @@ class DatabaseManager(object):
             exist_cpy = DatabaseManager.get_distrib_copies()
             if len(exist_cpy) > 0:
                 return -1
-            cd = ariane_delivery.DistributionService.copy_distrib(d)
+            cd = modelAndServices.DistributionService.copy_distrib(d)
             # Modify current Distrib name but save this name by adding 'copyTemp' before
             ReleaseTools.distrib_copy_id = d.id
             d.name = "copyTemp" + d.name
@@ -203,7 +204,7 @@ class DatabaseManager(object):
         """
         snapshot = "-SNAPSHOT"
         dev = ariane.distribution_service.get_dev_distrib()
-        if not isinstance(dev, ariane_delivery.Distribution):
+        if not isinstance(dev, modelAndServices.Distribution):
             return 1  # "Server can not find the actual DEV Distribution"
 
         if dev.editable != "true":
@@ -212,7 +213,7 @@ class DatabaseManager(object):
         if snapshot in dev.version:
             return 3  # Same as 2
 
-        newdev = ariane_delivery.DistributionService.copy_distrib(dev)
+        newdev = modelAndServices.DistributionService.copy_distrib(dev)
         dev.editable = "false"
         dev.save()
         newdev.editable = "true"
@@ -255,11 +256,11 @@ class DatabaseManager(object):
         :param cd: Distribution object to remove from database
         :return: if == 0 <=> success; if != 0 <=> error occured
         """
-        if (isinstance(cd, ariane_delivery.Distribution)) and (cd.editable == "true"):
+        if (isinstance(cd, modelAndServices.Distribution)) and (cd.editable == "true"):
             cd.delete()
         else:
             cd = ariane.distribution_service.find({"editable": "true"})
-            if isinstance(cd, ariane_delivery.Distribution):
+            if isinstance(cd, modelAndServices.Distribution):
                 cd.delete()
             elif isinstance(cd, list):
                 for c in cd:
@@ -267,7 +268,7 @@ class DatabaseManager(object):
             else:
                 return -1
         dist = ariane.get_unique(ariane.distribution_service, {"nID": ReleaseTools.distrib_copy_id})
-        if isinstance(dist, ariane_delivery.Distribution):
+        if isinstance(dist, modelAndServices.Distribution):
             dist.name = dist.name[len("copyTemp"):]
             dist.version = dist.version[len("copyTemp"):]
             dist.editable = "true"
@@ -291,7 +292,7 @@ class DatabaseManager(object):
         :return: None
         """
         dev = ariane.distribution_service.get_dev_distrib()
-        if not isinstance(dev, ariane_delivery.Distribution):
+        if not isinstance(dev, modelAndServices.Distribution):
             return 1
         if dev.editable != "true":
             return 2
@@ -329,7 +330,7 @@ class DatabaseManager(object):
         """
         LOGGER.info("Creating the new DEV Distribution...")
         newdev = DatabaseManager.create_dev_distrib()
-        if not isinstance(newdev, ariane_delivery.Distribution):
+        if not isinstance(newdev, modelAndServices.Distribution):
             if newdev == 1:
                 return 1  # "Server can not find the actual DEV Distribution"
             elif newdev in [2, 3]:
@@ -338,7 +339,7 @@ class DatabaseManager(object):
         DatabaseManager.remove_genuine_distrib()
         LOGGER.info("Old Distribution copy was removed. Start copying the new DEV distribution...")
         newdevcp = DatabaseManager.create_distrib_copy(newdev)
-        if not isinstance(newdev, ariane_delivery.Distribution):
+        if not isinstance(newdev, modelAndServices.Distribution):
             if newdevcp == -1:
                 return 3  # "Error occured while copying the New DEV Distribution into the "
                           # "database: A copy already exists."
@@ -351,7 +352,7 @@ class DatabaseManager(object):
     @staticmethod
     def sync_db_from_last_dev():
         dev = ariane.distribution_service.get_dev_distrib()
-        if not isinstance(dev, ariane_delivery.Distribution):
+        if not isinstance(dev, modelAndServices.Distribution):
             return 1
         if dev.editable != "true":
             return 2
@@ -445,7 +446,7 @@ class GitManager(object):
         # git push origin  version_component
 
         dist = ariane.distribution_service.get_dev_distrib()
-        if not isinstance(dist, ariane_delivery.Distribution):
+        if not isinstance(dist, modelAndServices.Distribution):
             return 1, "", ""  # "Server can not find the current Distribution to commit"
 
         LOGGER.info("Start " + mode + " Distribution("+dist.version+") commit-tag-push ...")
@@ -500,7 +501,7 @@ class GitManager(object):
 
     @staticmethod
     def checkout_distrib(dist, isplugin=False):
-        if not isinstance(dist, ariane_delivery.Distribution):
+        if not isinstance(dist, modelAndServices.Distribution):
             return 1
 
         LOGGER.info("Start files checkout ...")
@@ -555,7 +556,7 @@ class GitManager(object):
         backpath = os.getcwd()
         LOGGER.info("Start Tags reset")
         dist = ariane.distribution_service.get_dev_distrib()
-        if not isinstance(dist, ariane_delivery.Distribution):
+        if not isinstance(dist, modelAndServices.Distribution):
             return 1, ""  # "Server can not find the current Distribution to commit"
 
         if isplugin:
@@ -668,7 +669,11 @@ class BuildManager(object):
                                  # + " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname,
                                  shell=True,
                                  cwd=project_path + "/ariane.community.distrib")
-        streamdata = child.communicate(timeout=timeout)[0]
+        try:
+            child.communicate(timeout=timeout)[0]
+        except subprocess.TimeoutExpired:
+            os.killpg(os.getpgid(child.pid), signal.SIGTERM)
+            child.communicate()
         build_done = False
         rc = child.returncode
         if rc == 0:

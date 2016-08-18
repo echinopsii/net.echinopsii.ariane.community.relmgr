@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from ariane_reltreelib.dao import ariane_delivery
+from ariane_reltreelib.dao import modelAndServices
 
 __author__ = 'stanrenia'
 
@@ -27,7 +27,7 @@ def create_db_file(filename):
     list_component = []
     list_plugin = []
     args = {"login": "neo4j", "password":"admin", "type": "neo4j"}
-    ariane = ariane_delivery.DeliveryTree(args)
+    ariane = modelAndServices.DeliveryTree(args)
     distrib = None
     txtout = ""
     try:
@@ -41,7 +41,7 @@ def create_db_file(filename):
                 if ("#" not in list_param) and (len(list_param) > 0):
                     # print('list param: ', list_param)
                     if state == "core" and "distribution" in list_param:
-                        distrib = ariane_delivery.Distribution(list_param[1], list_param[2], editable="false")
+                        distrib = modelAndServices.Distribution(list_param[1], list_param[2], editable="false")
                         state = "component"
                     elif "dependency:" in list_param:
                         state = "dependency"
@@ -51,7 +51,7 @@ def create_db_file(filename):
                         mod_name = list_param[0]
                         mod_version = list_param[1]
                         mod_type = list_param[2]
-                        mod = ariane_delivery.Component(mod_name, mod_version, mod_type)
+                        mod = modelAndServices.Component(mod_name, mod_version, mod_type)
                         mod.order = mod_order
                         mod_order += 1
                         if len(list_param) > 3:
@@ -64,10 +64,10 @@ def create_db_file(filename):
                                     sub_list.remove(sub_parent)
                                     sub_list = sub_list[0].split('_')
                                     sub_list = [s for s in sub_list if s != '']
-                                    sub_parent = ariane_delivery.Module(sub_parent, mod.version)
+                                    sub_parent = modelAndServices.Module(sub_parent, mod.version)
                                     sub_parent.set_groupid_artifact(mod)
                                     for s in sub_list:
-                                        sub_sub = ariane_delivery.Module(s, mod.version)
+                                        sub_sub = modelAndServices.Module(s, mod.version)
                                         sub_sub.order = sub_order
                                         sub_order += 1
                                         sub_sub.set_groupid_artifact(sub_parent)
@@ -76,7 +76,7 @@ def create_db_file(filename):
                                     sub_order += 1
                                     mod.add_module(sub_parent)
                                 else:
-                                    sub = ariane_delivery.Module(module, mod.version)
+                                    sub = modelAndServices.Module(module, mod.version)
                                     sub.order = sub_order
                                     sub_order += 1
                                     sub.set_groupid_artifact(mod)
@@ -93,12 +93,12 @@ def create_db_file(filename):
                             index_sub = 3
                         plugin_name = list_param[1]
                         plugin_version = list_param[2]
-                        plug = ariane_delivery.Plugin(plugin_name, plugin_version)
+                        plug = modelAndServices.Plugin(plugin_name, plugin_version)
 
                         list_module = list_param[index_sub:]
                         sub_order = 1
                         for module in list_module:
-                            sub = ariane_delivery.Module(module, plug.version)
+                            sub = modelAndServices.Module(module, plug.version)
                             sub.order = sub_order
                             sub_order += 1
                             sub.set_groupid_artifact(plug)

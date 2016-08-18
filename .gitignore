@@ -15,3 +15,4 @@ tests/info.log
 bootstrap/misc/confsrv.json
 bootstrap/misc/relmgr_passwd
 bootstrap/misc/confsrv.json
+bootstrap/misc/confsrv.json.*
