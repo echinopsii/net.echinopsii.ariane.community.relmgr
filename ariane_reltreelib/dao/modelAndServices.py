@@ -56,13 +56,16 @@ class DeliveryTree(object):
 
     @staticmethod
     def get_files(ariane_node):
+        # print("get_files")
         list_fnode = None
         if isinstance(ariane_node, ArianeNode):
             args = {"node": ariane_node.node, "reverse": False, "relation": "CONTAINS"}
+            # print(args)
             list_fnode = DeliveryTree.graph_dao.get_all(args)
             for i, fnode in enumerate(list_fnode.copy()):
                 prop = DeliveryTree.graph_dao.get_node_properties(fnode)
                 list_fnode[i] = FileNode.create(prop)
+        # print(str(list_fnode))
         return list_fnode
 
     @staticmethod

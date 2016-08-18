@@ -25,7 +25,7 @@ from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import modelAndServices
 from ariane_relsrv.server.usersMgr import User
 from ariane_relsrv.server.releaseTools import DatabaseManager, GitManager, InitReleaseTools, BuildManager, \
-                                                FileGenManager, ReleaseTools
+    FileGenManager, ReleaseTools
 
 app = Flask(__name__)
 api = Api(app)
@@ -36,7 +36,8 @@ LOGGER = None
 project_path = None
 relmgr_path = None
 
-def start_relmgr(myglobals, test=False):
+
+def start_relmgr(myglobals):
     global RELMGR_CONFIG, ariane, LOGGER, project_path, relmgr_path
 
     RELMGR_CONFIG = myglobals["conf"]
@@ -53,7 +54,8 @@ def start_relmgr(myglobals, test=False):
         app.run(host=RELMGR_CONFIG.relmgr_host, port=RELMGR_CONFIG.relmgr_port)
 
 # import this after config declarations
-from ariane_relsrv.server import auth as relmgrAuth
+from ariane_relsrv.server import auth as rel_mgr_auth
+
 
 def abort_error(error, msg):
     LOGGER.error("(HTTP RESPONSE CODE: '"+error+"') " + msg)
@@ -66,11 +68,13 @@ def abort_error(error, msg):
     elif error == "FORBIDDEN":
         abort(403, message=msg)
 
+
 def clear_args(args):
     keys = [k for k in args.keys()]
     for key in keys:
         if args[key] is None:
             args.pop(key)
+
 
 @app.after_request
 def after_request(response):
@@ -83,53 +87,73 @@ headers_json = {'Content-Type': 'application/json'}
 headers_html = {'Content-Type': 'text/html'}
 
 
+# noinspection PyUnresolvedReferences
 class UI(Resource):
-    @relmgrAuth.requires_auth
+    @rel_mgr_auth.requires_auth
     def get(self):
         return make_response(render_template('index.html', url=RELMGR_CONFIG.relmgr_url, port=RELMGR_CONFIG.relmgr_port,
                                              mode=RELMGR_CONFIG.ui_running_mode), 200, headers_html)
 
+
+# noinspection PyUnresolvedReferences
 class TempBaseEdit(Resource):
+    @rel_mgr_auth.requires_auth
     def get(self):
         return make_response(render_template('baseEdition.html'), 200, headers_html)
 
 
+# noinspection PyUnresolvedReferences
 class TempBaseRelA(Resource):
+    @rel_mgr_auth.requires_auth
     def get(self):
         return make_response(render_template('baseReleaseA.html'), 200, headers_html)
 
 
+# noinspection PyUnresolvedReferences
 class TempBaseRelB(Resource):
+    @rel_mgr_auth.requires_auth
     def get(self):
         return make_response(render_template('baseReleaseB.html'), 200, headers_html)
 
 
+# noinspection PyUnresolvedReferences
 class TempBaseRelC(Resource):
+    @rel_mgr_auth.requires_auth
     def get(self):
         return make_response(render_template('baseReleaseC.html'), 200, headers_html)
 
 
+# noinspection PyUnresolvedReferences
 class TempBaseRelD(Resource):
+    @rel_mgr_auth.requires_auth
     def get(self):
         return make_response(render_template('baseReleaseD.html'), 200, headers_html)
 
 
+# noinspection PyUnresolvedReferences
 class TempBaseRelE(Resource):
+    @rel_mgr_auth.requires_auth
     def get(self):
         return make_response(render_template('baseReleaseE.html'), 200, headers_html)
 
 
+# noinspection PyUnresolvedReferences
 class TempEditViewEdit(Resource):
+    @rel_mgr_auth.requires_auth
     def get(self):
         return make_response(render_template('editionViewEdit.html'), 200, headers_html)
 
 
+# noinspection PyUnresolvedReferences
 class TempEditDiff(Resource):
+    @rel_mgr_auth.requires_auth
     def get(self):
         return make_response(render_template('editionDiff.html'), 200, headers_html)
 
 
+# noinspection PyUnresolvedReferences
 class TempErr(Resource):
+    @rel_mgr_auth.requires_auth
     def get(self):
         return make_response(render_template('err.html'), 200, headers_html)
 
@@ -169,6 +193,7 @@ class RestFileNode(Resource):
             return make_response(json.dumps({}), 200, headers_json)
         else:
             abort_error("NOT_FOUND", "Error, Wrong URL")
+
 
 class RestFileNodeList(Resource):
     def __init__(self):
@@ -210,7 +235,8 @@ class RestFileNodeList(Resource):
                     else:
                         abort_error("BAD_REQUEST", "FileNode {} already exists".format(args))
                 else:
-                    abort_error("BAD_REQUEST", "Given parameters {} does not match any FileNode in database".format(args))
+                    abort_error("BAD_REQUEST",
+                                "Given parameters {} does not match any FileNode in database".format(args))
             else:
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         elif args["filenode"] is not None and args["parent"] is None:
@@ -221,7 +247,8 @@ class RestFileNodeList(Resource):
                     if f.update(arg_p):
                         f.save()
 
-                        return make_response(json.dumps({"filenode": f.get_properties(gettype=True)}), 200, headers_json)
+                        return make_response(json.dumps({"filenode": f.get_properties(gettype=True)}),
+                                             200, headers_json)
                     else:
                         abort_error("BAD_REQUEST", "FileNode {} already exists".format(f.get_properties()))
                 else:
@@ -247,7 +274,8 @@ class RestFileNodeList(Resource):
                         f = modelAndServices.FileNode.create(args)
                         parent.add_file(f)
                         parent.save()
-                        return make_response(json.dumps({"filenode": f.get_properties(gettype=True)}), 201, headers_json)
+                        return make_response(json.dumps({"filenode": f.get_properties(gettype=True)}),
+                                             201, headers_json)
                     else:
                         abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
                                     fmodel.get_properties().keys()))
@@ -262,7 +290,8 @@ class RestPlugin(Resource):
         self.reqparse.add_argument('nID', type=int, help='Distribution database ID named "nID"')
         super(RestPlugin, self).__init__()
 
-    def __get_plugin(self, unique_key, unique_key2):
+    @staticmethod
+    def __get_plugin(unique_key, unique_key2):
         p = None
         if unique_key2 is None:
             if isinstance(unique_key, int):
@@ -280,7 +309,8 @@ class RestPlugin(Resource):
             if unique_key2 is None:
                 abort_error("BAD_REQUEST", "No component found with given parameters {}".format(unique_key))
             else:
-                abort_error("BAD_REQUEST", "No component found with given parameters {} {}".format(unique_key, unique_key2))
+                abort_error("BAD_REQUEST",
+                            "No component found with given parameters {} {}".format(unique_key, unique_key2))
 
     def delete(self, unique_key, unique_key2=None):
         p = self.__get_plugin(unique_key, unique_key2)
@@ -531,7 +561,8 @@ class RestComponent(Resource):
         self.reqparse.add_argument('nID', type=int, help='Distribution database ID named "nID"')
         super(RestComponent, self).__init__()
 
-    def __get_component(self, unique_key, unique_key2):
+    @staticmethod
+    def __get_component(unique_key, unique_key2):
         m = None
         if unique_key2 is None:
             if isinstance(unique_key, int):
@@ -550,7 +581,8 @@ class RestComponent(Resource):
             if unique_key2 is None:
                 abort_error("BAD_REQUEST", "No component found with given parameters {}".format(unique_key))
             else:
-                abort_error("BAD_REQUEST", "No component found with given parameters {} {}".format(unique_key, unique_key2))
+                abort_error("BAD_REQUEST",
+                            "No component found with given parameters {} {}".format(unique_key, unique_key2))
 
     def delete(self, unique_key, unique_key2=None):
         m = self.__get_component(unique_key, unique_key2)
@@ -604,7 +636,8 @@ class RestComponentList(Resource):
                     else:
                         abort_error("BAD_REQUEST", "component {} already exists".format(args))
                 else:
-                    abort_error("BAD_REQUEST", "Given parameters {} does not match any component in database".format(args))
+                    abort_error("BAD_REQUEST",
+                                "Given parameters {} does not match any component in database".format(args))
             else:
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         elif args["component"] is not None:
@@ -614,7 +647,8 @@ class RestComponentList(Resource):
                 if isinstance(m, modelAndServices.Component):
                     if m.update(arg_m):
                         m.save()
-                        return make_response(json.dumps({"component": m.get_properties(gettype=True)}), 200, headers_json)
+                        return make_response(json.dumps({"component": m.get_properties(gettype=True)}),
+                                             200, headers_json)
             else:
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         else:
@@ -623,7 +657,8 @@ class RestComponentList(Resource):
                 if key not in ["component", "nID"] and args[key] is None:
                     abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
                         m.get_properties().keys()))
-            mod_exists = ariane.get_unique(ariane.component_service, {"name": args["name"], "version": args["version"], "type": args["type"]})
+            mod_exists = ariane.get_unique(ariane.component_service,
+                                           {"name": args["name"], "version": args["version"], "type": args["type"]})
             if mod_exists is None:
                 dist = ariane.get_unique(ariane.distribution_service, {"version": args["dist_version"]})
                 if isinstance(dist, modelAndServices.Distribution):
@@ -651,7 +686,8 @@ class RestDistribution(Resource):
         self.reqparse.add_argument('nID', type=int, help='Distribution database ID named "nID"')
         super(RestDistribution, self).__init__()
 
-    def __get_distrib(self, unique_key):
+    @staticmethod
+    def __get_distrib(unique_key):
         d = None
         if isinstance(unique_key, str):
             d = ariane.get_unique(ariane.distribution_service, {"version": unique_key})
@@ -689,6 +725,7 @@ class RestDistributionList(Resource):
         # self.reqparse.add_argument('version', type=str)
         super(RestDistributionList, self).__init__()
 
+    # noinspection PyMethodMayBeStatic
     def get(self):
         dlist = ariane.distribution_service.get_all()
         dev = ariane.distribution_service.get_dev_distrib()
@@ -717,7 +754,8 @@ class RestDistributionList(Resource):
                     else:
                         abort_error("BAD_REQUEST", "Distribution {} already exists".format(args))
                 else:
-                    abort_error("BAD_REQUEST", "Given parameters {} does not match any Distribition in database".format(args))
+                    abort_error("BAD_REQUEST",
+                                "Given parameters {} does not match any Distribition in database".format(args))
             else:
                 abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
         elif args["distrib"] is not None:
@@ -734,7 +772,8 @@ class RestDistributionList(Resource):
             else:
                 abort_error("BAD_REQUEST", "Can not modifiy Distribution which is not in SNAPSHOT Version")
         else:
-            dist_exists = ariane.get_unique(ariane.distribution_service, {"name": args["name"], "version": args["version"]})
+            dist_exists = ariane.get_unique(ariane.distribution_service,
+                                            {"name": args["name"], "version": args["version"]})
             if dist_exists is None:
                 d = modelAndServices.Distribution("", "")
                 primary_key = ['name', 'version']
@@ -805,7 +844,8 @@ class RestDistributionManager(Resource):
             if newdevcp == 1:
                 abort_error("INTERNAL_ERROR", "Server can not find the actual DEV Distribution")
             elif newdevcp == 2:
-                abort_error("BAD_REQUEST", "A component of the actual DEV Distribution is already in a '-SNAPSHOT' version")
+                abort_error("BAD_REQUEST",
+                            "A component of the actual DEV Distribution is already in a '-SNAPSHOT' version")
             elif newdevcp == 3:
                 abort_error("INTERNAL_ERROR", "Error occured while copying the New DEV Distribution into the "
                                               "database: A copy already exists.")
@@ -834,12 +874,12 @@ class RestDistributionManager(Resource):
             return make_response(json.dumps({"distrib": dev.get_properties(gettype=True)}), 200, headers_json)
 
         elif action == "removeDEVcopy":
-            #err = ReleaseTools.remove_genuine_distrib()
-            #if err < 0:
-            #    abort_error("INTERNAL_ERROR", "UNABLE TO REMOVE THE DATABASE DISTRIBTUTION COPY")
-            #LOGGER.info("The current distribution copy in database was removed")
-            #TODO: a proper function for removing DEV copy ???
-            #TODO: mail Stan
+            # err = ReleaseTools.remove_genuine_distrib()
+            # if err < 0:
+            #     abort_error("INTERNAL_ERROR", "UNABLE TO REMOVE THE DATABASE DISTRIBTUTION COPY")
+            # LOGGER.info("The current distribution copy in database was removed")
+            # TODO: a proper function for removing DEV copy ???
+            # TODO: mail Stan
             ReleaseTools.export_new_distrib()
             return make_response(json.dumps({}), 200, headers_json)
 
@@ -865,6 +905,7 @@ class RestDistributionManager(Resource):
 
 
 class RestReset(Resource):
+    # noinspection PyMethodMayBeStatic
     def post(self):
         print("reset begin")
         err, fpath = DatabaseManager.reset_database()
@@ -875,6 +916,7 @@ class RestReset(Resource):
         else:
             print("reset error")
             abort_error("INTERNAL_ERROR", "Error while importing '"+fpath+"', file was not found")
+
 
 class RestCommit(Resource):
 
@@ -959,7 +1001,8 @@ class RestCheckout(Resource):
                 LOGGER.info("Removing the working copy...")
                 ret_rmcompy = DatabaseManager.remove_distrib_copy(dist)
                 if ret_rmcompy == 1:
-                    abort_error("BAD_REQUEST", "Distribution copy model was not found. Can not reinitialize the Database")
+                    abort_error("BAD_REQUEST",
+                                "Distribution copy model was not found. Can not reinitialize the Database")
                 elif ret_rmcompy == -1:
                     abort_error("BAD_REQUEST", "Given distribution {} is not the copy, "
                                                "Can not reinitialize the Database".format(dist))
@@ -978,7 +1021,8 @@ class RestCheckout(Resource):
                     abort_error("BAD_REQUEST", "Multiple copies were found in database")
                 LOGGER.info("Working copy was reseted")
             LOGGER.info("git checkout done. Database reinitialized")
-            return make_response(json.dumps({"message": "git checkout done. Database reinitialized."}), 200, headers_json)
+            return make_response(json.dumps({"message": "git checkout done. Database reinitialized."}),
+                                 200, headers_json)
 
         elif mode == "directories":
             err, errmsg = GitManager.pull_checkout_distrib(dist, isplugin)
@@ -1020,6 +1064,7 @@ class RestGetDelZip(Resource):
         self.reqparse.add_argument('version', type=str, help='Version of Zip file')
         super(RestGetDelZip, self).__init__()
 
+    # noinspection PyMethodMayBeStatic
     def post(self):
         path_zip = BuildManager.path_zip
         zipfile = BuildManager.zipfile
@@ -1037,14 +1082,16 @@ class RestGetDelZip(Resource):
         
         version = args["version"]
         if version not in zipfile:
-            abort_error("BAD_REQUEST", "Given parameter 'version' {} does not match the latest Zip file created".format(version))
+            abort_error("BAD_REQUEST",
+                        "Given parameter 'version' {} does not match the latest Zip file created".format(version))
         
         err = BuildManager.delete_zip()
         if err == 1:
             msg = "Built Zip file does not exists, can not remove it"
             LOGGER.warn(msg)
             return make_response(json.dumps({"message": msg, "zip": zipfile}), 200, headers_json)
-        return make_response(json.dumps({"message": "Zip file {} has been removed".format(zipfile), "zip": zipfile}), 200, headers_json)
+        return make_response(json.dumps({"message": "Zip file {} has been removed".format(zipfile), "zip": zipfile}),
+                             200, headers_json)
 
 
 class RestBuildZip(Resource):
@@ -1059,8 +1106,6 @@ class RestBuildZip(Resource):
 
     def post(self):
         """
-        Use a subprocess calling "bootstrap/command.py 'command (arguments for command.py)'" to execute the File Generation.
-        command.py handles the change of working directory
         :return:
         """
         args = self.reqparse.parse_args()
@@ -1081,7 +1126,8 @@ class RestBuildZip(Resource):
             if err == 1:
                 abort_error("INTERNAL_ERROR", "Error while building")
             else:
-                return make_response(json.dumps({"zip": BuildManager.zipfile, "message": "Build Success"}), 200, headers_json)
+                return make_response(json.dumps({"zip": BuildManager.zipfile, "message": "Build Success"}),
+                                     200, headers_json)
 
         elif str(action).lower() == "mvncleaninstall":
             err = BuildManager.do_mvn_clean_install()
@@ -1100,7 +1146,8 @@ class RestGeneration(Resource):
 
     def post(self):
         """
-        Use a subprocess calling "bootstrap/command.py 'command (arguments for command.py)'" to execute the File Generation.
+        Use a subprocess calling "bootstrap/command.py 'command (arguments for command.py)'"
+        to execute the File Generation.
         command.py handles the change of working directory
          ** Note: 'distrib_plugin_only' command is used to only generate distribution plugin files (2 files). **
         :return:

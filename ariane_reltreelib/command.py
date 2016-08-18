@@ -105,6 +105,7 @@ class Command(object):
         self.execute(cmd, version, name)
 
     def execute(self, cmd, version, name):
+        # print("cmd: " + str(cmd) + " ;version: " + str(version) + " ; name: " + str(name))
         distrib = Command.dao_ariane.get_unique(Command.dao_ariane.distribution_service, {"version": version})
         if isinstance(distrib, modelAndServices.Distribution):
             if cmd in Command.commands_dist:
@@ -113,6 +114,7 @@ class Command(object):
                 else:
                     if "only" in cmd:
                         method = 'generate_'+str(cmd).replace('_only', '_files')
+                        # print(method)
                         method = getattr(Command.gen, method)
                         method(version)
                     else:

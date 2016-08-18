@@ -28,7 +28,7 @@ import json
 import re
 from datetime import date
 
-from ariane_reltreelib import command
+from ariane_reltreelib.command import Command
 from ariane_reltreelib.dao import modelAndServices
 from ariane_reltreelib import exceptions as err
 from ariane_reltreelib.generator import GitTagHandler
@@ -813,7 +813,7 @@ class FileGenManager(object):
         if ReleaseTools.make_components_to_tag_list() == -1:
             return 1, None  # "There is no copy of the master SNAPSHOT Distribution"
 
-        cmd = command.Command(dao_ariane=ariane, project_path=project_path)
+        cmd = Command(dao_ariane=ariane, project_path=project_path)
         # cmd.gen.set_release_component_exceptions(GitManager.COMPONENTS_EXCEPTIONS)
         try:
             cmd.execute(cmd_str, version, name)

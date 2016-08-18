@@ -56,7 +56,9 @@ class GitTagHandler(object):
         tags = []
         if path is not None:
             if os.path.exists(path):
+                # print(path)
                 tags = subprocess.check_output("git tag", shell=True, cwd=path)
+                # print(str(tags))
         else:
             tags = subprocess.check_output("git tag", shell=True)
         # check_output gives the command output in bytes format, so we decode it.
@@ -168,12 +170,15 @@ class Generator(object):
         flag_clean_env = True
 
         for mod in components:
+            # print("generate component " + mod.name + " " + mod.version + " files")
             if not is_snapshot_version:
                 if GitTagHandler.is_git_tagged(mod.version, path=self.dir_output+mod.get_directory_name()):
+                    # print("git tagged !")
                     continue
             self.ariane.component_service.update_arianenode_lists(mod)
             mod_files = self.ariane.get_files(mod)
             for f in mod_files:
+                # print(f.name)
                 if "SNAPSHOT" in f.name and not is_snapshot_version:
                     continue
                 elif f.type == "plan":
