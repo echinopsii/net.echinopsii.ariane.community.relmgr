@@ -1,9 +1,12 @@
+import logging
 
 __author__ = 'ikito'
 
 from flask import request, Response
 from functools import wraps
 from ariane_relsrv.server.usersMgr import User
+
+LOGGER = logging.getLogger(__name__)
 
 
 # The following code is from http://flask.pocoo.org/snippets/8/

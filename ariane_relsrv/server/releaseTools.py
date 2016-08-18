@@ -17,6 +17,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import logging
 import signal
 
 __author__ = 'stan renia'
@@ -33,9 +34,10 @@ from ariane_reltreelib.dao import modelAndServices
 from ariane_reltreelib import exceptions as err
 from ariane_reltreelib.generator import GitTagHandler
 
+LOGGER = logging.getLogger(__name__)
+
 ariane = None
 RELMGR_CONFIG = None
-LOGGER = None
 project_path = None
 relmgr_path = None
 
@@ -46,7 +48,6 @@ class InitReleaseTools(object):
         global RELMGR_CONFIG, ariane, LOGGER, project_path, relmgr_path
         RELMGR_CONFIG = myglobals["conf"]
         ariane = myglobals["delivery_tree"]
-        LOGGER = myglobals["logger"]
         project_path = myglobals["project_path"]
         relmgr_path = myglobals["relmgr_path"]
         BuildManager.path_zip = project_path + "/artifacts/"

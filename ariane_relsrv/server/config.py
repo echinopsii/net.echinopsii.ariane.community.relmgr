@@ -26,6 +26,8 @@ import ariane_reltreelib.exceptions as err
 import logging
 import logging.config
 
+LOGGER = logging.getLogger(__name__)
+
 
 class Config(object):
     def __init__(self):

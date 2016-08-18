@@ -17,11 +17,15 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import logging
+
 __author__ = 'ikito'
 
 from passlib.apps import custom_app_context as pwd_context
 import os
 import argparse
+
+LOGGER = logging.getLogger(__name__)
 
 
 class User(object):

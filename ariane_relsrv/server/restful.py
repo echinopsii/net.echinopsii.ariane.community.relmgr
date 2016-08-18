@@ -20,6 +20,7 @@
 
 
 import json
+import logging
 from flask import Flask, make_response, render_template, send_from_directory
 from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import modelAndServices
@@ -30,9 +31,10 @@ from ariane_relsrv.server.releaseTools import DatabaseManager, GitManager, InitR
 app = Flask(__name__)
 api = Api(app)
 
+LOGGER = logging.getLogger(__name__)
+
 RELMGR_CONFIG = None
 ariane = None
-LOGGER = None
 project_path = None
 relmgr_path = None
 
@@ -42,7 +44,6 @@ def start_relmgr(myglobals):
 
     RELMGR_CONFIG = myglobals["conf"]
     ariane = myglobals["delivery_tree"]
-    LOGGER = myglobals["logger"]
     project_path = myglobals["project_path"]
     relmgr_path = myglobals["relmgr_path"]
     User.users_file = RELMGR_CONFIG.users_file

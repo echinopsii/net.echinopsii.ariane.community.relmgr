@@ -88,7 +88,7 @@ if __name__ == '__main__':
                                                 "port": RELMGR_CONFIG.neo4j_port,
                                                 "type": "neo4j"})
         from ariane_relsrv.server import restful
-        myglobals = {"conf": RELMGR_CONFIG, "delivery_tree": ariane, "logger": LOGGER, "project_path": project_path,
+        myglobals = {"conf": RELMGR_CONFIG, "delivery_tree": ariane, "project_path": project_path,
                      "relmgr_path": relmgr_path}
         # TODO: REMOVE LOOP DEPENDENCIES
         if RELMGR_CONFIG.testing or args.command == "relmgr":
