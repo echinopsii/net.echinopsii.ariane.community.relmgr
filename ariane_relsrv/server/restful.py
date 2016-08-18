@@ -875,12 +875,10 @@ class RestDistributionManager(Resource):
             return make_response(json.dumps({"distrib": dev.get_properties(gettype=True)}), 200, headers_json)
 
         elif action == "removeDEVcopy":
-            # err = ReleaseTools.remove_genuine_distrib()
-            # if err < 0:
-            #     abort_error("INTERNAL_ERROR", "UNABLE TO REMOVE THE DATABASE DISTRIBTUTION COPY")
-            # LOGGER.info("The current distribution copy in database was removed")
-            # TODO: a proper function for removing DEV copy ???
-            # TODO: mail Stan
+            err = DatabaseManager.remove_genuine_distrib()
+            if err < 0:
+                abort_error("INTERNAL_ERROR", "UNABLE TO REMOVE THE DATABASE DISTRIBTUTION COPY")
+            LOGGER.info("The current distribution copy in database was removed")
             ReleaseTools.export_new_distrib()
             return make_response(json.dumps({}), 200, headers_json)
 

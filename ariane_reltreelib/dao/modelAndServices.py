@@ -1284,6 +1284,7 @@ class Distribution(ArianeNode):
                 self.update_files_name()
 
     def delete(self):
+        LOGGER.debug("Distribution.delete - " + str(self))
         if self._is_saved():
             DeliveryTree.distribution_service.update_arianenode_lists(self)
             for mod in self.list_component.copy():

@@ -266,13 +266,16 @@ class DatabaseManager(object):
     @staticmethod
     def remove_genuine_distrib():
         dcopies = ariane.distribution_service.get_all()
+        LOGGER.debug("DatabaseManager.remove_genuine_distrib - " + str(dcopies))
         if len(dcopies) > 0:
             dcopies = DatabaseManager.get_distrib_copies(dcopies)
+            LOGGER.debug("DatabaseManager.remove_genuine_distrib - " + str(dcopies))
             if len(dcopies) > 1:
                 LOGGER.warn("MULTIPLE DISTRIB COPIES WERE FOUND IN DATABASE")
             if len(dcopies) == 0:
                 return -1
             for d in dcopies:
+                LOGGER.debug("DatabaseManager.remove_genuine_distrib - " + str(d))
                 d.delete()
             return 0
         return -2

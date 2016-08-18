@@ -41,6 +41,16 @@
       "level": "DEBUG",
       "handlers": ["info_file_handler", "error_file_handler"],
       "propagate": "no"
+    },
+    "ariane_reltreelib.dao.neographDB": {
+      "level": "WARN",
+      "handlers": ["info_file_handler", "error_file_handler"],
+      "propagate": "no"
+    },
+    "ariane_reltreelib.dao.modelAndServices": {
+      "level": "WARN",
+      "handlers": ["info_file_handler", "error_file_handler"],
+      "propagate": "no"
     }
   },
 
