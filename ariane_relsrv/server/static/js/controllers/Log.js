@@ -19,9 +19,7 @@
  You should have received a copy of the GNU Affero General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/**
- * Created by stanrenia on 07/09/15.
- */
+
 angular.module('ArianeUI')
     .controller('LogCtrl', function ($scope, serviceUI) {
         $scope.log = {list: [{type: "", message: "", mode: "", status: "", show: false}]};

@@ -712,6 +712,93 @@ class RestDistribution(Resource):
             abort_error("NOT_FOUND", "Error, Wrong URL")
 
 
+class RestSnapshotsList(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        # self.reqparse.add_argument('name', type=str)
+        self.reqparse.add_argument('name', type=str, help='Distribution name')
+        self.reqparse.add_argument('version', type=str, help='Distribution version')
+        self.reqparse.add_argument('editable', type=bool, help='Distribution editable flag')
+        self.reqparse.add_argument('url_repos', type=str, help='Distribution repository URL')
+        self.reqparse.add_argument('nID', type=int, help='Distribution database ID named "nID"')
+        self.reqparse.add_argument('distrib', location='json')
+        # self.reqparse.add_argument('copy', type=bool)
+        # self.reqparse.add_argument('version', type=str)
+        super(RestSnapshotsList, self).__init__()
+
+    # noinspection PyMethodMayBeStatic
+    def get(self):
+        dev = ariane.distribution_service.get_dev_distrib()
+        if dev is None:
+            abort_error("BAD_REQUEST", "No Distribution was found in the database")
+        dev_prop = dev.get_properties(gettype=True)
+        dprop = [dev_prop]
+        return make_response(json.dumps({"distribs": dprop}), 200, headers_json)
+
+    def post(self):
+        args = self.reqparse.parse_args()
+        if args["nID"] is not None:
+            d = ariane.get_unique(ariane.distribution_service, {"nID": args["nID"]})
+            dev = ariane.distribution_service.get_dev_distrib()
+            if d == dev:
+                if isinstance(d, modelAndServices.Distribution):
+                    args.pop("nID")
+                    if d.update(args):
+                        d.save()
+                        d = d.get_properties(gettype=True)
+                        return make_response(json.dumps({"distrib": d}), 200, headers_json)
+                    else:
+                        abort_error("BAD_REQUEST", "Distribution {} already exists".format(args))
+                else:
+                    abort_error("BAD_REQUEST",
+                                "Given parameters {} does not match any Distribition in database".format(args))
+            else:
+                abort_error("BAD_REQUEST", "Can not modify Distribution which is not in SNAPSHOT Version")
+        elif args["distrib"] is not None:
+            arg_d = json.loads(args["distrib"])
+            d = ariane.get_unique(ariane.distribution_service, arg_d)
+            if not isinstance(d, modelAndServices.Distribution):
+                abort_error("BAD_REQUEST", "Given parameter {} must be a Distribution".format(d))
+            dev = ariane.distribution_service.get_dev_distrib()
+            if dev == d:
+                arg_d.pop("nID")
+                if d.update(arg_d):
+                    d.save()
+                    return make_response(json.dumps({"distrib": d.get_properties(gettype=True)}), 200, headers_json)
+            else:
+                abort_error("BAD_REQUEST", "Can not modifiy Distribution which is not in SNAPSHOT Version")
+        else:
+            dist_exists = ariane.get_unique(ariane.distribution_service,
+                                            {"name": args["name"], "version": args["version"]})
+            if dist_exists is None:
+                d = modelAndServices.Distribution("", "")
+                primary_key = ['name', 'version']
+                if ariane.check_args_init(primary_key, args.copy()):
+                    args["nID"] = 0
+                    d = modelAndServices.ArianeNode.create_subclass("Distribution", args)
+                    d.save()
+                    d = d.get_properties(gettype=True)
+                    return make_response(json.dumps({"distrib": d}), 201, headers_json)
+                else:
+                    d = d.get_properties()
+                    d.pop("nID")
+                    abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(d.keys()))
+            else:
+                abort_error("BAD_REQUEST", "Distribution {} already exists".format(args))
+
+                # def delete(self):
+                #     args = self.reqparse.parse_args()
+                #     for key in args.copy().keys():
+                #         if args[key] is None:
+                #             args.pop(key)
+                #     d = ariane.distribution_service.get_unique(args.copy())
+                #     if isinstance(d, ariane_delivery.Distribution):
+                #         d.delete()
+                #         return {}, 200
+                #     else:
+                #         abort_error("BAD_REQUEST", "Distribution {} does not exist".format(args))
+
+
 class RestDistributionList(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
@@ -735,7 +822,7 @@ class RestDistributionList(Resource):
         dprop = [d.get_properties(gettype=True) for d in dlist]
         for d in dprop:
             if d["nID"] == dev.id:
-                d["snapshot"] = True
+                dprop.remove(d)
             else:
                 d["snapshot"] = False
         return make_response(json.dumps({"distribs": dprop}), 200, headers_json)
@@ -1174,6 +1261,7 @@ class RestGeneration(Resource):
         return make_response(json.dumps({"message": args["command"]}), 200, headers_json)
 
 
+api.add_resource(RestSnapshotsList, '/rest/snapshot')
 api.add_resource(RestDistributionList, '/rest/distrib')
 api.add_resource(RestDistribution, '/rest/distrib/<int:unique_key>', '/rest/distrib/<unique_key>')
 api.add_resource(RestComponentList, '/rest/component')

@@ -82,49 +82,45 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			        </div>
 			        <div class="colBody">
 			            <span class="listRoot">
-							<button class="btn btn-sm btnExtend sectionTitle" ng-click="toggleDistList()">
-								<i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i> Distributions
+							<button class="btn btn-sm btnExtend sectionTitle" ng-click="toggleSnapList()">
+								<i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i> Snapshots
 							</button>
 			                <span class="pull-right" ng-if="page=='view'">
-								<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-disabled="!btnActive.release" ng-click="syncLastDev()">
+								<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-click="syncLastDev()">
 									<i class="fa fa-magic"></i> Sync last DEV
 								</button>
-								<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-disabled="!btnActive.release" ng-click="clickReleaseMod()">
+								<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-click="clickReleaseMod()">
 									<i class="fa fa-magic"></i> New Release
 								</button>
-								<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-disabled="!btnActive.dev" ng-click="clickDevEdit()">
+								<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-click="clickDevEdit()">
 									<i class="fa fa-magic"></i> New Snapshot
 								</button>
-								<!--
-								<button class="btn btn-sm btnGreen" ng-if="page=='view'" ng-show="btnActive.export"
-										ng-disabled="!btnActive.export" ng-click="clickExport()">
-									<i class="fa fa-arrow-circle-o-up"></i> Export
-								</button>
-			                    <button class="btn btn-sm btnAction pull-right" ng-disabled="!btnActive.reset.active" ng-click="toggleResetDB()">
-									<i class="fa fa-database"></i> Reset Graph DB
-								</button>
-			                    <button class="btn btn-sm btnAction pull-right" ng-disabled="!btnActive.refresh" ng-click="clickRefresh()">
-									<i class="fa fa-refresh"></i> Refresh
-								</button>
-
-
-			                    <span ng-show="btnActive.reset.showConfirm">
-									Reset Database ?
-									<button ng-click="clickResetDB('YES')">Yes</button>
-									<button ng-click="clickResetDB('NO')">No</button>
-								</span>
-								-->
 			                </span>
 			            </span>
-			            <div class="DistList" ng-show="isDistToggle()">
-			            <ul class="blockList">
-			                {% raw %}
-			                <li ng-repeat="dist in dists" ng-class="dist.selected ? 'active' : ''" ng-click="clickDist(dist)">
-								<label>{{ dist.name }} {{ dist.version }}</label>
-							</li>
-			                {% endraw %}
-			            </ul>
+			            <div class="SnapList" ng-show="isSnapToggle()">
+							<ul class="blockList">
+								{% raw %}
+								<li ng-repeat="snap in snapshots" ng-class="snap.selected ? 'active' : ''" ng-click="clickDist(snap)">
+									<label>{{ snap.name }} {{ snap.version }}</label>
+								</li>
+								{% endraw %}
+							</ul>
 			            </div>
+						<hr class="separateur" ng-if="page=='view'">
+						<span class="listRoot" ng-if="page=='view'">
+							<button class="btn btn-sm btnExtend sectionTitle" ng-click="toggleDistList()" ng-if="page=='view'">
+								<i class="fa fa-plus" style="padding: 2px"></i> <i class="fa fa-minus" style="padding: 2px"></i> Releases
+							</button>
+			            </span>
+						<div class="DistList" ng-show="isDistToggle()" ng-if="page=='view'">
+							<ul class="blockList" ng-if="page=='view'">
+								{% raw %}
+								<li ng-repeat="dist in dists" ng-class="dist.selected ? 'active' : ''" ng-click="clickDist(dist)" ng-if="page=='view'">
+									<label>{{ dist.name }} {{ dist.version }}</label>
+								</li>
+								{% endraw %}
+							</ul>
+						</div>
 			            <!-- ************************ INCLUDED TEMPLATE  ************************ -->
 			            <div ng-include="baseTemplate.url"></div>
 			        </div>

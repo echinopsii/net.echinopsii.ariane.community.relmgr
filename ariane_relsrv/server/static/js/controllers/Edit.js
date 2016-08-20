@@ -32,7 +32,11 @@ angular.module('ArianeUI')
         $scope.choice = {deleting: "no"};
         $scope.parent = {};
         $scope.page = 'view';
-        var editionTemplates = [{name: 'view', url:'editionViewEdit.html'}, {name:'releaseA', url:'editionViewEdit.html'}, {name:'releaseB', url:'editionDiff.html'}];
+        var editionTemplates = [
+            {name: 'view', url:'editionViewEdit.html'},
+            {name:'releaseA', url:'editionViewEdit.html'},
+            {name:'releaseB', url:'editionDiff.html'}
+        ];
         $scope.editionTemplate = editionTemplates[0];
         var templateErr = "err.html";
         var editablesView = {

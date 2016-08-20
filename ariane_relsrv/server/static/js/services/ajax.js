@@ -53,7 +53,13 @@ angular.module('ArianeUI')
                 else if(type == "filenode")
                     return {name: "", version: "", type: "", path: "",node_type:"filenode", nID:0};
             },
-            distrib: function(version){
+            snapshots: function(version) {
+                if (version == "")
+                    return $http.get("http://" + url + ":" + port + "/rest/snapshot");
+                else
+                    return $http.get("http://" + url + ":" + port + "/rest/snapshot/" + version);
+            },
+            releases: function(version){
                 if (version == "")
                     return $http.get("http://" + url + ":" + port + "/rest/distrib");
                 else

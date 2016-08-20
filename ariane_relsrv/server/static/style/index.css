@@ -90,7 +90,9 @@ ul li {
 	padding: 0 5px;
 }
 
-
+.SnapList {
+    margin-top: 10px;
+}
 
 .DistList {
     margin-top: 10px;
