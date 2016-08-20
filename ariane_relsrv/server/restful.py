@@ -906,21 +906,19 @@ class RestDistributionManager(Resource):
     """
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
-        self.reqparse.add_argument('distrib', location='json')
-        self.reqparse.add_argument('mode', type=str)
         self.reqparse.add_argument('action', type=str)
+        self.reqparse.add_argument('distrib', location='json')
         super(RestDistributionManager, self).__init__()
 
     def post(self):
         args = self.reqparse.parse_args()
         action = None
-        if args["action"] is not None:
+        if args["action"] is None:
+            abort_error("BAD_REQUEST", "You must provide the 'mode' parameter")
+        else:
             action = args["action"]
 
-        if args["mode"] is None:
-            abort_error("BAD_REQUEST", "You must provide the 'mode' parameter")
-        mode = args["mode"]
-        if mode == "DEV":
+        if action == "DEV":
             dev = ariane.distribution_service.get_dev_distrib()
             if "-SNAPSHOT" in dev.version:
                 cpy_dev = DatabaseManager.get_distrib_copies()
@@ -941,9 +939,11 @@ class RestDistributionManager(Resource):
                 abort_error("INTERNAL_ERROR", "Error occured while copying the New DEV Distribution into the database")
 
             return make_response(json.dumps({"distrib": newdevcp.get_properties(gettype=True)}), 200, headers_json)
-        elif mode == "RELEASE":
+
+        elif action == "RELEASE":
             if args["distrib"] is None:
                 abort_error("BAD_REQUEST", "You must provide the 'distrib' parameter")
+
             arg_d = json.loads(args["distrib"])
             d = ariane.get_unique(ariane.distribution_service, arg_d)
             if not isinstance(d, modelAndServices.Distribution):

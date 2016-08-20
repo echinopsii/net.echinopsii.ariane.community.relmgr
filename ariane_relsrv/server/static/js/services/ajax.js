@@ -65,10 +65,9 @@ angular.module('ArianeUI')
                 else
                     return $http.get("http://" + url + ":" + port + "/rest/distrib/" + version);
             },
-            distribManager: function(mode, action, distrib){
-                action = (typeof action === "undefined" ? "" : action);
+            distribManager: function(action, distrib){
                 distrib = (typeof distrib === "undefined" ? "" : JSON.stringify(cleanElementAttr(distrib)));
-                return $http.post("http://" + url + ":" + port + "/rest/distribmanager", {mode: mode, action: action, distrib: distrib})
+                return $http.post("http://" + url + ":" + port + "/rest/distribmanager", {action: action, distrib: distrib})
             },
             component: function(dist){
                 if (dist.version != "")
