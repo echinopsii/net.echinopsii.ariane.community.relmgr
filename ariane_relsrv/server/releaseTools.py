@@ -64,37 +64,6 @@ class ReleaseTools(object):
 
     # noinspection PyTypeChecker
     @staticmethod
-    def set_distrib_url_repos(dist):
-        if project_path is None:
-            LOGGER.error("Initialization problem (set_distrib_url_repos:project_path is None)!")
-            return 1
-
-        dpath = ReleaseTools.get_distrib_path(dist)
-        dpath = os.path.join(project_path, dpath)
-        if os.path.exists(dpath):
-            fpath = os.path.join(dpath, "resources/sources/ariane.community.git.repos-master.SNAPSHOT.json")
-            if os.path.isfile(fpath):
-                with open(fpath, 'r') as target:
-                    fdata = json.load(target)
-                    url = None
-                    for key, val in fdata.items():
-                        url = fdata[key]["url"]
-                        break
-                    if url is not None:
-                        url = url[:url.index("ariane.")]
-                        if dist.url_repos != url:
-                            dist.url_repos = url
-                            dist.save()
-                            LOGGER.info("Repository URL was changed to '{}'for Distribution ({})".format(url, dist))
-                    else:
-                        LOGGER.error("URL not found from source repositories definition !")
-                        return
-            else:
-                LOGGER.warn("Distribution({}) repository URL was set to default: "
-                            "'https://github.com/echinopsii/'".format(dist))
-
-    # noinspection PyTypeChecker
-    @staticmethod
     def make_components_to_tag_list():
         if project_path is None:
             LOGGER.error("Initialization problem (make_components_to_tag_list:project_path is None)!")
@@ -197,7 +166,6 @@ class DatabaseManager(object):
             cd = DatabaseManager.create_distrib_copy(d)
             if cd is None:
                 return 1, None  # "Distribution copy already exists in database"
-            ReleaseTools.set_distrib_url_repos(cd)
             return 0, cd
 
     @staticmethod
