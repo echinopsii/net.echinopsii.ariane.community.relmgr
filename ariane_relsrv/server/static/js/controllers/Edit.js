@@ -44,14 +44,14 @@ angular.module('ArianeUI')
             plugin: ["name", "version"],
             module: ['name', 'version', 'groupId', 'artifactId', 'order', 'deployable', 'extension'],
             filenode: ["name", "type", "path"],
-            distrib: ["name", "version", "url_repos"]
+            distrib: ["name", "version", "url_repos", "dep_type"]
         };
         var editablesForNewNode = {
             component: ['name', 'version', 'order', 'type', 'build'],
             plugin: ["name", "version"],
             module: ["name", "order", 'deployable', 'extension'],
             filenode: ["name", "version", "type", "path"],
-            distrib: ["name", "version", "url_repos"]
+            distrib: ["name", "version", "url_repos", "dep_type"]
         };
         $scope.filediff = {diff: [{line: "", color: ""}], message: ""};
         /* ********************* EVENTS ********************* */

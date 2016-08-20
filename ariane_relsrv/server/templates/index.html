@@ -101,7 +101,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 							<ul class="blockList">
 								{% raw %}
 								<li ng-repeat="snap in snapshots" ng-class="snap.selected ? 'active' : ''" ng-click="clickDist(snap)">
-									<label>{{ snap.name }} {{ snap.version }}</label>
+									<label> {{ snap.dep_type }} {{ snap.name }} {{ snap.version }}</label>
 								</li>
 								{% endraw %}
 							</ul>
@@ -116,7 +116,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 							<ul class="blockList" ng-if="page=='view'">
 								{% raw %}
 								<li ng-repeat="dist in dists" ng-class="dist.selected ? 'active' : ''" ng-click="clickDist(dist)" ng-if="page=='view'">
-									<label>{{ dist.name }} {{ dist.version }}</label>
+									<label> {{ dist.dep_type }} {{ dist.name }} {{ dist.version }}</label>
 								</li>
 								{% endraw %}
 							</ul>
