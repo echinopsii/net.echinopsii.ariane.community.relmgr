@@ -71,7 +71,7 @@ angular.module('ArianeUI')
             },
             component: function(dist){
                 if (dist.version != "")
-                    return $http.get("http://" + url + ":" + port + "/rest/component?version="+dist.version);
+                    return $http.get("http://" + url + ":" + port + "/rest/component?dist_version="+dist.version+"&dist_dep_type="+dist.dep_type);
             },
             plugin: function(version){
                 if (version != "")
@@ -152,8 +152,8 @@ angular.module('ArianeUI')
                     return $http.get("http://" + url + ":" + port + "/rest/filediff", config);
                 }
             },
-            checkout: function(version, mode, isdistrib, isplugin){
-                return $http.post("http://" + url + ":" + port + "/rest/checkout", {version: version, isdistrib: isdistrib, isplugin: isplugin, mode: mode});
+            checkout: function(version, dep_type, mode, isdistrib, isplugin){
+                return $http.post("http://" + url + ":" + port + "/rest/checkout", {version: version, dep_type: dep_type, isdistrib: isdistrib, isplugin: isplugin, mode: mode});
             },
             resetDB: function(){
                 return $http.post("http://" + url + ":" + port + "/rest/reset");

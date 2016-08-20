@@ -264,7 +264,7 @@ angular.module('ArianeUI')
                 var distrib = serviceUI.getBaseObj();
                 distrib = distrib.node;
                 serviceUI.setNotifyLog("info", "View", "Entering into Release mode. Waiting for repositories pull and for Distribution copying process ...");
-                serviceAjax.checkout(distrib.version, "directories", false, false)
+                serviceAjax.checkout(distrib.version, distrib.dep_type, "directories", false, false)
                     .success(function(data){
                         serviceAjax.distribManager("RELEASE", distrib)
                             .success(function(data){
@@ -293,15 +293,14 @@ angular.module('ArianeUI')
                 var distrib = serviceUI.getBaseObj();
                 distrib = distrib.node;
                 serviceUI.setNotifyLog("info", "View", "Creating new Snapshot from " + distrib.version + " ...");
-                serviceAjax.distribManager("RELEASE", null)
+                serviceAjax.distribManager("SNAPSHOT", distrib)
                     .success(function(data){
                         $scope.mode = "DEV";
                         $scope.snapshots = [];
                         $scope.snapshots.push(data.distrib);
                         serviceUI.setBaseObj({obj: "default", node: $scope.snapshots[0]});
-                        serviceUI.setNotifyLog("info", "View", "Entered in DEV Edition mode. Distribution SNAPSHOT was copied in database.");
-                        if(serviceUI.changePage('release'))
-                            serviceUI.actionBroadcast('changePage');
+                        loadSnapshots();
+                        serviceUI.setNotifyLog("info", "View", "New snapshot created: you can now customize it.");
                     })
                     .error(function(data){
                         $scope.btnActive.dev = false;
@@ -467,7 +466,7 @@ angular.module('ArianeUI')
         function Rollback(release) {
             if(($scope.mode == "Release")&&(release == "relD" || (release == "relC" && pageErrors.relC == "error_tag"))){
                 var isdistrib = false;
-                serviceAjax.checkout($scope.snapshots[0].version, "tags", isdistrib, false)
+                serviceAjax.checkout($scope.snapshots[0].version, $scope.snapshots[0].dep_type, "tags", isdistrib, false)
                     .success(function(data){
                         var mode = 'Release' + release[release.indexOf('rel')];
                         pageErrors.relC = "";
@@ -508,7 +507,7 @@ angular.module('ArianeUI')
             if(release == "relD" || release == "relC" || release == "relB" || release == "relA"){
                 if(serviceUI.setState({obj: "release", state:"generation"})){
                     if($scope.mode == "Release"){
-                        serviceAjax.checkout($scope.snapshots[0].version, "files", false, false)
+                        serviceAjax.checkout($scope.snapshots[0].version, $scope.snapshots[0].dep_type, "files", false, false)
                             .success(function(data){
                                 var mode = 'Release' + release[release.indexOf('rel')];
                                 serviceUI.setState({obj: "default", state: "done"});
@@ -524,7 +523,7 @@ angular.module('ArianeUI')
                                 serviceUI.setNotifyLog("error", mode,  "An error occured: " + data.message);
                             });
                     } else if($scope.mode == "DEV") {
-                        serviceAjax.checkout($scope.snapshots[0].version, "files_DEV", false, false)
+                        serviceAjax.checkout($scope.snapshots[0].version, $scope.snapshots[0].dep_type, "files_DEV", false, false)
                             .success(function(data){
                                 var mode = 'DEV' + release[release.indexOf('rel')];
                                 serviceUI.setState({obj: "default", state: "done"});

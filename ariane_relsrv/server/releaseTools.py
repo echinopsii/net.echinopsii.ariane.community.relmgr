@@ -160,7 +160,7 @@ class DatabaseManager(object):
 
     @staticmethod
     def make_release_distrib(d):
-        dev = ariane.distribution_service.get_dev_distrib()
+        dev = ariane.distribution_service.get_dev_distrib(dep_type=d.dep_type)
         if dev == d:
             LOGGER.info("Creating a copy of this distribution in order to work on it")
             cd = DatabaseManager.create_distrib_copy(d)
@@ -177,7 +177,7 @@ class DatabaseManager(object):
 
     @staticmethod
     def create_distrib_copy(d):
-        dev = ariane.distribution_service.get_dev_distrib()
+        dev = ariane.distribution_service.get_dev_distrib(dep_type=d.dep_type)
         if dev.editable == "true":
             exist_cpy = DatabaseManager.get_distrib_copies()
             if len(exist_cpy) > 0:
@@ -193,13 +193,24 @@ class DatabaseManager(object):
         return None
 
     @staticmethod
-    def create_dev_distrib():
+    def create_snap_distrib():
+        dev = ariane.distribution_service.get_dev_distrib()
+        if not isinstance(dev, modelAndServices.Distribution):
+            return 1  # "Server can not find the actual DEV Distribution"
+
+        newsnap = modelAndServices.DistributionService.copy_distrib(dev)
+        newsnap.dep_type = "TO_BE_DEFINED"
+        newsnap.save()
+        return newsnap
+
+    @staticmethod
+    def create_dev_distrib(dep_type="mno"):
         """
         :return 0: success, 1: interal error, can not find the actual DEV Distribution, 2 | 3:
         The actual DEV Distribution is already in a '-SNAPSHOT' version
         """
         snapshot = "-SNAPSHOT"
-        dev = ariane.distribution_service.get_dev_distrib()
+        dev = ariane.distribution_service.get_dev_distrib(dep_type=dep_type)
         if not isinstance(dev, modelAndServices.Distribution):
             return 1  # "Server can not find the actual DEV Distribution"
 

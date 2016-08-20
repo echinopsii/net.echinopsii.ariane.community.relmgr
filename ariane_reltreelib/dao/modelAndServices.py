@@ -177,11 +177,16 @@ class DeliveryTree(object):
     def is_dev_version(ariane_node):
         if not issubclass(type(ariane_node), ArianeNode):
             return False
-        dev = DeliveryTree.distribution_service.get_dev_distrib()
-        rel = DeliveryTree.graph_dao.shortest_path(ariane_node.id, dev.id)
-        if rel is None:
-            rel = DeliveryTree.graph_dao.shortest_path(dev.id, ariane_node.id)
-        return rel is not None
+        devs = DeliveryTree.distribution_service.get_dev_distribs()
+        for dev in devs:
+            rel = DeliveryTree.graph_dao.shortest_path(ariane_node.id, dev.id)
+            if rel is None:
+                rel = DeliveryTree.graph_dao.shortest_path(dev.id, ariane_node.id)
+                if rel is not None:
+                    return True
+            else:
+                return True
+        return False
 
     @staticmethod
     def get_relations_helper(service, args, ariane_node, relations):
@@ -340,8 +345,8 @@ class DistributionService(object):
     def get_relations(self, args):
         return DeliveryTree.get_relations_helper(self, args, self.node_model, ArianeRelation.Dist_relations)
 
-    def get_dev_distrib(self):
-        dev = DeliveryTree.get_unique(self, {"editable": "true"})
+    def get_dev_distrib(self, dep_type="mno"):
+        dev = DeliveryTree.get_unique(self, {"editable": "true", "dep_type": dep_type})
         if isinstance(dev, Distribution):
             return dev
         else:
@@ -350,9 +355,17 @@ class DistributionService(object):
             # if distribs is None:
             #     return None
             for dev in distribs:
-                if "SNAPSHOT" in dev.version:
+                if "SNAPSHOT" in dev.version and dep_type == dev.dep_type:
                     return dev
             return dev
+
+    def get_dev_distribs(self):
+        ret = []
+        distribs = self.get_all()
+        for dev in distribs:
+            if "SNAPSHOT" in dev.version or dev.editable == "true":
+                ret.append(dev)
+        return ret
 
     @staticmethod
     def copy_distrib(dist):
