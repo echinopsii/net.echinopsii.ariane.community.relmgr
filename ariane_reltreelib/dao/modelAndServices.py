@@ -1253,7 +1253,7 @@ class Distribution(ArianeNode):
                     self.version = args[key]
                 elif key == "url_repos" and self.version != args[key]:
                     self.url_repos = args[key]
-                elif key == "dep_type" and self.version != args[key]:
+                elif key == "dep_type" and self.dep_type != args[key]:
                     self.dep_type = args[key]
                 else:
                     continue
@@ -1353,13 +1353,17 @@ class Component(ArianeNode):
     BUILD_PYTHON3 = "python3"
     BUILD_NONE = "none"
 
-    def __init__(self, name, version, co_type="none", node_id=0, order=0, build=None):
+    def __init__(self, name, version, co_type="none", node_id=0, order=0, build=None, branch="master"):
         self.type = co_type
         self.order = order
         self.directory_name = ""
         self.list_module = []
         self.list_component_dependency = []
         self.build = build
+        if not branch:
+            self.branch = "master"
+        else:
+            self.branch = branch
         self._len_list_mod_dep = 0
         self._len_list_module = 0
         self._len_list_files = 0
@@ -1368,6 +1372,7 @@ class Component(ArianeNode):
             "name": name,
             "version": version,
             "type": self.type,
+            "branch": self.branch,
             "build": self.build,
             "order": self.order,
             "nID": node_id
@@ -1375,7 +1380,7 @@ class Component(ArianeNode):
         self.node = DeliveryTree.graph_dao.init_node(self.node_type, self.dir)
 
     def get_dir(self):
-        self.dir = {"name": self.name, "version": self.version, "type": self.type,
+        self.dir = {"name": self.name, "version": self.version, "type": self.type, "branch": self.branch,
                     "build": self.build, "order": self.order, "nID": self.id}
         return self.dir
 
@@ -1389,6 +1394,8 @@ class Component(ArianeNode):
                     self.version = args[key]
                 elif key == "type" and self.type != args[key]:
                     self.type = args[key]
+                elif key == "branch" and self.branch != args[key]:
+                    self.branch = args[key]
                 elif key == "order" and self.order != args[key]:
                     self.order = args[key]
                 elif key == "build" and self.build != args[key]:

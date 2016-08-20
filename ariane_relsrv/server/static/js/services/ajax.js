@@ -25,7 +25,7 @@ angular.module('ArianeUI')
         var url = CONFIG.url;
         var port = CONFIG.port;
         var nodeKeys = ['name', 'version', 'groupId', 'artifactId', 'deployable', 'extension',
-            'order', 'git_repos','nID', 'type', 'build', 'path', 'url_repos', 'dep_type'];
+            'order', 'git_repos','nID', 'type', 'build', 'path', 'url_repos', 'dep_type', 'branch'];
         function cleanElementAttr(element){
             var copy = JSON.parse(JSON.stringify(element));
             for(var key in element){

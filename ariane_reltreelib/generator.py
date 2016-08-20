@@ -377,7 +377,7 @@ class Generator(object):
             key = e.get_directory_name()
             if type(e) is modelAndServices.Component:
                 if snapshot:
-                    dictio[key] = "master.SNAPSHOT"
+                    dictio[key] = e.branch + ".SNAPSHOT"
                 else:
                     dictio[key] = e.version
 
