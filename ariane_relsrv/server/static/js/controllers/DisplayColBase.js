@@ -347,7 +347,7 @@ angular.module('ArianeUI')
                         callBuildZip(release, false);
                     else{
                         serviceUI.setNotifyLog("info", "ReleaseA", "Running 'mvn clean install' ...");
-                        serviceAjax.buildZip($scope.snapshots[0].version, false, "mvncleaninstall")
+                        serviceAjax.buildZip($scope.snapshots[0].version, false, "mvncleaninstall", $scope.snapshots[0].dep_type)
                             .success(function(data){
                                 $scope.confirmValRoll.disableVal = false;
                                 serviceUI.setNotifyLog("info", "ReleaseA", "'mvn clean install' succeeded");
@@ -544,7 +544,7 @@ angular.module('ArianeUI')
             }
         }
         function callBuildZip(release, flag){
-            serviceAjax.buildZip($scope.snapshots[0].version, flag, "buildzip")
+            serviceAjax.buildZip($scope.snapshots[0].version, flag, "buildzip", $scope.snapshots[0].dep_type)
                 .success(function(data){
                     $scope.download.zip = [];
                     $scope.download.zip.push(data.zip);

@@ -1218,7 +1218,10 @@ class Distribution(ArianeNode):
         self.list_component = []
         self.list_plugin = []
         self._old_version = version
-        self.dep_type = dep_type
+        if not dep_type:
+            self.dep_type = "mno"
+        else:
+            self.dep_type = dep_type
         super().__init__(node_id, name, version, {
             "name": name,
             "version":  version,

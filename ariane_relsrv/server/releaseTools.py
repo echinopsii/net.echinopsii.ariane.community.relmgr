@@ -700,12 +700,12 @@ class BuildManager(object):
     zipfile = ""
 
     @staticmethod
-    def build_distrib(version, from_tags):
+    def build_distrib(version, from_tags, dep_type):
         # Command is either 'distpkgr master.SNAPSHOT'
         # or 'distpkgr {version}.SNAPSHOT' where {version} is version's value (i.e version= '0.6.4')
         LOGGER.info("Start Zip Build")
         if "SNAPSHOT" in version:
-            version = "master.SNAPSHOT"
+            # version = "master.SNAPSHOT"
             version_cmd = version
         else:
             if from_tags:
@@ -730,7 +730,9 @@ class BuildManager(object):
             cmd_slack = "-s " + RELMGR_CONFIG.url_slack
             LOGGER.info("Building info will be transmitted to Slack on: " + RELMGR_CONFIG.url_slack)
 
-        child = subprocess.Popen("./distribManager.py "+cmd_slack+" distpkgr " + version_cmd,
+        cmd = "./distribManager.py "+ cmd_slack + " distpkgr " + version_cmd + " " + dep_type
+        LOGGER.info("Call : " + cmd)
+        child = subprocess.Popen(cmd,
                                  # + " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname,
                                  shell=True,
                                  cwd=project_path + "/ariane.community.distrib")

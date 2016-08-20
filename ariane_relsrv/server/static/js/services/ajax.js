@@ -133,8 +133,8 @@ angular.module('ArianeUI')
                 var data = {command: command + ' ' + version};
                 return $http.post("http://" + url + ":" + port + "/rest/generation", data);
             },
-            buildZip: function(version, tags, action){
-                var data = {version: version, tags: tags, action: action}; // tags is boolean
+            buildZip: function(version, tags, action, dep_type){
+                var data = {version: version, tags: tags, action: action, dep_type: dep_type}; // tags is boolean
                 return $http.post("http://" + url + ":" + port + "/rest/buildzip", data);
             },
             commit: function(mode, task, comment, isdistrib, isplugin){

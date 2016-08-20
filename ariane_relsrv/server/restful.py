@@ -1188,6 +1188,7 @@ class RestBuildZip(Resource):
         self.reqparse.add_argument('action', type=str, help='Action you want to do')
         self.reqparse.add_argument('version', type=str, help='Version of Distribution to build')
         self.reqparse.add_argument('tags', type=bool, help='True if building .zip from Git tags')
+        self.reqparse.add_argument('dep_type', type=str, help='Deployment type of Distribution to build')
         super(RestBuildZip, self).__init__()
 
     def post(self):
@@ -1195,20 +1196,22 @@ class RestBuildZip(Resource):
         :return:
         """
         args = self.reqparse.parse_args()
-        if args["version"] is None:
+        if "version" not in args or args["version"] is None:
             abort_error("BAD_REQUEST", "You must provide the parameter 'version'")
-
-        if args["tags"] is None:
+        if "dep_type" not in args or args["dep_type"] is None:
+            abort_error("BAD_REQUEST", "You must provide the parameter 'dep_type'")
+        if "tags" not in args or args["tags"] is None:
             abort_error("BAD_REQUEST", "You must provide the parameter 'tags' (boolean)")
-        if args["action"] is None:
+        if "action" not in args or args["action"] is None:
             abort_error("BAD_REQUEST", "You must provide the parameter 'action'")
 
         version = args["version"]
+        dep_type = args["dep_type"]
         from_tags = args["tags"]
         action = args["action"]
 
         if str(action).lower() == "buildzip":
-            err = BuildManager.build_distrib(version, from_tags)
+            err = BuildManager.build_distrib(version, from_tags, dep_type)
             if err == 1:
                 abort_error("INTERNAL_ERROR", "Error while building")
             else:
