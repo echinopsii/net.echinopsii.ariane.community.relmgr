@@ -208,7 +208,7 @@ class DeliveryTree(object):
         return ret
 
     @staticmethod
-    def get_name_version_master(version):
+    def get_name_version_snapshot(version):
         if "SNAPSHOT" in str(version):
             return "SNAPSHOT"
         else:
@@ -275,7 +275,7 @@ class DistributionService(object):
 
     @staticmethod
     def sync_db_from_last_dev(distrib):
-        if DeliveryTree.get_name_version_master(distrib.version) == "SNAPSHOT":
+        if DeliveryTree.get_name_version_snapshot(distrib.version) == "SNAPSHOT":
             distrib.list_files = DeliveryTree.get_files(distrib)
             distrib.list_component = DeliveryTree.component_service.get_all(distrib)
 
@@ -484,15 +484,15 @@ class DistributionService(object):
 
     @staticmethod
     def __make_file_json_dist(distrib):
-        fname = distrib.get_directory_name() + '-' + distrib.dist_dep_type + "-" + \
-            DeliveryTree.get_name_version_master(distrib.version) + '.json'
+        fname = distrib.get_directory_name() + '-' + distrib.dist_dep_type + "." + \
+            DeliveryTree.get_name_version_snapshot(distrib.version) + '.json'
         fpath = distrib.get_directory_name() + "/resources/distrib/"
         distrib.add_file(FileNode(fname, "json_dist", distrib.version, fpath))
 
     @staticmethod
     def __make_file_pom_dist(distrib):
-        fname = "pom-" + distrib.get_directory_name() + '-' + distrib.dist_dep_type + '-' + \
-            DeliveryTree.get_name_version_master(distrib.version) + '.xml'
+        fname = "pom-" + distrib.get_directory_name() + '-' + distrib.dist_dep_type + '.' + \
+            DeliveryTree.get_name_version_snapshot(distrib.version) + '.xml'
         fpath = distrib.get_directory_name() + '/resources/maven/'
         distrib.add_file(FileNode(fname, "pom_dist", distrib.version, fpath))
 
@@ -504,13 +504,13 @@ class DistributionService(object):
 
     @staticmethod
     def __make_file_json_plugin_dist(distrib):
-        fname = 'ariane.community.plugins-distrib-' + DeliveryTree.get_name_version_master(distrib.version) + '.json'
+        fname = 'ariane.community.plugins-distrib-' + DeliveryTree.get_name_version_snapshot(distrib.version) + '.json'
         fpath = distrib.get_directory_name()+"/resources/plugins/"
         distrib.add_file(FileNode(fname, "json_plugin_dist", distrib.version, fpath))
 
     @staticmethod
     def __make_file_json_git_repos(distrib):
-        fname = 'ariane.community.git.repos-' + DeliveryTree.get_name_version_master(distrib.version) + '.json'
+        fname = 'ariane.community.git.repos-' + DeliveryTree.get_name_version_snapshot(distrib.version) + '.json'
         fpath = distrib.get_directory_name() + "/resources/sources/"
         distrib.add_file(FileNode(fname, "json_git_repos", distrib.version, fpath))
 
@@ -525,7 +525,7 @@ class ComponentService(object):
 
     @staticmethod
     def sync_db_from_last_dev(component):
-        if DeliveryTree.get_name_version_master(component.version) == "SNAPSHOT":
+        if DeliveryTree.get_name_version_snapshot(component.version) == "SNAPSHOT":
             component.list_module = DeliveryTree.module_service.get_all(component)
             component.list_component_dependency = DeliveryTree.component_service.get_all_dep(component)
             component.list_files = DeliveryTree.get_files(component)
@@ -684,7 +684,7 @@ class ComponentService(object):
 
     @staticmethod
     def __make_file_build(component):
-        fname = component.get_directory_name() + '-' + DeliveryTree.get_name_version_master(component.version) + '.json'
+        fname = component.get_directory_name() + '-' + DeliveryTree.get_name_version_snapshot(component.version) + '.json'
         fpath = component.get_directory_name()+"/distrib/db/resources/builds/"
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             component.add_file(FileNode(fname, "json_build", component.version, fpath))
@@ -692,7 +692,7 @@ class ComponentService(object):
     @staticmethod
     def __make_file_plan(component):
         fname = "net.echinopsii." + component.get_directory_name() + '_' + \
-                DeliveryTree.get_name_version_master(component.version) + '.plan'
+                DeliveryTree.get_name_version_snapshot(component.version) + '.plan'
         fpath = component.get_directory_name()+"/distrib/db/resources/virgo/repository/ariane-core/"
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             component.add_file(FileNode(fname, "plan", component.version, fpath))
@@ -728,7 +728,7 @@ class PluginService(object):
 
     @staticmethod
     def sync_db_from_last_dev(plugin):
-        if DeliveryTree.get_name_version_master(plugin.version) == "SNAPSHOT":
+        if DeliveryTree.get_name_version_snapshot(plugin.version) == "SNAPSHOT":
             plugin.list_module = DeliveryTree.plugin_service.get_all(plugin)
             plugin.list_component_dependency = DeliveryTree.plugin_service.get_all_dep(plugin)
             plugin.list_files = DeliveryTree.get_files(plugin)
@@ -876,7 +876,7 @@ class PluginService(object):
 
     @staticmethod
     def __make_file_build(plugin):
-        fname = plugin.get_directory_name() + '-' + DeliveryTree.get_name_version_master(plugin.version) + '.json'
+        fname = plugin.get_directory_name() + '-' + DeliveryTree.get_name_version_snapshot(plugin.version) + '.json'
         fpath = plugin.get_directory_name()+"/distrib/db/resources/builds/"
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             plugin.add_file(FileNode(fname, "json_build", plugin.version, fpath))
@@ -884,7 +884,7 @@ class PluginService(object):
     @staticmethod
     def __make_file_plan(plugin):
         fname = "net.echinopsii." + plugin.get_directory_name() + '_' + \
-                DeliveryTree.get_name_version_master(plugin.version) + '.plan'
+                DeliveryTree.get_name_version_snapshot(plugin.version) + '.plan'
         fpath = plugin.get_directory_name()+"/distrib/db/resources/virgo/repository/ariane-plugins/"
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             plugin.add_file(FileNode(fname, "plan", plugin.version, fpath))
@@ -918,7 +918,7 @@ class ModuleService(object):
 
     @staticmethod
     def sync_db_from_last_dev(module):
-        if DeliveryTree.get_name_version_master(module.version) == "SNAPSHOT":
+        if DeliveryTree.get_name_version_snapshot(module.version) == "SNAPSHOT":
             module.list_module = DeliveryTree.module_service.get_all(module)
             module.list_files = DeliveryTree.get_files(module)
 
