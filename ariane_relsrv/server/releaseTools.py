@@ -792,7 +792,7 @@ class BuildManager(object):
 class FileGenManager(object):
 
     @staticmethod
-    def generate_files(cmd_str, version, name):
+    def generate_files(cmd_str, version, dep_type="mno"):
         GitManager.COMPONENTS_EXCEPTIONS = []
         GitManager.COMPONENTS_TO_TAG = []
         if ReleaseTools.make_components_to_tag_list() == -1:
@@ -801,7 +801,7 @@ class FileGenManager(object):
         cmd = Command(dao_ariane=ariane, project_path=project_path)
         # cmd.gen.set_release_component_exceptions(GitManager.COMPONENTS_EXCEPTIONS)
         try:
-            cmd.execute(cmd_str, version, name)
+            cmd.execute(cmd_str, version, None, dep_type=dep_type)
             return 0, None
         except err.CommandError as cmderr:
             return 2, cmderr

@@ -104,19 +104,22 @@ class Generator(object):
         self.plugin_dict = {}
         self.distrib_dict = {}
 
-    def get_distrib(self, version):
+    def get_distrib(self, version, dep_type="mno"):
         # if version not in self.distrib_dict.keys():
-        self.distrib_dict[version] = self.ariane.get_unique(self.ariane.distribution_service, {"version": version})
+        self.distrib_dict[version] = self.ariane.get_unique(self.ariane.distribution_service,
+                                                            {"version": version, "dep_type": dep_type})
         return self.distrib_dict[version]
 
-    def get_components_list(self, version):
+    def get_components_list(self, version, dep_type="mno"):
         if version not in self.components_dict.keys():
-            self.components_dict[version] = self.ariane.component_service.get_all(self.get_distrib(version))
+            self.components_dict[version] = self.ariane.component_service.get_all(
+                self.get_distrib(version, dep_type=dep_type)
+            )
         return [m for m in self.components_dict[version]]
 
-    def get_plugins_list(self, version):
+    def get_plugins_list(self, version, dep_type="mno"):
         if version not in self.plugin_dict.keys():
-            self.plugin_dict[version] = self.ariane.plugin_service.get_all(self.get_distrib(version))
+            self.plugin_dict[version] = self.ariane.plugin_service.get_all(self.get_distrib(version, dep_type=dep_type))
         return [p for p in self.plugin_dict[version]]
 
     @staticmethod
@@ -134,41 +137,38 @@ class Generator(object):
         vmax = '.'.join(v)
         return vmin, vmax
 
-    def generate_all_distribution(self, version):
-        self.generate_distribution_files(version, with_plugins=True)
-        self.generate_component_files(version)
-        self.generate_plugin_files(version)
+    def generate_all_distribution(self, version, dep_type="mno"):
+        self.generate_distribution_files(version, dep_type)
+        self.generate_component_files(version, dep_type)
+        self.generate_plugin_files(version, dep_type)
 
-    def generate_core_files(self, version):
-        self.generate_distribution_files(version)
-        self.generate_component_files(version)
+    def generate_core_files(self, version, dep_type="mno"):
+        self.generate_distribution_files(version, dep_type)
+        self.generate_component_files(version, dep_type)
 
-    def generate_distribution_files(self, version, with_plugins=False):
-        distrib = self.get_distrib(version)
+    def generate_distribution_files(self, version, dep_type="mno"):
+        distrib = self.get_distrib(version, dep_type=dep_type)
         dist_files = self.ariane.get_files(distrib)
         for df in dist_files:
             if df.type == "pom_dist":
-                self.generate_pom_dist(version, df)
+                self.generate_pom_dist(version, dep_type, df)
             elif df.type == "json_dist":
-                self.generate_json_dist(version, df)
+                self.generate_json_dist(version, dep_type, df)
             elif df.type == "json_git_repos":
-                self.generate_json_git_repos(version, df)
+                self.generate_json_git_repos(version, dep_type, df)
 
-        if with_plugins:
-            self.generate_distrib_plugin_files(version)
-
-    def generate_distrib_plugin_files(self, version):
-        distrib = self.get_distrib(version)
+    def generate_distrib_plugin_files(self, version, dep_type="mno"):
+        distrib = self.get_distrib(version, dep_type=dep_type)
         dist_files = self.ariane.get_files(distrib)
         for df in dist_files:
             if df.type == "json_plugins":
                 self.generate_json_plugins(version, df)
             elif df.type == "json_plugin_dist":
-                self.generate_json_plugin_dist(version, df)
+                self.generate_json_plugin_dist(version, dep_type, df)
 
     # TODO: RECURSIVITY ?
-    def generate_component_files(self, version):
-        components = self.get_components_list(version)
+    def generate_component_files(self, version, dep_type):
+        components = self.get_components_list(version, dep_type=dep_type)
         is_snapshot_version = "SNAPSHOT" in version
         flag_clean_env = True
 
@@ -195,7 +195,7 @@ class Generator(object):
                         if flag_clean_env:
                             self.__clean_environment_files(self.dir_output + f.path)
                             flag_clean_env = False
-                        self.generate_plan_tpl(version, f)
+                        self.generate_plan_tpl(version, dep_type, f)
                 elif f.type == "pom":
                     gr_id, art_id = self.__generate_pom_comp_plug(mod, f)
 
@@ -204,13 +204,13 @@ class Generator(object):
                         if sub.is_parent():
                             self.__generate_pom_subparent(sub, s_gr_id, s_art_id)
 
-    def generate_plugin_files(self, version):
+    def generate_plugin_files(self, version, dep_type="mno"):
         """ Generate all files for each plugin in the given distribution.
         :param version:
         :return:
         """
         is_dev = "SNAPSHOT" in version
-        plugins = self.get_plugins_list(version)
+        plugins = self.get_plugins_list(version, dep_type=dep_type)
 
         for plug in plugins:
             if not is_dev:
@@ -297,10 +297,10 @@ class Generator(object):
 
         return group_id, artifact_id
 
-    def generate_pom_dist(self, version, f_pom):
+    def generate_pom_dist(self, version, dep_type, f_pom):
         if GitTagHandler.is_git_tagged(version, path=self.dir_output+f_pom.path):
             return
-        components = self.get_components_list(version)
+        components = self.get_components_list(version, dep_type=dep_type)
         for m in components.copy():
             if m.build != Component.BUILD_MVN and m.build != Component.BUILD_MVN_PYTHON3:
                 components.remove(m)
@@ -344,10 +344,10 @@ class Generator(object):
         with open(self.dir_output+fplan.path+fplan.name, 'w') as target:
                 target.write(template.render(args))
 
-    def generate_json_plugin_dist(self, version, fjson):
+    def generate_json_plugin_dist(self, version, dep_type, fjson):
         if GitTagHandler.is_git_tagged(version, path=self.dir_output+fjson.path):
             return
-        elements = self.get_plugins_list(version)
+        elements = self.get_plugins_list(version, dep_type=dep_type)
         dictio = {}
 
         for e in elements:
@@ -363,10 +363,10 @@ class Generator(object):
 
         return self.dir_output+fjson.path+fjson.name
 
-    def generate_json_dist(self, version, fjson):
+    def generate_json_dist(self, version, dep_type, fjson):
         if GitTagHandler.is_git_tagged(version, path=self.dir_output+fjson.path):
             return
-        elements = self.get_components_list(version)
+        elements = self.get_components_list(version, dep_type=dep_type)
         LOGGER.debug("Generator.generate_json_dist - " + str(elements))
         dictio = {}
         snapshot = False
@@ -465,13 +465,13 @@ class Generator(object):
 
         return self.dir_output+fjson.path+fjson.name
 
-    def generate_json_git_repos(self, version, fjson):
+    def generate_json_git_repos(self, version, dep_type, fjson):
         if GitTagHandler.is_git_tagged(version, path=self.dir_output+fjson.path):
             return
 
-        dist = self.get_distrib(version)
-        components = self.get_components_list(version)
-        plugins = self.get_plugins_list(version)
+        dist = self.get_distrib(version, dep_type=dep_type)
+        components = self.get_components_list(version, dep_type=dep_type)
+        plugins = self.get_plugins_list(version, dep_type=dep_type)
         dictio = {}
         url = dist.url_repos
         for m in components:
@@ -551,11 +551,11 @@ class Generator(object):
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
             target.write(template.render(args))
 
-    def generate_plan_tpl(self, version, fplantpl):
+    def generate_plan_tpl(self, version, dep_type, fplantpl):
         # Only for DEV generation
         if "-SNAPSHOT" not in version:
             return
-        components = self.get_components_list(version)
+        components = self.get_components_list(version, dep_type=dep_type)
         component = None
         for m in components:
             if m.name in fplantpl.name:

@@ -326,7 +326,7 @@ angular.module('ArianeUI')
                 }
                 if(serviceUI.setState({obj: "release", state:"generation"})){
                     $scope.warnRelA.warning = null;
-                    serviceAjax.generate($scope.cmdGen.cmd, $scope.snapshots[0].version)
+                    serviceAjax.generate($scope.cmdGen.cmd, $scope.snapshots[0].version, $scope.snapshots[0].dep_type)
                         .success(function(data){
                             serviceUI.setNotifyLog("info", "ReleaseA", "Generation done! ("+data.message+")");
                             serviceUI.setState({obj: "default", state: "done"});

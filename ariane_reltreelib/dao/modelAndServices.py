@@ -153,10 +153,12 @@ class DeliveryTree(object):
         rel = None
         if isinstance(start, ArianeNode) and isinstance(end, ArianeNode):
             relation = DeliveryTree.graph_dao.get_relation_between(start.id, end.id)
-            rel_d = DeliveryTree.graph_dao.get_relation_data(relation)
-            start_node = ArianeNode.create_subclass(rel_d["start_label"], rel_d["start_properties"])
-            end_node = ArianeNode.create_subclass(rel_d["end_label"], rel_d["end_properties"])
-            rel = ArianeRelation(start_node, rel_d["relation"], end_node, rel_d["rel_properties"], rel_d["rel_node"])
+            if relation is not None:
+                rel_d = DeliveryTree.graph_dao.get_relation_data(relation)
+                start_node = ArianeNode.create_subclass(rel_d["start_label"], rel_d["start_properties"])
+                end_node = ArianeNode.create_subclass(rel_d["end_label"], rel_d["end_properties"])
+                rel = ArianeRelation(start_node, rel_d["relation"], end_node,
+                                     rel_d["rel_properties"], rel_d["rel_node"])
         return rel
 
     @staticmethod
@@ -1114,9 +1116,9 @@ class ArianeNode(object):
             prop["node_type"] = self.get_rest_endpoint()
         return prop
 
-    def update_files_name(self):
+    def update_files_name(self, dep_type=None):
         for f in self.list_files:
-            f.udpdate_name(self.version)
+            f.update_name(self.version, dep_type)
             f.save()
 
     def add_file(self, file_node):
@@ -1268,8 +1270,8 @@ class Distribution(ArianeNode):
 
     def save(self):
         if self.id == 0:
-            for mod in self.list_component:
-                mod.save()
+            for comp in self.list_component:
+                comp.save()
 
             for plugin_dict in self.list_plugin:
                 plugin_dict["Plugin"].save()
@@ -1284,8 +1286,8 @@ class Distribution(ArianeNode):
                 self.__create_relation(plugin_dict["Plugin"], ArianeRelation.Plugin_Dist,
                                        plugin_dict["properties"], reverse=False)
 
-            for mod in self.list_component:
-                self.__create_relation(mod, ArianeRelation.Dist_component)
+            for comp in self.list_component:
+                self.__create_relation(comp, ArianeRelation.Dist_component)
 
             for fnode in self.list_files:
                 self._create_file(fnode)
@@ -1297,7 +1299,7 @@ class Distribution(ArianeNode):
 
             if self._old_version != self.version:
                 self.list_files = DeliveryTree.get_files(self)
-                self.update_files_name()
+                self.update_files_name(dep_type=self.dep_type)
 
     def delete(self):
         LOGGER.debug("Distribution.delete - " + str(self))
@@ -1467,8 +1469,10 @@ class Component(ArianeNode):
                     s.save()
                 for f in self.list_files:
                     f.version = self.version
-                self.update_files_name()
-                FileNode.update_environment_filename(self.name, self.version)
+                dist = self.get_parent_distrib()
+                dep_type = dist.dep_type if dist is not None else None
+                self.update_files_name(dep_type=dep_type)
+                FileNode.update_environment_filename(self.name, self.version, dep_type=dep_type)
                 self.__update_dependencies()
                 self._old_version = self.version
 
@@ -1489,6 +1493,15 @@ class Component(ArianeNode):
                 DeliveryTree.graph_dao.delete(rel)
             DeliveryTree.graph_dao.delete(self.node)
             self._reset_node()
+
+    def get_parent_distrib(self):
+        ret = None
+        distribs = DeliveryTree.distribution_service.get_all()
+        for distrib in distribs:
+            if DeliveryTree.get_relation_between(distrib, self) is not None:
+                ret = distrib
+                break
+        return ret
 
     def add_module(self, module):
         if isinstance(module, Module):
@@ -2008,11 +2021,15 @@ class FileNode(ArianeNode):
                     return fnode
         return None
 
-    def udpdate_name(self, version):
+    def update_name(self, version, dep_type=None):
         self.version = version
         if self.type not in ["plantpl"]:
             if "SNAPSHOT" in version:
-                version = "SNAPSHOT"
+                if (dep_type is None or dep_type not in self.name) and \
+                   (self.type == "json_build" or self.type == "plan"):
+                    version = "master.SNAPSHOT"
+                else:
+                    version = "SNAPSHOT"
             if "-" in version:
                 version = str(version).replace('-', '.')
             if "_" in version:
@@ -2028,7 +2045,10 @@ class FileNode(ArianeNode):
                     sufix = '.' + sufix[len(sufix)-1]
                 else:
                     raise "Error, incorrect file name for {}".format(self)
-                self.name = prefix + '-' + version + sufix
+                if dep_type is None or dep_type not in self.name:
+                    self.name = prefix + '-' + version + sufix
+                else:
+                    self.name = prefix + '-' + dep_type + "." + version + sufix
             elif self.type == "plan":
                 tmp = self.name.split('_')
                 if len(tmp) > 0:
@@ -2039,10 +2059,13 @@ class FileNode(ArianeNode):
                     sufix = '.' + sufix[len(sufix)-1]
                 else:
                     raise "Error, incorrect file name for {}".format(self)
-                self.name = prefix + '_' + version + sufix
+                if dep_type is None or dep_type not in self.name:
+                    self.name = prefix + '_' + version + sufix
+                else:
+                    self.name = prefix + '_' + dep_type + "." + version + sufix
 
     @staticmethod
-    def update_environment_filename(name, version):
+    def update_environment_filename(name, version, dep_type=None):
         if name not in ["directory", "idm", "injector", "portal", "mapping", "messaging"]:
             return
         if "SNAPSHOT" not in version:
@@ -2072,7 +2095,11 @@ class FileNode(ArianeNode):
             sufix = tmp[1]
             sufix = sufix[-len(".plan.tpl"):]
             version = version.replace('-', '.')
-            file.name = prefix + '_' + version + sufix
+            if dep_type is None or dep_type not in file.name:
+                file.name = prefix + '_' + version + sufix
+            else:
+                file.name = prefix + '_' + dep_type + "." + version + sufix
+
             file.save()
         else:
             raise "Error, incorrect file name for {}".format(file)

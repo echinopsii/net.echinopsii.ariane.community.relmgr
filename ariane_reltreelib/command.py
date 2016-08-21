@@ -105,9 +105,10 @@ class Command(object):
         LOGGER.debug("Command.execute_parse - {cmd: " + cmd + ",  version: " + version + "}")
         self.execute(cmd, version, name)
 
-    def execute(self, cmd, version, name):
+    def execute(self, cmd, version, name, dep_type="mno"):
         LOGGER.debug("Command.execute - {cmd: " + str(cmd) + " ;version: " + str(version) + " ; name: " + str(name) + "}")
-        distrib = Command.dao_ariane.get_unique(Command.dao_ariane.distribution_service, {"version": version})
+        distrib = Command.dao_ariane.get_unique(Command.dao_ariane.distribution_service,
+                                                {"version": version, "dep_type": dep_type})
         if isinstance(distrib, modelAndServices.Distribution):
             if cmd in Command.commands_dist:
                 if cmd == "distribution":

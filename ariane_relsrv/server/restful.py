@@ -1190,6 +1190,8 @@ class RestGeneration(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('command', type=str, help='Command of File Generation')
+        self.reqparse.add_argument('dist_version', type=str, help='Distribution version')
+        self.reqparse.add_argument('dist_dep_type', type=str, help="Distribution deployment type")
         super(RestGeneration, self).__init__()
 
     def post(self):
@@ -1201,24 +1203,18 @@ class RestGeneration(Resource):
         :return:
         """
         args = self.reqparse.parse_args()
-        if args["command"] is None:
+        if "command" not in args or args["command"] is None:
             abort_error("BAD_REQUEST", "You must provide the 'command' parameter")
+        if "dist_version" not in args or args["dist_version"] is None:
+            abort_error("BAD_REQUEST", "You must provide the 'dist_version' parameter")
+        if "dist_dep_type" not in args or args["dist_dep_type"] is None:
+            abort_error("BAD_REQUEST", "You must provide the 'dist_dep_type' parameter")
 
-        params = args["command"].split(' ')
-        if params[0] == "testOK":
-            return make_response(json.dumps({"message": args["command"]}), 200, headers_json)
-        elif params[0] == "testNOK":
-            abort_error("BAD_REQUEST", "TEST: the Error test has succeded")
-        if len(params) >= 2:
-            if len(params) == 2:
-                params.append(None)
-            err, errobj = FileGenManager.generate_files(params[0], params[1], params[2])
-            if err == 1:
-                abort_error("BAD_REQUEST", "There is no copy of the master SNAPSHOT Distribution")
-            elif err == 2:
-                abort_error("BAD_REQUEST", "{} (Given command {} is incorrect)".format(errobj, args))
-        else:
-            abort_error("BAD_REQUEST", "Too few arguments in the given command {}".format(args))
+        err, errobj = FileGenManager.generate_files(args["command"], args["dist_version"], args["dist_dep_type"])
+        if err == 1:
+            abort_error("BAD_REQUEST", "There is no copy of the " + args["dist_dep_type"] + " SNAPSHOT Distribution")
+        elif err == 2:
+            abort_error("BAD_REQUEST", "{} (Given command {} is incorrect)".format(errobj, args))
 
         return make_response(json.dumps({"message": args["command"]}), 200, headers_json)
 

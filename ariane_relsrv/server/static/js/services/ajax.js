@@ -128,8 +128,8 @@ angular.module('ArianeUI')
                 var type = element.node_type;
                 return $http.delete("http://" + url + ":" + port + "/rest/"+type+'/'+element.nID.toString());
             },
-            generate: function (command, version) {
-                var data = {command: command + ' ' + version};
+            generate: function (command, dist_version, dist_dep_type) {
+                var data = {command: command, dist_version: dist_version, dist_dep_type: dist_dep_type};
                 return $http.post("http://" + url + ":" + port + "/rest/generation", data);
             },
             buildZip: function(version, tags, action, dep_type){
