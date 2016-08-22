@@ -136,8 +136,10 @@ angular.module('ArianeUI')
                 var data = {version: version, tags: tags, action: action, dep_type: dep_type}; // tags is boolean
                 return $http.post("http://" + url + ":" + port + "/rest/buildzip", data);
             },
-            commit: function(mode, task, comment, isdistrib, isplugin){
-                var data = {isdistrib: isdistrib,isplugin: isplugin, mode: mode, task: task, comment: comment};
+            commit: function(dist_dep_type, mode, comment, isdistrib, isplugin){
+                var data = {
+                    isdistrib: isdistrib, isplugin: isplugin, mode: mode, comment: comment, dist_dep_type: dist_dep_type
+                };
                 return $http.post("http://" + url + ":" + port + "/rest/commit", data);
             },
             deleteZip: function(version){

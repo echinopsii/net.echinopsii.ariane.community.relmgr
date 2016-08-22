@@ -971,8 +971,9 @@ class RestCommit(Resource):
         self.reqparse.add_argument('isdistrib', type=bool)
         self.reqparse.add_argument('isplugin', type=bool)
         self.reqparse.add_argument('mode', type=str)
-        self.reqparse.add_argument('task', type=str)
         self.reqparse.add_argument('comment', type=str)
+        self.reqparse.add_argument('dist_version', type=str)
+        self.reqparse.add_argument('dist_dep_type', type=str)
         super(RestCommit, self).__init__()
 
     def post(self):
@@ -986,12 +987,12 @@ class RestCommit(Resource):
         if args["mode"] is None:
             LOGGER.warn("You must provide 'mode' parameter")
             abort_error("BAD_REQUEST", "You must provide 'mode' parameter")
-        if args["task"] is None:
-            LOGGER.warn("You must provide 'task' parameter")
-            abort_error("BAD_REQUEST", "You must provide 'task' parameter")
         if args["comment"] is None:
             LOGGER.warn("You must provide 'comment' parameter")
             abort_error("BAD_REQUEST", "You must provide 'comment' parameter")
+        if args["dist_dep_type"] is None:
+            LOGGER.warn("You must provide 'dist_dep_type' parameter")
+            abort_error("BAD_REQUEST", "You must provide 'dist_dep_type' parameter")
 
         err, message, warns = GitManager.commit_distrib(args)
 
@@ -1045,7 +1046,7 @@ class RestCheckout(Resource):
         if mode in ["files", "files_DEV"]:
             err = GitManager.checkout_distrib(dist, isplugin)
             if err == 1:
-                abort_error("BAD_REQUEST", "Given Distribution version ({})does not exists".format(version))
+                abort_error("BAD_REQUEST", "Given Distribution version ({}) does not exists".format(version))
             # Delete copy distrib and rename Initial distrib
             if mode == "files":
                 LOGGER.info("Removing the working copy...")
@@ -1076,10 +1077,13 @@ class RestCheckout(Resource):
 
         elif mode == "directories":
             err, errmsg = GitManager.pull_checkout_distrib(dist, isplugin)
-            return make_response(json.dumps({"message": "git checkout and pull done. " + errmsg}), 200, headers_json)
+            if err != 0:
+                abort_error("BAD_REQUEST", str(errmsg))
+            else:
+                return make_response(json.dumps({"message": "git checkout and pull done. " + errmsg}), 200, headers_json)
 
         elif mode == "tags":
-            err, message = GitManager.checkout_tags(isdistrib, isplugin)
+            err, message = GitManager.rollback_checkout_tags(isdistrib, isplugin)
             if err == 1:
                 abort_error("INTERNAL_ERROR", "Server can not find the current Distribution to commit")
             elif err == 2:
@@ -1208,6 +1212,7 @@ class RestGeneration(Resource):
         :return:
         """
         args = self.reqparse.parse_args()
+        LOGGER.debug("RestGeneration.post: " + str(args))
         if "command" not in args or args["command"] is None:
             abort_error("BAD_REQUEST", "You must provide the 'command' parameter")
         if "dist_version" not in args or args["dist_version"] is None:
@@ -1215,7 +1220,8 @@ class RestGeneration(Resource):
         if "dist_dep_type" not in args or args["dist_dep_type"] is None:
             abort_error("BAD_REQUEST", "You must provide the 'dist_dep_type' parameter")
 
-        err, errobj = FileGenManager.generate_files(args["command"], args["dist_version"], args["dist_dep_type"])
+        err, errobj = FileGenManager.generate_files(args["command"], args["dist_version"],
+                                                    dep_type=args["dist_dep_type"])
         if err == 1:
             abort_error("BAD_REQUEST", "There is no copy of the " + args["dist_dep_type"] + " SNAPSHOT Distribution")
         elif err == 2:

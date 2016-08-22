@@ -106,19 +106,20 @@ class Command(object):
         self.execute(cmd, version, name)
 
     def execute(self, cmd, version, name, dep_type="mno"):
-        LOGGER.debug("Command.execute - {cmd: " + str(cmd) + " ;version: " + str(version) + " ; name: " + str(name) + "}")
+        LOGGER.debug("Command.execute - {cmd: " + str(cmd) + " ; version: " + str(version) + " ; name: " +
+                     str(name) + "; dep_type: " + str(dep_type) + "}")
         distrib = Command.dao_ariane.get_unique(Command.dao_ariane.distribution_service,
                                                 {"version": version, "dep_type": dep_type})
         if isinstance(distrib, modelAndServices.Distribution):
             if cmd in Command.commands_dist:
                 if cmd == "distribution":
-                    Command.gen.generate_all_distribution(version)
+                    Command.gen.generate_all_distribution(version, dep_type=dep_type)
                 else:
                     if "only" in cmd:
                         method = 'generate_'+str(cmd).replace('_only', '_files')
                         LOGGER.debug("Command.execute - " + method)
                         method = getattr(Command.gen, method)
-                        method(version)
+                        method(version, dep_type=dep_type)
                     else:
                         fnode = Command.dao_ariane.get_one_file(distrib, cmd)
                         if cmd == "json_plugins":

@@ -147,6 +147,7 @@ class Generator(object):
         self.generate_component_files(version, dep_type)
 
     def generate_distribution_files(self, version, dep_type="mno"):
+        LOGGER.warning("Generator.generate_distribution_files: {" + version + ", " + dep_type + "}")
         distrib = self.get_distrib(version, dep_type=dep_type)
         dist_files = self.ariane.get_files(distrib)
         for df in dist_files:
@@ -172,22 +173,22 @@ class Generator(object):
         is_snapshot_version = "SNAPSHOT" in version
         flag_clean_env = True
 
-        for mod in components:
-            LOGGER.debug("Generator.generate_component_files - " + mod.name + " " + mod.version + " files")
+        for comp in components:
+            LOGGER.debug("Generator.generate_component_files - " + comp.name + " " + comp.version + " files")
             if not is_snapshot_version:
-                if GitTagHandler.is_git_tagged(mod.version, path=self.dir_output+mod.get_directory_name()):
+                if GitTagHandler.is_git_tagged(comp.version, path=self.dir_output+comp.get_directory_name()):
                     LOGGER.debug("Generator.generate_component_files - git tagged !")
                     continue
-            self.ariane.component_service.update_arianenode_lists(mod)
-            mod_files = self.ariane.get_files(mod)
+            self.ariane.component_service.update_arianenode_lists(comp)
+            mod_files = self.ariane.get_files(comp)
             for f in mod_files:
                 LOGGER.debug("Generator.generate_component_files - " + f.name)
                 if "SNAPSHOT" in f.name and not is_snapshot_version:
                     continue
                 elif f.type == "plan":
-                    self.generate_plan(mod, f)
+                    self.generate_plan(comp, f)
                 elif f.type == "json_build":
-                    self.generate_lib_json(mod, f)
+                    self.generate_lib_json(comp, f)
                 elif f.type == "vsh":
                     self.generate_vsh_installer(version, components, f)
                 elif f.type == "plantpl":
@@ -197,9 +198,9 @@ class Generator(object):
                             flag_clean_env = False
                         self.generate_plan_tpl(version, dep_type, f)
                 elif f.type == "pom":
-                    gr_id, art_id = self.__generate_pom_comp_plug(mod, f)
+                    gr_id, art_id = self.__generate_pom_comp_plug(comp, f)
 
-                    for sub in mod.list_module:
+                    for sub in comp.list_module:
                         s_gr_id, s_art_id = self.__generate_pom_module(sub, gr_id, art_id)
                         if sub.is_parent():
                             self.__generate_pom_subparent(sub, s_gr_id, s_art_id)
@@ -320,25 +321,41 @@ class Generator(object):
         if "SNAPSHOT" in comp_plug.version:
             snapshot = True
 
-        template = self.jinja_env.get_template(fplan.path+"plan_"+comp_plug.name+"_template.jnj")
+        if isinstance(comp_plug, modelAndServices.Component):
+            d = comp_plug.get_parent_distrib()
+            if os.path.isfile(self.dir_output + fplan.path + "plan_" + comp_plug.name + "_" +
+                              d.dep_type + "_template.jnj"):
+                template = self.jinja_env.get_template(fplan.path + "plan_" + comp_plug.name + "_" + d.dep_type +
+                                                       "_template.jnj")
+            else:
+                template = self.jinja_env.get_template(fplan.path + "plan_" + comp_plug.name + "_template.jnj")
+        else:
+            template = self.jinja_env.get_template(fplan.path + "plan_" + comp_plug.name + "_template.jnj")
         modules = [s for s in comp_plug.list_module]
 
         for s in modules:
             self.ariane.module_service.update_arianenode_lists(s)
-        # Remove each module which is not deployable.
         for s in modules.copy():
             if s.is_parent():
                 modules.extend(s.list_module)
                 modules.remove(s)
+        # Remove each module which is not deployable.
+        for s in modules.copy():
             if not s.deployable:
                 modules.remove(s)
         modules = sorted(modules, key=lambda module: module.order)
         vmin, vmax = modelAndServices.ArianeRelation.make_vmin_vmax(comp_plug.version)
         if snapshot:
-            m_version = comp_plug.version
+            if comp_plug.version.split("-").__len__() > 2:
+                m_version = comp_plug.version.split("-")[0] + "-" + comp_plug.version.split("-")[2]
+            else:
+                m_version = comp_plug.version
             m_version = str(m_version).replace("-", ".")
         else:
-            m_version = comp_plug.version
+            if comp_plug.version.split("-").__len__() > 1:
+                m_version = comp_plug.version.split("-")[0]
+            else:
+                m_version = comp_plug.version
         args = {"version": m_version, "component": comp_plug, "vmin": vmin, "vmax": vmax, "submodules": modules}
 
         with open(self.dir_output+fplan.path+fplan.name, 'w') as target:
@@ -498,7 +515,7 @@ class Generator(object):
         list_lib = []
         for s in comp_plug.list_module:
             ext = s.extension
-            if ext == Module.EXTENSION_JAR or ext == Module.EXTENSION_WAR:
+            if s.deployable and (ext == Module.EXTENSION_JAR or ext == Module.EXTENSION_WAR):
                 # url = groupId.replace('.','/') + artifactId + version + '/'
                 url = "net/echinopsii/" + str(comp_plug.get_directory_name()).replace('.', '/') + "/"
                 url += "net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"/" + \
@@ -508,7 +525,7 @@ class Generator(object):
             elif s.is_parent():
                 for s_sub in s.list_module:
                     ext = s_sub.extension
-                    if ext == Module.EXTENSION_JAR or ext == Module.EXTENSION_WAR:
+                    if s_sub.deployable and (ext == Module.EXTENSION_JAR or ext == Module.EXTENSION_WAR):
                         url = "net/echinopsii/" + str(comp_plug.get_directory_name()).replace('.', '/') + "/"+s.name+"/"
                         url += "net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"."+s_sub.name+"/" + \
                                comp_plug.version+"/net.echinopsii."+comp_plug.get_directory_name()+"."+s.name + \
@@ -526,7 +543,11 @@ class Generator(object):
         for component in components:
             v = component.version
             if "-SNAPSHOT" in v:
+                if v.split("-").__len__() > 2:
+                    v = v.split("-")[0] + "-" + v.split("-")[2]
                 v = str(v).replace('-', '.')
+            elif v.split("-").__len__() > 1:
+                v = v.split("-")[0]
             components_list.append({"name": component.name, "version": v, "type": component.type})
 
         for component in components_list.copy():
@@ -568,11 +589,15 @@ class Generator(object):
         version_tag = component.version[:-len("-SNAPSHOT")]
         if GitTagHandler.is_git_tagged(version_tag, path=self.dir_output+component.get_directory_name()):
             return
-        # net.echinopsii.ariane.community.core.directory_0.7.2-SNAPSHOT.plan.tpl
+
         tplname = fplantpl.name.split("_")
         tplname = tplname[0] + ".plan.tpl.jnj"
         template = self.jinja_env.get_template(fplantpl.path+tplname)
-        m_version = component.version
+
+        if component.version.split("-").__len__() > 2:
+            m_version = component.version.split("-")[0] + "-" + component.version.split("-")[2]
+        else:
+            m_version = component.version
         version_point = str(m_version).replace("-", ".")
         args = {"version": m_version, "version_point": version_point}
 

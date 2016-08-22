@@ -358,7 +358,7 @@ class DistributionService(object):
             # if distribs is None:
             #     return None
             for dev in distribs:
-                if "SNAPSHOT" in dev.version and dep_type == dev.dep_type:
+                if dev.editable == "true" and dep_type == dev.dep_type:
                     return dev
             return dev
 
@@ -718,7 +718,8 @@ class ComponentService(object):
     def create_ariane_node(node):
         args = DeliveryTree.graph_dao.get_node_properties(node)
         return Component(args["name"], args["version"], co_type=args["type"], node_id=args["nID"],
-                         build=args["build"], order=args["order"])
+                         build=args["build"], order=args["order"],
+                         branch=args["branch"] if "branch" in args else None)
 
     def get_label(self):
         return self.node_model.node_type
@@ -1187,7 +1188,8 @@ class ArianeNode(object):
                                 editable=args["editable"], url_repos=args["url_repos"], dep_type=args["dep_type"])
         elif node_type == "Component":
             node = Component(args["name"], args["version"], args["type"], args["nID"],
-                             build=args["build"], order=args["order"])
+                             build=args["build"], order=args["order"],
+                             branch=args["branch"] if "branch" in args else None)
         elif node_type == "Plugin":
             node = Plugin(args["name"], args["version"], args["nID"], git_repos=args["git_repos"])
         elif node_type == "Module":
@@ -1367,7 +1369,7 @@ class Component(ArianeNode):
         self.list_module = []
         self.list_component_dependency = []
         self.build = build
-        if not branch:
+        if branch is None or not branch:
             self.branch = "master"
         else:
             self.branch = branch
@@ -2036,6 +2038,10 @@ class FileNode(ArianeNode):
                     version = "master.SNAPSHOT"
                 else:
                     version = "SNAPSHOT"
+            elif version.split("-").__len__() > 1:
+                # Manage branched versions like X.Y.Z-<BRANCH_DEF> => rename file with dep_type.X.Y.Z only
+                version = version.split("-")[0]
+
             if "-" in version:
                 version = str(version).replace('-', '.')
             if "_" in version:
@@ -2090,6 +2096,9 @@ class FileNode(ArianeNode):
             return
         if "SNAPSHOT" not in dist.version:
             return
+        if version.split("-").__len__() > 2:
+            version = version.split("-")[0] + "-" + version.split("-")[2]
+
         components = DeliveryTree.component_service.get_all(dist)
         env = [m for m in components if m.name == "environment"]
         if not len(env) == 1:

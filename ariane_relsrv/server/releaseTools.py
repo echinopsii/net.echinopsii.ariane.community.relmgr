@@ -403,7 +403,7 @@ class GitManager(object):
     commit_comment = ""
 
     @staticmethod
-    def commit_element(m, mpath, commit, task, comment, mode):
+    def commit_element(m, mpath, commit, comment, mode):
         rets = {"path_errs": ""}
         errs = ""
         warns = ""
@@ -427,8 +427,8 @@ class GitManager(object):
                         LOGGER.warn("warning_on_tag("+m.name+" "+m.version+"): "+line+"; ")
                         break
                     if "error" in line:
-                        LOGGER.error("error_on_commit("+m.name+"): "+task + " " + comment + ""+line+"; ")
-                        errs += "error_on_commit("+m.name+"): "+task + " " + comment + ""+line+"; "
+                        LOGGER.error("error_on_commit(" + m.name + "): " + comment + "" + line + "; ")
+                        errs += "error_on_commit(" + m.name + "): " + comment + "" + line + "; "
                         break
                 if errs == "":
                     if subprocess.call("git push ", shell=True) != 0:
@@ -462,17 +462,17 @@ class GitManager(object):
             LOGGER.error("Initialization problem (commit_distrib:project_path is None)!")
             return 1
 
+        dist_dep_type = args["dist_dep_type"]
+        mode = args["mode"]
+        comment = args["comment"]
         isdistrib = args["isdistrib"]
         isplugin = args["isplugin"]
-        mode = args["mode"]
-        task = args["task"]
-        comment = args["comment"]
 
         # git commit -m "task comment" ./
         # git tag version_component
         # git push origin  version_component
 
-        dist = ariane.distribution_service.get_dev_distrib()
+        dist = ariane.distribution_service.get_dev_distrib(dist_dep_type)
         if not isinstance(dist, modelAndServices.Distribution):
             return 1, "", ""  # "Server can not find the current Distribution to commit"
 
@@ -480,13 +480,13 @@ class GitManager(object):
         errs = ""
         warns = ""
         path_errs = []
-        GitManager.commit_comment = task+" "+comment
+        GitManager.commit_comment = comment
         commit = "git commit -m \""+GitManager.commit_comment+"\" ./"
 
         if isdistrib:
             rets = GitManager.commit_element(dist, os.path.join(
                 project_path, ReleaseTools.get_distrib_path(dist)
-            ), commit, task, comment, mode)
+            ), commit, comment, mode)
 
             errs += rets["errs"]
             warns += rets["warns"]
@@ -507,7 +507,7 @@ class GitManager(object):
                         LOGGER.warn(m.name+"("+m.version+") not in components to tag")
                         continue
                     mpath = os.path.join(project_path, m.get_directory_name())
-                    rets = GitManager.commit_element(m, mpath, commit, task, comment, mode)
+                    rets = GitManager.commit_element(m, mpath, commit, comment, mode)
                     errs += rets["errs"]
                     warns += rets["warns"]
                     if rets["path_errs"] != "":
@@ -568,28 +568,56 @@ class GitManager(object):
             return 1
 
         LOGGER.info("Start repositories git checkout and git pull")
-        paths = [ReleaseTools.get_distrib_path(dist)]
         components = ariane.component_service.get_all(dist)
         plugins = ariane.plugin_service.get_all(dist)
-        paths.extend([os.path.join(project_path, m.get_directory_name()) for m in components])
-        if isplugin:
-            paths.extend([os.path.join(project_path, p.get_directory_name()) for p in plugins])
+
         errs = ""
-        for p in paths:
+        for comp in components:
+            p = os.path.join(project_path, comp.get_directory_name())
             if os.path.exists(p):
-                if subprocess.call('git checkout ./', shell=True, cwd=p) != 0:
-                    errs += "error while git checkout {}-".format(p)
+                branches = subprocess.check_output(['git', 'branch'], cwd=p)
+                if comp.branch not in str(branches):
+                    if subprocess.call('git branch -v -a', shell=True, cwd=p) != 0:
+                        errs += "error while getting other remote git branches {}-".format(p)
+                    if subprocess.call(
+                            'git checkout -b ' + comp.branch + ' remotes/origin/' + comp.branch,
+                            shell=True, cwd=p) != 0:
+                        errs += "error while checkout remote branch {}-".format(comp.branch)
+                    branches = subprocess.check_output(['git', 'branch'], cwd=p)
+                if ("* " + comp.branch) not in str(branches):
+                    if subprocess.call('git checkout ' + comp.branch, shell=True, cwd=p):
+                        errs += "error while checkout on branch {}-".format(comp.branch)
+
+                status = subprocess.check_output(['git', 'status'], cwd=p)
+                if 'Changes not staged for commit' in str(status) or 'Untracked files:' in str(status):
+                    errs += "current git local repository has diff {}-".format(p)
+                # if subprocess.call('git checkout ./', shell=True, cwd=p) != 0:
+                #     errs += "error while git checkout {}-".format(p)
                 if subprocess.call('git pull', shell=True, cwd=p) != 0:
                     errs += "error while git pull {}-".format(p)
+
+        if isplugin:
+            for plug in plugins:
+                p = os.path.join(project_path, plug.get_directory_name())
+                if os.path.exists(p):
+                    # if subprocess.call('git checkout ./', shell=True, cwd=p) != 0:
+                    #     errs += "error while git checkout {}-".format(p)
+                    status = subprocess.check_output(['git', 'status'], cwd=p)
+                    if 'Changes not staged for commit' in str(status) or 'Untracked files:' in str(status):
+                        errs += "current git local repository has diff {}-".format(p)
+                    if subprocess.call('git pull', shell=True, cwd=p) != 0:
+                        errs += "error while git pull {}-".format(p)
+
         if errs != "":
             LOGGER.warn("Git Checkout done but errors occured for some repositories: "+errs)
+            return 1, errs
         else:
             LOGGER.info("Git Checkout done")
-        return 0, errs
+            return 0, errs
 
     # noinspection PyTypeChecker
     @staticmethod
-    def checkout_tags(isdistrib=False, isplugin=False):
+    def rollback_checkout_tags(isdistrib=False, isplugin=False):
         if project_path is None:
             LOGGER.error("Initialization problem (checkout_tags:project_path is None)!")
             return 1
@@ -657,10 +685,11 @@ class GitManager(object):
                                 if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
                                     errs += "error_on_reset: "+m.name+"(" + m.version + "); "
                                 else:
-                                    if subprocess.call("git push --force origin master", shell=True) != 0:
-                                        errs += "error_on_reset_commit: "+m.name+"(" + m.version + "); "
+                                    if subprocess.call("git push --force origin " + m.branch, shell=True) != 0:
+                                        errs += "error_on_reset_commit: " + m.name + "(" + m.branch + "/" + \
+                                                m.version + "); "
                                     else:
-                                        LOGGER.info("Last commit was reset in "+m.name+" repository")
+                                        LOGGER.info("Last commit was reset in " + m.name + " repository")
                 else:
                     path_errs.append(mpath)
 
@@ -711,7 +740,7 @@ class BuildManager(object):
             cmd_slack = "-s " + RELMGR_CONFIG.url_slack
             LOGGER.info("Building info will be transmitted to Slack on: " + RELMGR_CONFIG.url_slack)
 
-        cmd = "./distribManager.py "+ cmd_slack + " distpkgr " + version_cmd + " " + dep_type
+        cmd = "./distribManager.py " + cmd_slack + " distpkgr " + version_cmd + " " + dep_type
         LOGGER.info("Call : " + cmd)
         child = subprocess.Popen(cmd,
                                  # + " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname,
@@ -795,6 +824,8 @@ class FileGenManager(object):
 
     @staticmethod
     def generate_files(cmd_str, version, dep_type="mno"):
+        LOGGER.debug("FileGenManager.generate_files: {" + str(cmd_str) + ", " + str(version) + ", " +
+                     str(dep_type) + "}")
         GitManager.COMPONENTS_EXCEPTIONS = []
         GitManager.COMPONENTS_TO_TAG = []
         if ReleaseTools.make_components_to_tag_list() == -1:

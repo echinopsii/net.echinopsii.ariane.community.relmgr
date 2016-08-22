@@ -20,10 +20,6 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * Created by stanrenia on 24/08/15.
- */
-
 angular.module('ArianeUI')
     .factory('serviceUI', function serviceAjax($http, $rootScope) {
         var state = {obj: "default", status: "none"};

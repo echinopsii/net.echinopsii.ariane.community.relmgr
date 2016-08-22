@@ -63,7 +63,7 @@ angular.module('ArianeUI')
         $scope.confirmValRoll = {msg: "VALIDATE", confirm:false, active: false, disableVal: false};
         $scope.commandsRelA = {Core: "core_only", Plugins_Only: "plugin_only", TestOK:"testOK", TestNOK: "testNOK"};
         $scope.commandsRelE = {Plugins_Only: "plugin_only"};
-        $scope.cmdRelC = {task: null, comment: null, warning: "You must fill everything", warn: false};
+        $scope.cmdRelC = {comment: null, warning: "You must fill everything", warn: false};
         $scope.cmdRelD = {choice: "ReleaseDev"};
         $scope.cmdRelDEV = {version: null, warning: "You must fill the version field", warn: false};
         $scope.cmdGen = {cmd: $scope.commandsRelA.Core};
@@ -363,7 +363,7 @@ angular.module('ArianeUI')
             else if(release == "relC"){
                 if(serviceUI.setState({obj: "release", state:"zip"})){
                         // GIT COMMIT TAG PUSH
-                        serviceAjax.commit($scope.mode, $scope.cmdRelC.task, $scope.cmdRelC.comment, false, false)
+                        serviceAjax.commit($scope.snapshots[0].dep_type, $scope.mode, $scope.cmdRelC.comment, false, false)
                             .success(function(data){
                                 serviceUI.setNotifyLog("info", "ReleaseC", data.message);
                                 if($scope.mode == "Release"){
@@ -609,7 +609,7 @@ angular.module('ArianeUI')
             $scope.confirmValRoll.release = release;
             $scope.confirmValRoll.active = true;
             if(release == "relC" && $scope.mode == "Release" && validRoll == "VALIDATE"){
-                if ($scope.cmdRelC.comment == null || $scope.cmdRelC.task == null || $scope.cmdRelC.comment == "" || $scope.cmdRelC.task == ""){
+                if ($scope.cmdRelC.comment == null || $scope.cmdRelC.comment == ""){
                     $scope.cmdRelC.warn = true;
                     $scope.confirmValRoll.active = false;
                 }
