@@ -1471,9 +1471,12 @@ class Component(ArianeNode):
                 for f in self.list_files:
                     f.version = self.version
                 dist = self.get_parent_distrib()
-                dep_type = dist.dep_type if dist is not None else None
-                self.update_files_name(dep_type=dep_type)
-                FileNode.update_environment_filename(self.name, self.version, dep_type=dep_type)
+                dist_version = dist.version if dist is not None else None
+                dist_dep_type = dist.dep_type if dist is not None else None
+                self.update_files_name(dep_type=dist_dep_type)
+                FileNode.update_environment_filename(self.name, self.version,
+                                                     dist_version=dist_version,
+                                                     dep_type=dist_dep_type)
                 self.__update_dependencies()
                 self._old_version = self.version
 
@@ -2023,6 +2026,8 @@ class FileNode(ArianeNode):
         return None
 
     def update_name(self, version, dep_type=None):
+        LOGGER.debug("FileNode.update_name: {" + str(self.id) + ", " + self.name + ", " + self.type + ", " +
+                     version + ", " + str(dep_type) + "}")
         self.version = version
         if self.type not in ["plantpl"]:
             if "SNAPSHOT" in version:
@@ -2066,12 +2071,21 @@ class FileNode(ArianeNode):
                     self.name = prefix + '_' + dep_type + "." + version + sufix
 
     @staticmethod
-    def update_environment_filename(name, version, dep_type=None):
+    def update_environment_filename(name, version, dist_version=None, dep_type=None):
+        LOGGER.debug("FileNode.update_environment_filename: {" + name + ", " + version + ", " +
+                     str(dist_version) + " ," + str(dep_type) + "}")
         if name not in ["directory", "idm", "injector", "portal", "mapping", "messaging"]:
             return
         if "SNAPSHOT" not in version:
             return
-        dist = DeliveryTree.distribution_service.get_dev_distrib()
+        dists = DeliveryTree.distribution_service.get_dev_distribs()
+        dist = None
+        for distrib in dists:
+            LOGGER.debug("FileNode.update_environment_filename - looking relevant distrib: " + str(distrib))
+            if distrib.version == dist_version and distrib.dep_type == dep_type:
+                dist = distrib
+                break
+        LOGGER.debug("FileNode.update_environment_filename - relevant distrib found: " + str(dist))
         if not isinstance(dist, Distribution):
             return
         if "SNAPSHOT" not in dist.version:

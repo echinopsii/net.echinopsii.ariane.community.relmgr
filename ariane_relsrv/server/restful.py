@@ -465,6 +465,7 @@ class RestModuleList(Resource):
 
     def get(self):
         args = self.reqparse.parse_args()
+        LOGGER.debug("RestModuleList.get: {" + str(args) + "}")
         if args["parent"] is not None:
             args["parent"] = json.loads(args["parent"])
             par = ariane.get_unique(ariane.component_service, args["parent"])
@@ -473,6 +474,7 @@ class RestModuleList(Resource):
             if par is None:
                 par = ariane.get_unique(ariane.module_service, args["parent"])
             if par is not None:
+                LOGGER.debug("RestModuleList.get - list sub modules from parent: " + str(par))
                 slist = ariane.module_service.get_all(par)
                 slist_ret = []
                 for s in slist:
