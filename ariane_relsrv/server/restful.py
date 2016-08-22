@@ -605,16 +605,19 @@ class RestComponentList(Resource):
         self.reqparse.add_argument('order', type=int, help="component order for Installer .vsh file")
         self.reqparse.add_argument('nID', type=int, help='component database ID named "nID"')
         self.reqparse.add_argument('dist_version')
+        self.reqparse.add_argument('dist_dep_type')
         self.reqparse.add_argument('component')
         # self.reqparse.add_argument('version', type=str)
         super(RestComponentList, self).__init__()
 
     def get(self):
         args = self.reqparse.parse_args()
+        LOGGER.debug("RestComponentList.get: {" + str(args) + "}")
         if "dist_version" in args and args["dist_version"] is not None:
             if "dist_dep_type" not in args or args["dist_dep_type"] is None:
                 args["dist_dep_type"] = "mno"
-            d = ariane.get_unique(ariane.distribution_service, {"version": args["dist_version"], "dep_type": args["dist_dep_type"]})
+            d = ariane.get_unique(ariane.distribution_service,
+                                  {"version": args["dist_version"], "dep_type": args["dist_dep_type"]})
             if d is not None:
                 mlist = ariane.component_service.get_all(d)
                 m = [m.get_properties(gettype=True) for m in mlist]
@@ -905,7 +908,7 @@ class RestDistributionManager(Resource):
                 d = ariane.get_unique(ariane.distribution_service, arg_d)
             else:
                 d = None
-            new_snap = DatabaseManager.create_snap_distrib(d)
+            new_snap = DatabaseManager.create_snap_distrib(distrib=d)
             if new_snap == 1:
                 abort_error("INTERNAL_ERROR", "Server can not find dev distribution")
             return make_response(json.dumps({"distrib": new_snap.get_properties(gettype=True)}), 200, headers_json)

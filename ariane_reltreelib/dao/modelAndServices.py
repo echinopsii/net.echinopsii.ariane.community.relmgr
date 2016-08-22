@@ -139,6 +139,7 @@ class DeliveryTree(object):
                If no node matches, return None
                If multiple nodes matches, return 0
        """
+        LOGGER.debug("DeliveryTree.get_unique: {" + str(service) + ", " + str(args) + "}")
         if DeliveryTree._check_dict_properties(service.node_model, args) is True:
             args["label"] = service.get_label()
             node = DeliveryTree.graph_dao.get_unique(args)

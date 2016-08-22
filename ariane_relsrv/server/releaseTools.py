@@ -193,13 +193,15 @@ class DatabaseManager(object):
         return None
 
     @staticmethod
-    def create_snap_distrib():
-        dev = ariane.distribution_service.get_dev_distrib()
-        if not isinstance(dev, modelAndServices.Distribution):
+    def create_snap_distrib(distrib=None):
+        if distrib is None:
+            distrib = ariane.distribution_service.get_dev_distrib()
+
+        if not isinstance(distrib, modelAndServices.Distribution):
             return 1  # "Server can not find the actual DEV Distribution"
 
-        newsnap = modelAndServices.DistributionService.copy_distrib(dev)
-        newsnap.dep_type = "TO_BE_DEFINED"
+        newsnap = modelAndServices.DistributionService.copy_distrib(distrib)
+        newsnap.dep_type = "TBD"
         newsnap.save()
         return newsnap
 
