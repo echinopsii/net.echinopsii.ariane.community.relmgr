@@ -77,16 +77,6 @@ angular.module('ArianeUI')
         $scope.togPlug = true;
         /* ********************* Main FUNCTIONS ********************* */
         (function init(){
-            // No need to get config by Ajax for the moment, we do this using Jinja2 templates renderer;
-            /*serviceAjax.distribManager("other", "getConfig")
-                .success(function(data){
-                    if(data.run_mode)
-                        $scope.CONFIG.mode = data.run_mode;
-                    if(data.relmgr_url)
-			serviceAjax.define_url(data.relmgr_url);
-                    if($scope.CONFIG.mode == "test")
-                        $scope.btnActive.export = true;
-                });*/
             if($scope.CONFIG.mode == "test")
                 $scope.btnActive.export = true;
             loadSnapshots();
@@ -247,7 +237,8 @@ angular.module('ArianeUI')
             }
         };
         $scope.syncLastDev = function() {
-            serviceAjax.distribManager("syncFromLastDev", null)
+            var distrib = serviceUI.getBaseObj().node;
+            serviceAjax.distribManager("syncFromLastDev", distrib)
                 .success(function(data){
                     loadSnapshots();
                     serviceUI.setNotifyLog("info", "View", data.message);
@@ -261,8 +252,7 @@ angular.module('ArianeUI')
         };
         $scope.clickNewRelease = function(){
             if(serviceUI.setState({obj: "baseRelease", state: "nextPage"})){
-                var distrib = serviceUI.getBaseObj();
-                distrib = distrib.node;
+                var distrib = serviceUI.getBaseObj().node;
                 serviceUI.setNotifyLog("info", "View", "Entering into Release mode. Waiting for repositories pull and for Distribution copying process ...");
                 serviceAjax.checkout(distrib.version, distrib.dep_type, "directories", false, false)
                     .success(function(data){
@@ -290,8 +280,7 @@ angular.module('ArianeUI')
         };
         $scope.clickNewSnapshot = function(){
             if(serviceUI.setState({obj: "baseRelease", state: "nextPage"})){
-                var distrib = serviceUI.getBaseObj();
-                distrib = distrib.node;
+                var distrib = serviceUI.getBaseObj().node;
                 serviceUI.setNotifyLog("info", "View", "Creating new Snapshot from " + distrib.version + " ...");
                 serviceAjax.distribManager("SNAPSHOT", distrib)
                     .success(function(data){
@@ -371,7 +360,8 @@ angular.module('ArianeUI')
                                         serviceUI.actionBroadcast('changePage');
                                 }
                                 else if($scope.mode == "DEV"){
-                                    serviceAjax.distribManager("removeDEVcopy", null)
+                                    var distrib = serviceUI.getBaseObj().node;
+                                    serviceAjax.distribManager("removeDEVcopy", distrib)
                                         .success(function(data){
                                             $scope.mode = "Release";
                                             $scope.btnActive.export = true;
@@ -405,7 +395,8 @@ angular.module('ArianeUI')
                         if(serviceUI.setState({obj: "release", state:"zip"})){
                             serviceUI.setNotifyLog("info", "ReleaseD", "Entering in DEV mode. Waiting...");
                             if($scope.cmdRelD.choice == "ReleaseDev") {
-                                serviceAjax.distribManager("DEV", null)
+                                var distrib = serviceUI.getBaseObj().node;
+                                serviceAjax.distribManager("DEV", distrib)
                                     .success(function(data){
                                         $scope.snapshots = [];
                                         $scope.snapshots.push(data.distrib);
@@ -587,8 +578,9 @@ angular.module('ArianeUI')
                         serviceUI.actionBroadcast('changePage');
                 }
                 else{
+                    var distrib = serviceUI.getBaseObj().node;
                     serviceUI.setNotifyLog("info", "ReleaseC", "Now removing the copy before entering in Release mode");
-                    serviceAjax.distribManager("removeDEVcopy", null)
+                    serviceAjax.distribManager("removeDEVcopy", distrib)
                         .success(function(data){
                             $scope.mode = "Release";
                             serviceUI.setNotifyLog("info", "ReleaseC_DEV", "New DEV Distribution was successfully done");
@@ -655,8 +647,9 @@ angular.module('ArianeUI')
             $scope.btnActive.reset.showConfirm = false;
         };
         $scope.clickExport = function(){
+            var distrib = serviceUI.getBaseObj().node;
             $scope.btnActive.export = false;
-            serviceAjax.distribManager("exportDB", null).
+            serviceAjax.distribManager("exportDB", distrib).
                 success(function(data){
                    serviceUI.setNotifyLog("info", "View", "New database file was correctly exported to the server")
                 })

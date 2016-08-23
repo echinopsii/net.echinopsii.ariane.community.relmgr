@@ -862,20 +862,30 @@ class RestDistributionManager(Resource):
     def post(self):
         args = self.reqparse.parse_args()
         action = None
-        if args["action"] is None:
+        distrib = None
+
+        if "action" not in args or args["action"] is None:
             abort_error("BAD_REQUEST", "You must provide the 'mode' parameter")
         else:
             action = args["action"]
 
+        if "distrib" in args and args["distrib"] is not None:
+            arg_d = json.loads(args["distrib"])
+            distrib = ariane.get_unique(ariane.distribution_service, arg_d)
+            if not isinstance(distrib, modelAndServices.Distribution):
+                abort_error("BAD_REQUEST", "Given parameter {} must be a Distribution".format(distrib))
+
         if action == "DEV":
-            dev = ariane.distribution_service.get_dev_distrib()
+            if distrib is None:
+                abort_error("BAD_REQUEST", "You must provide the 'distrib' parameter")
+            dev = ariane.distribution_service.get_dev_distrib(dep_type=distrib.dep_type)
             if "-SNAPSHOT" in dev.version:
                 cpy_dev = DatabaseManager.get_distrib_copies()
                 if len(cpy_dev) != 1:
                     abort_error("BAD_REQUEST", "No copy was found in database, can not continue")
                 return make_response(json.dumps({"distrib": dev.get_properties(gettype=True)}), 200, headers_json)
 
-            newdevcp = DatabaseManager.make_dev_distrib()
+            newdevcp = DatabaseManager.make_dev_distrib(dev.dep_type)
             if newdevcp == 1:
                 abort_error("INTERNAL_ERROR", "Server can not find the actual DEV Distribution")
             elif newdevcp == 2:
@@ -890,27 +900,14 @@ class RestDistributionManager(Resource):
             return make_response(json.dumps({"distrib": newdevcp.get_properties(gettype=True)}), 200, headers_json)
 
         elif action == "RELEASE":
-            if args["distrib"] is None:
-                abort_error("BAD_REQUEST", "You must provide the 'distrib' parameter")
-
-            arg_d = json.loads(args["distrib"])
-            d = ariane.get_unique(ariane.distribution_service, arg_d)
-            if not isinstance(d, modelAndServices.Distribution):
-                abort_error("BAD_REQUEST", "Given parameter {} must be a Distribution".format(d))
-
-            err, cd = DatabaseManager.make_release_distrib(d)
+            err, cd = DatabaseManager.make_release_distrib(distrib)
             if err == 1:
                 abort_error("FORBIDDEN", "Distribution copy already exists in database")
             else:
                 return make_response(json.dumps({"distrib": cd.get_properties(gettype=True)}), 200, headers_json)
 
         elif action == "SNAPSHOT":
-            if "distrib" in args:
-                arg_d = json.loads(args["distrib"])
-                d = ariane.get_unique(ariane.distribution_service, arg_d)
-            else:
-                d = None
-            new_snap = DatabaseManager.create_snap_distrib(distrib=d)
+            new_snap = DatabaseManager.create_snap_distrib(distrib=distrib)
             if new_snap == 1:
                 abort_error("INTERNAL_ERROR", "Server can not find dev distribution")
             return make_response(json.dumps({"distrib": new_snap.get_properties(gettype=True)}), 200, headers_json)
@@ -941,7 +938,10 @@ class RestDistributionManager(Resource):
             return make_response(json.dumps({}), 200, headers_json)
 
         elif action == "syncFromLastDev":
-            err = DatabaseManager.sync_db_from_last_dev()
+            if distrib is None:
+                abort_error("BAD_REQUEST", "You must provide the 'distrib' parameter")
+
+            err = DatabaseManager.sync_db_from_last_dev(dep_type=distrib.dep_type if distrib is not None else None)
             if err:
                 abort_error("BAD_REQUEST", "Could not have sync from last development")
             return make_response(json.dumps({}), 200, headers_json)
@@ -1061,7 +1061,7 @@ class RestCheckout(Resource):
 
             elif mode == "files_DEV":
                 LOGGER.info("Reseting the working copy...")
-                ret = DatabaseManager.reset_dev_distrib()
+                ret = DatabaseManager.reset_dev_distrib(dep_type)
                 if ret == 1:
                     abort_error("BAD_REQUEST", "DEV Distribution was not found")
                 elif ret == 2:
@@ -1083,7 +1083,7 @@ class RestCheckout(Resource):
                 return make_response(json.dumps({"message": "git checkout and pull done. " + errmsg}), 200, headers_json)
 
         elif mode == "tags":
-            err, message = GitManager.rollback_checkout_tags(isdistrib, isplugin)
+            err, message = GitManager.rollback_checkout_tags(dep_type, isdistrib, isplugin)
             if err == 1:
                 abort_error("INTERNAL_ERROR", "Server can not find the current Distribution to commit")
             elif err == 2:

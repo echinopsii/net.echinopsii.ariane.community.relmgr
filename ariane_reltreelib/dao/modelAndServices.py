@@ -349,6 +349,8 @@ class DistributionService(object):
         return DeliveryTree.get_relations_helper(self, args, self.node_model, ArianeRelation.Dist_relations)
 
     def get_dev_distrib(self, dep_type="mno"):
+        if dep_type is None:
+            dep_type = "mno"
         dev = DeliveryTree.get_unique(self, {"editable": "true", "dep_type": dep_type})
         if isinstance(dev, Distribution):
             return dev

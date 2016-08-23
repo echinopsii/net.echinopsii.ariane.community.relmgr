@@ -64,33 +64,48 @@ class ReleaseTools(object):
 
     # noinspection PyTypeChecker
     @staticmethod
-    def make_components_to_tag_list():
+    def build_component_tag_list(dep_type):
         if project_path is None:
             LOGGER.error("Initialization problem (make_components_to_tag_list:project_path is None)!")
             return 1
 
-        dist = ariane.distribution_service.get_dev_distrib()
+        dist = ariane.distribution_service.get_dev_distrib(dep_type=dep_type)
         if dist.editable == "true":
             ariane.distribution_service.update_arianenode_lists(dist)
             for m in dist.list_component:
+                LOGGER.debug("ReleaseTools.build_component_tag_list: {" + m.name + "," + m.version + "}")
                 mpath = os.path.join(project_path, m.get_directory_name())
 
                 last_tag = GitTagHandler.get_last_tag(path=mpath)
+                LOGGER.debug("ReleaseTools.build_component_tag_list - last_tag: " + str(last_tag))
                 mversion = m.version
-                if "-SNAPSHOT" in mversion:
-                    mversion = mversion[:-len("-SNAPSHOT")]
-                if mversion > last_tag:
-                    GitManager.COMPONENTS_TO_TAG.append(m.name)
+
+                if "SNAPSHOT" not in mversion:
+                    if mversion > last_tag:
+                        GitManager.COMPONENTS_TO_TAG.append(m.name)
+                    else:
+                        GitManager.COMPONENTS_EXCEPTIONS.append(m.name)
                 else:
                     GitManager.COMPONENTS_EXCEPTIONS.append(m.name)
 
     @staticmethod
     def update_version(version, position="minor", operation="inc"):
+        LOGGER.debug("ReleaseTools.update_version: {" + str(version) + ", " + str(position) + ", " +
+                     str(operation) + "}")
+
+        version_suffix = None
+        if version.split("-").__len__() > 1:
+            version_suffix = version.split("-")[1]
+            version = version.split("-")[0]
+
         if position == "minor":
             v = version.split('.')
             if operation == "inc":
                 v[-1] = str(int(v[-1]) + 1)  # Increments minor number of the version
             version = '.'.join(v)
+
+        if version_suffix is not None:
+            version = version + "-" + version_suffix
 
         return version
 
@@ -298,12 +313,12 @@ class DatabaseManager(object):
         return 1
 
     @staticmethod
-    def reset_dev_distrib():
+    def reset_dev_distrib(dep_type):
         """
         Reinitialize values of the DEV Distribution copy, using the original DEV Distribution.
         :return: None
         """
-        dev = ariane.distribution_service.get_dev_distrib()
+        dev = ariane.distribution_service.get_dev_distrib(dep_type=dep_type)
         if not isinstance(dev, modelAndServices.Distribution):
             return 1
         if dev.editable != "true":
@@ -334,14 +349,14 @@ class DatabaseManager(object):
         dev.save()
 
     @staticmethod
-    def make_dev_distrib():
+    def make_dev_distrib(dep_type):
         """
         Make the new DEV distrib from the latest released. This method uses other DatabaseManager's static methods
          to proceed, such as 'create_dev_distrib()', 'remove_genuine_distrib()' and 'create_distrib_copy()'
         :return: 'newdevcp' : the copy of the DEV distrib which was created. Next edition will be affected to this copy
         """
         LOGGER.info("Creating the new DEV Distribution...")
-        newdev = DatabaseManager.create_dev_distrib()
+        newdev = DatabaseManager.create_dev_distrib(dep_type)
         if not isinstance(newdev, modelAndServices.Distribution):
             if newdev == 1:
                 return 1  # "Server can not find the actual DEV Distribution"
@@ -364,8 +379,8 @@ class DatabaseManager(object):
         return newdevcp
 
     @staticmethod
-    def sync_db_from_last_dev():
-        dev = ariane.distribution_service.get_dev_distrib()
+    def sync_db_from_last_dev(dep_type="mno"):
+        dev = ariane.distribution_service.get_dev_distrib(dep_type=dep_type)
         if not isinstance(dev, modelAndServices.Distribution):
             return 1
         if dev.editable != "true":
@@ -472,7 +487,7 @@ class GitManager(object):
         # git tag version_component
         # git push origin  version_component
 
-        dist = ariane.distribution_service.get_dev_distrib(dist_dep_type)
+        dist = ariane.distribution_service.get_dev_distrib(dep_type=dist_dep_type)
         if not isinstance(dist, modelAndServices.Distribution):
             return 1, "", ""  # "Server can not find the current Distribution to commit"
 
@@ -617,7 +632,7 @@ class GitManager(object):
 
     # noinspection PyTypeChecker
     @staticmethod
-    def rollback_checkout_tags(isdistrib=False, isplugin=False):
+    def rollback_checkout_tags(dep_type="mno", isdistrib=False, isplugin=False):
         if project_path is None:
             LOGGER.error("Initialization problem (checkout_tags:project_path is None)!")
             return 1
@@ -628,7 +643,7 @@ class GitManager(object):
         #    git reset --hard HEAD~1
         backpath = os.getcwd()
         LOGGER.info("Start Tags reset")
-        dist = ariane.distribution_service.get_dev_distrib()
+        dist = ariane.distribution_service.get_dev_distrib(dep_type=dep_type)
         if not isinstance(dist, modelAndServices.Distribution):
             return 1, ""  # "Server can not find the current Distribution to commit"
 
@@ -828,7 +843,7 @@ class FileGenManager(object):
                      str(dep_type) + "}")
         GitManager.COMPONENTS_EXCEPTIONS = []
         GitManager.COMPONENTS_TO_TAG = []
-        if ReleaseTools.make_components_to_tag_list() == -1:
+        if ReleaseTools.build_component_tag_list(dep_type) == -1:
             return 1, None  # "There is no copy of the master SNAPSHOT Distribution"
 
         cmd = Command(dao_ariane=ariane, project_path=project_path)
