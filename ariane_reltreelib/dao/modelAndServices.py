@@ -342,7 +342,6 @@ class DistributionService(object):
 
         # if len(list_distrib) == 0:
         #     list_distrib = None
-
         return list_distrib
 
     def get_relations(self, args):
@@ -369,6 +368,7 @@ class DistributionService(object):
         distribs = self.get_all()
         for dev in distribs:
             if "SNAPSHOT" in dev.version or dev.editable == "true":
+                # LOGGER.warning("distrib: " + str(dev))
                 ret.append(dev)
         return ret
 
@@ -407,7 +407,7 @@ class DistributionService(object):
             cd.add_file(FileNode(df.name, df.type, df.version, df.path))
 
         for m in dist.list_component:  # Copying components and their modules and files
-            cm = Component(m.name, m.version, m.type, order=m.order, build=m.build)
+            cm = Component(m.name, m.version, m.type, order=m.order, build=m.build, branch=m.branch)
             DeliveryTree.component_service.update_arianenode_lists(m)
             for mf in m.list_files:
                 cm.add_file(FileNode(mf.name, mf.type, mf.version, mf.path))
@@ -689,7 +689,8 @@ class ComponentService(object):
 
     @staticmethod
     def __make_file_build(component):
-        fname = component.get_directory_name() + '-' + DeliveryTree.get_name_version_snapshot(component.version) + '.json'
+        fname = component.get_directory_name() + '-' + DeliveryTree.get_name_version_snapshot(component.version) + \
+            '.json'
         fpath = component.get_directory_name()+"/distrib/db/resources/builds/"
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             component.add_file(FileNode(fname, "json_build", component.version, fpath))
@@ -1350,7 +1351,8 @@ class Distribution(ArianeNode):
         return self.directory_name
 
     def __repr__(self):
-        return "Distribution( name = "+self.name+", version = "+self.version+", nID = "+str(self.id)+")"
+        return "Distribution( name = " + self.name + ", version = " + self.version + \
+               ", deployment type = " + self.dep_type + " , nID = " + str(self.id) + ")"
 
 
 class Component(ArianeNode):

@@ -102,20 +102,6 @@ angular.module('ArianeUI')
                 $scope.dists = data.distribs;
                 var len_dist = $scope.dists.length;
                 $scope.dists = $scope.dists.filter(function(e){ return !serviceUI.isDistribCopy(e)});
-                if(len_dist != $scope.dists.length) {
-                    serviceUI.setMode("DEV");
-                    serviceUI.actionBroadcast("changeMode");
-                    serviceUI.setNotifyLog("info","View","You are now in DEV mode");
-                    $scope.btnActive.release = false;
-                    $scope.btnActive.dev = true;
-                }
-                else{
-                    serviceUI.setMode("Release");
-                    serviceUI.actionBroadcast("changeMode");
-                    serviceUI.setNotifyLog("info","View","You are now in Release mode");
-                    $scope.btnActive.release = true;
-                    $scope.btnActive.dev = false;
-                }
                 toggleBtnRefresh();
                 if (typeof callFunction !== "undefined")
                     callFunction();
@@ -241,7 +227,7 @@ angular.module('ArianeUI')
             serviceAjax.distribManager("syncFromLastDev", distrib)
                 .success(function(data){
                     loadSnapshots();
-                    serviceUI.setNotifyLog("info", "View", data.message);
+                    // serviceUI.setNotifyLog("info", "View", data.message);
                     serviceUI.setState({obj: "default", status: "done"});
                 })
                 .error(function(data){
@@ -253,7 +239,7 @@ angular.module('ArianeUI')
         $scope.clickNewRelease = function(){
             if(serviceUI.setState({obj: "baseRelease", state: "nextPage"})){
                 var distrib = serviceUI.getBaseObj().node;
-                serviceUI.setNotifyLog("info", "View", "Entering into Release mode. Waiting for repositories pull and for Distribution copying process ...");
+                // serviceUI.setNotifyLog("info", "View", "Entering into Release mode. Waiting for repositories pull and for Distribution copying process ...");
                 serviceAjax.checkout(distrib.version, distrib.dep_type, "directories", false, false)
                     .success(function(data){
                         serviceAjax.distribManager("RELEASE", distrib)
@@ -262,7 +248,7 @@ angular.module('ArianeUI')
                                 $scope.snapshots = [];
                                 $scope.snapshots.push(data.distrib);
                                 serviceUI.setBaseObj({obj: "default", node: $scope.snapshots[0]});
-                                serviceUI.setNotifyLog("info", "View", "Enter ReleaseA mode. Ariane Components directories are up-to-date. Distribution SNAPSHOT was copied in database.");
+                                // serviceUI.setNotifyLog("info", "View", "Enter ReleaseA mode. Ariane Components directories are up-to-date. Distribution SNAPSHOT was copied in database.");
                                 if(serviceUI.changePage('release'))
                                     serviceUI.actionBroadcast('changePage');
                             })
@@ -281,7 +267,7 @@ angular.module('ArianeUI')
         $scope.clickNewSnapshot = function(){
             if(serviceUI.setState({obj: "baseRelease", state: "nextPage"})){
                 var distrib = serviceUI.getBaseObj().node;
-                serviceUI.setNotifyLog("info", "View", "Creating new Snapshot from " + distrib.version + " ...");
+                // serviceUI.setNotifyLog("info", "View", "Creating new Snapshot from " + distrib.version + " ...");
                 serviceAjax.distribManager("SNAPSHOT", distrib)
                     .success(function(data){
                         $scope.mode = "DEV";
@@ -289,7 +275,7 @@ angular.module('ArianeUI')
                         $scope.snapshots.push(data.distrib);
                         serviceUI.setBaseObj({obj: "default", node: $scope.snapshots[0]});
                         loadSnapshots();
-                        serviceUI.setNotifyLog("info", "View", "New snapshot created: you can now customize it.");
+                        // serviceUI.setNotifyLog("info", "View", "New snapshot created: you can now customize it.");
                     })
                     .error(function(data){
                         $scope.btnActive.dev = false;
@@ -317,7 +303,7 @@ angular.module('ArianeUI')
                     $scope.warnRelA.warning = null;
                     serviceAjax.generate($scope.cmdGen.cmd, $scope.snapshots[0].version, $scope.snapshots[0].dep_type)
                         .success(function(data){
-                            serviceUI.setNotifyLog("info", "ReleaseA", "Generation done! ("+data.message+")");
+                            // serviceUI.setNotifyLog("info", "ReleaseA", "Generation done! ("+data.message+")");
                             serviceUI.setState({obj: "default", state: "done"});
                             if(serviceUI.changePage('release'))
                                 serviceUI.actionBroadcast('changePage');
@@ -334,11 +320,11 @@ angular.module('ArianeUI')
                     if($scope.mode == "Release")
                         callBuildZip(release, false);
                     else{
-                        serviceUI.setNotifyLog("info", "ReleaseA", "Running 'mvn clean install' ...");
+                        // serviceUI.setNotifyLog("info", "ReleaseA", "Running 'mvn clean install' ...");
                         serviceAjax.buildZip($scope.snapshots[0].version, false, "mvncleaninstall", $scope.snapshots[0].dep_type)
                             .success(function(data){
                                 $scope.confirmValRoll.disableVal = false;
-                                serviceUI.setNotifyLog("info", "ReleaseA", "'mvn clean install' succeeded");
+                                // serviceUI.setNotifyLog("info", "ReleaseA", "'mvn clean install' succeeded");
                                 if(serviceUI.changePage('release'))
                                     serviceUI.actionBroadcast('changePage');
                             })
@@ -354,7 +340,7 @@ angular.module('ArianeUI')
                         // GIT COMMIT TAG PUSH
                         serviceAjax.commit($scope.snapshots[0].dep_type, $scope.mode, $scope.cmdRelC.comment, false, false)
                             .success(function(data){
-                                serviceUI.setNotifyLog("info", "ReleaseC", data.message);
+                                // serviceUI.setNotifyLog("info", "ReleaseC", data.message);
                                 if($scope.mode == "Release"){
                                     if(serviceUI.changePage('release'))
                                         serviceUI.actionBroadcast('changePage');
@@ -365,7 +351,7 @@ angular.module('ArianeUI')
                                         .success(function(data){
                                             $scope.mode = "Release";
                                             $scope.btnActive.export = true;
-                                            serviceUI.setNotifyLog("info", "ReleaseC_DEV", "New DEV Distribution was successfully done");
+                                            // serviceUI.setNotifyLog("info", "ReleaseC_DEV", "New DEV Distribution was successfully done");
                                             serviceUI.setPage('view');
                                             serviceUI.actionBroadcast('changePage');
                                         })
@@ -387,13 +373,13 @@ angular.module('ArianeUI')
             else if(release == "relD"){
                 if(serviceUI.setState({obj: "release", state:"zip"})) {
                     if($scope.pageStates.relD == "tobuild"){
-                        serviceUI.setNotifyLog("info", "ReleaseD", "Now building the new zip file from tags. Waiting...");
+                        // serviceUI.setNotifyLog("info", "ReleaseD", "Now building the new zip file from tags. Waiting...");
                         $scope.confirmValRoll.disableVal = false;
                         callBuildZip(release, true);
                     }
                     else if($scope.pageStates.relD == "tovalid"){
                         if(serviceUI.setState({obj: "release", state:"zip"})){
-                            serviceUI.setNotifyLog("info", "ReleaseD", "Entering in DEV mode. Waiting...");
+                            // serviceUI.setNotifyLog("info", "ReleaseD", "Entering in DEV mode. Waiting...");
                             if($scope.cmdRelD.choice == "ReleaseDev") {
                                 var distrib = serviceUI.getBaseObj().node;
                                 serviceAjax.distribManager("DEV", distrib)
@@ -404,7 +390,7 @@ angular.module('ArianeUI')
                                         if ($scope.mode == "Release")
                                             serviceUI.setMode('DEV');
                                         serviceUI.actionBroadcast('changeMode');
-                                        serviceUI.setNotifyLog("info", "ReleaseD", "New DEV Distribution was created");
+                                        // serviceUI.setNotifyLog("info", "ReleaseD", "New DEV Distribution was created");
                                         serviceUI.setPage("releaseA");
                                         serviceUI.actionBroadcast("changePage");
                                         serviceUI.setState({obj: "default", state: "done"});
@@ -418,7 +404,7 @@ angular.module('ArianeUI')
                                 $scope.btnActive.export = true;
                                 serviceUI.setPage("view");
                                 serviceUI.actionBroadcast("changePage");
-                                serviceUI.setNotifyLog("info", "ReleaseD", "Release process is over. Returns to main page");
+                                // serviceUI.setNotifyLog("info", "ReleaseD", "Release process is over. Returns to main page");
                                 serviceUI.setState({obj: "default", state: "done"});
                             }
                         }
@@ -439,7 +425,7 @@ angular.module('ArianeUI')
             }
             else if(release == "relE"){
                 // PLUGIN MANAGER -- TODO: IMPLEMENT PLUGIN MANAGER
-                serviceUI.setNotifyLog("info", "ReleaseE", "Passing step ReleaseE (Plugin Manager) because not implemented yet");
+                // serviceUI.setNotifyLog("info", "ReleaseE", "Passing step ReleaseE (Plugin Manager) because not implemented yet");
                 if(serviceUI.changePage('release'))
                     serviceUI.actionBroadcast('changePage');
                 /*if(serviceUI.setState({obj: "releasePlugin", state:"selection"})){
@@ -462,7 +448,7 @@ angular.module('ArianeUI')
                         var mode = 'Release' + release[release.indexOf('rel')];
                         pageErrors.relC = "";
                         serviceUI.setState({obj: "default", state: "done"});
-                        serviceUI.setNotifyLog("info", mode, data.message);
+                        // serviceUI.setNotifyLog("info", mode, data.message);
                         if(serviceUI.changePage('rollback'))
                             serviceUI.actionBroadcast('changePage');
                     })
@@ -487,7 +473,7 @@ angular.module('ArianeUI')
                             }
                         }
                         $scope.download.zip = $scope.download.zip.filter(function(e){ return e != "";});
-                        serviceUI.setNotifyLog("info", "releaseC", data.message);
+                        // serviceUI.setNotifyLog("info", "releaseC", data.message);
                     })
                     .error(function(data){
                         $scope.confirmValRoll.disableVal = false;
@@ -502,7 +488,7 @@ angular.module('ArianeUI')
                             .success(function(data){
                                 var mode = 'Release' + release[release.indexOf('rel')];
                                 serviceUI.setState({obj: "default", state: "done"});
-                                serviceUI.setNotifyLog("info", mode, data.message);
+                                // serviceUI.setNotifyLog("info", mode, data.message);
                                 if(serviceUI.changePage('rollback'))
                                     serviceUI.actionBroadcast('changePage');
                             })
@@ -518,7 +504,7 @@ angular.module('ArianeUI')
                             .success(function(data){
                                 var mode = 'DEV' + release[release.indexOf('rel')];
                                 serviceUI.setState({obj: "default", state: "done"});
-                                serviceUI.setNotifyLog("info", mode, data.message);
+                                // serviceUI.setNotifyLog("info", mode, data.message);
                                 if(serviceUI.changePage('rollback'))
                                     serviceUI.actionBroadcast('changePage');
                             })
@@ -539,7 +525,7 @@ angular.module('ArianeUI')
                     $scope.download.zip = [];
                     $scope.download.zip.push(data.zip);
                     if (release == "relB")
-                        serviceUI.setNotifyLog("info", "ReleaseB", "Build of zip done!");
+                        // serviceUI.setNotifyLog("info", "ReleaseB", "Build of zip done!");
                     serviceUI.setState({obj: "default", state: "done"});
                     $scope.confirmValRoll.disableVal = false;
                     if (release != "relD"){
@@ -547,7 +533,7 @@ angular.module('ArianeUI')
                             serviceUI.actionBroadcast('changePage');
                     }
                     else {
-                        serviceUI.setNotifyLog("info", "ReleaseD", "Build of zip (from TAG) done!");
+                        // serviceUI.setNotifyLog("info", "ReleaseD", "Build of zip (from TAG) done!");
                         $scope.pageStates.relD = "tovalid";
                     }
                 })
@@ -561,7 +547,7 @@ angular.module('ArianeUI')
 
         $scope.TestValidRelB = function(){
             $scope.download.zip.push("testzip.zip");
-            serviceUI.setNotifyLog("info", "ReleaseB", "Build of zip done! ");
+            // serviceUI.setNotifyLog("info", "ReleaseB", "Build of zip done! ");
             serviceUI.setState({obj: "default", state: "done"});
             if(serviceUI.changePage('release'))
                 serviceUI.actionBroadcast('changePage');
@@ -570,7 +556,7 @@ angular.module('ArianeUI')
         $scope.TestValidRelC = function(){
             if(serviceUI.setState({obj: "release", state:"zip"})){
                 if($scope.mode == "Release"){
-                    serviceUI.setNotifyLog("info", "ReleaseC", "FOR TEST: Git tag push validated");
+                    // serviceUI.setNotifyLog("info", "ReleaseC", "FOR TEST: Git tag push validated");
                     $scope.download.zip.push("New_testReleaseC.zip");
                     serviceUI.setState({obj: "default", state: "done"});
                     $scope.pageStates.relD = "tovalid";
@@ -579,11 +565,12 @@ angular.module('ArianeUI')
                 }
                 else{
                     var distrib = serviceUI.getBaseObj().node;
-                    serviceUI.setNotifyLog("info", "ReleaseC", "Now removing the copy before entering in Release mode");
+                    // serviceUI.setNotifyLog("info", "ReleaseC", "Now removing the copy before entering in Release mode");
                     serviceAjax.distribManager("removeDEVcopy", distrib)
                         .success(function(data){
                             $scope.mode = "Release";
-                            serviceUI.setNotifyLog("info", "ReleaseC_DEV", "New DEV Distribution was successfully done");
+                            loadReleases();
+                            // serviceUI.setNotifyLog("info", "ReleaseC_DEV", "New DEV Distribution was successfully done");
                             serviceUI.setPage('view');
                             serviceUI.actionBroadcast('changePage');
                         })
@@ -632,7 +619,7 @@ angular.module('ArianeUI')
                     serviceAjax.resetDB()
                         .success(function(data){
                             loadSnapshots();
-                            serviceUI.setNotifyLog("info", "View", data.message);
+                            // serviceUI.setNotifyLog("info", "View", data.message);
                             serviceUI.setState({obj: "default", status: "done"});
                             $scope.btnActive.reset.active = true;
                         })
@@ -651,7 +638,7 @@ angular.module('ArianeUI')
             $scope.btnActive.export = false;
             serviceAjax.distribManager("exportDB", distrib).
                 success(function(data){
-                   serviceUI.setNotifyLog("info", "View", "New database file was correctly exported to the server")
+                   // serviceUI.setNotifyLog("info", "View", "New database file was correctly exported to the server")
                 })
                 .error(function(data){
                     $scope.btnActive.export = true;
@@ -665,7 +652,7 @@ angular.module('ArianeUI')
         };
         function toggleBtnRefresh(){
             if(!$scope.btnActive.refresh){
-                serviceUI.setNotifyLog("info", "View", "Distribution list has been refreshed");
+                // serviceUI.setNotifyLog("info", "View", "Distribution list has been refreshed");
                 $scope.btnActive.refresh = true;
             }
         }

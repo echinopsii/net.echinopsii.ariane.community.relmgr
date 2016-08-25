@@ -5,7 +5,6 @@
     "NEO4J_PASSWORD": "<Neo4J Login Password>",
     "NEO4J_HOST": "localhost",
     "NEO4J_PORT": "7575",
-    "BUILD_TIMEOUT": {"LOCAL": 300, "REMOTE": 900},
     "UI_RUNNING_MODE": "release",
     "URL_SLACK": "<SLACK URL TO SEND BUILD NOTIFICATION>",
     "LOG_CONFIG_FILE_PATH": "<PATH TO RELMGR>/bootstrap/misc/relsrv_logging_conf.json",

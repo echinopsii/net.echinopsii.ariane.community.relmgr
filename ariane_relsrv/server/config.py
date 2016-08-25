@@ -38,7 +38,6 @@ class Config(object):
         self.neo4j_password = None
         self.neo4j_host = None
         self.neo4j_port = None
-        self.build_timeout = None
         self.ui_running_mode = None
         self.url_slack = None
         self.log_file = None
@@ -55,7 +54,7 @@ class Config(object):
         with open(config_file_path, "r") as configfile:
             conf = json.load(configfile)
             conf_keys = ["NEO4J_LOGIN", "NEO4J_PASSWORD", "NEO4J_HOST", "NEO4J_PORT", "NEO4J_PATH", "DB_EXPORT_PATH",
-                         "BUILD_TIMEOUT", "LOG_CONFIG_FILE_PATH"]
+                         "LOG_CONFIG_FILE_PATH"]
             forgotten_keys = []
             for k in conf_keys:
                 if k not in conf.keys():
@@ -69,7 +68,6 @@ class Config(object):
             self.neo4j_password = conf["NEO4J_PASSWORD"]
             self.neo4j_host = conf["NEO4J_HOST"]
             self.neo4j_port = conf["NEO4J_PORT"]
-            self.build_timeout = conf["BUILD_TIMEOUT"]
             self.ui_running_mode = conf["UI_RUNNING_MODE"]
             self.url_slack = conf["URL_SLACK"]
             self.log_file = conf["LOG_CONFIG_FILE_PATH"]

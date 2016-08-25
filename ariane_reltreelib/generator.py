@@ -75,22 +75,6 @@ class GitTagHandler(object):
                     break
         return tag_flag
 
-    @staticmethod
-    def get_last_tag(path=None):
-        tags = None
-        if path is not None:
-            if os.path.exists(path):
-                tags = subprocess.check_output("git tag", shell=True, cwd=path)
-        else:
-            tags = subprocess.check_output("git tag", shell=True)
-        # check_output gives the command output in bytes format, so we decode it.
-        if (tags is not None and isinstance(tags, bytes)) and (len(tags) > 0):
-            tags = (tags.decode()).split('\n')
-            if tags[-1] == '':
-                tags = tags[:-1]
-            return tags[len(tags)-1]
-
-
 class Generator(object):
     # TODO:clean
     ariane_deliverytool_module_path = os.path.dirname(ariane_reltreelib.__file__)
@@ -590,15 +574,22 @@ class Generator(object):
         if GitTagHandler.is_git_tagged(version_tag, path=self.dir_output+component.get_directory_name()):
             return
 
-        tplname = fplantpl.name.split("_")
-        tplname = tplname[0] + ".plan.tpl.jnj"
-        template = self.jinja_env.get_template(fplantpl.path+tplname)
-
-        if component.version.split("-").__len__() > 2:
-            m_version = component.version.split("-")[0] + "-" + component.version.split("-")[2]
+        tplname = fplantpl.name.split("_")[0] + "." + dep_type + ".plan.tpl.jnj"
+        LOGGER.debug("Generator.generate_plan_tpl - tplname: " + str(tplname))
+        if os.path.isfile(self.dir_output + fplantpl.path + tplname):
+            template = self.jinja_env.get_template(fplantpl.path+tplname)
         else:
-            m_version = component.version
-        version_point = str(m_version).replace("-", ".")
+            tplname = fplantpl.name.split("_")[0]+ ".plan.tpl.jnj"
+            LOGGER.debug("Generator.generate_plan_tpl - tplname: " + str(tplname))
+            template = self.jinja_env.get_template(fplantpl.path+tplname)
+
+        m_version = component.version
+        if component.version.split("-").__len__() > 2:
+            t_version = component.version.split("-")[0] + "-" + component.version.split("-")[2]
+            version_point = str(t_version).replace("-", ".")
+        else:
+            version_point = str(m_version).replace("-", ".")
+
         args = {"version": m_version, "version_point": version_point}
 
         with open(self.dir_output+fplantpl.path+fplantpl.name, 'w') as target:

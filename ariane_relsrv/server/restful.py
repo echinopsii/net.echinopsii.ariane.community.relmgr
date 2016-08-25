@@ -21,6 +21,7 @@
 
 import json
 import logging
+from time import sleep
 from flask import Flask, make_response, render_template, send_from_directory
 from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import modelAndServices
@@ -767,13 +768,15 @@ class RestDistributionList(Resource):
         devs = ariane.distribution_service.get_dev_distribs()
         if (dlist is None) or (devs is None):
             abort_error("BAD_REQUEST", "No Distribution was found in the database")
+        for distrib in dlist.copy():
+            for dev in devs:
+                if distrib.id == dev.id:
+                    dlist.remove(distrib)
+
         dprop = [d.get_properties(gettype=True) for d in dlist]
         for d in dprop:
-            for dev in devs:
-                if d["nID"] == dev.id:
-                    dprop.remove(d)
-                else:
-                    d["snapshot"] = False
+            d["snapshot"] = False
+
         return make_response(json.dumps({"distribs": dprop}), 200, headers_json)
 
     def post(self):
@@ -912,6 +915,7 @@ class RestDistributionManager(Resource):
                 abort_error("INTERNAL_ERROR", "Server can not find dev distribution")
             return make_response(json.dumps({"distrib": new_snap.get_properties(gettype=True)}), 200, headers_json)
 
+        # TODO : remove ?
         elif action == "getDEV":
             dev = ariane.distribution_service.get_dev_distrib()
             if not isinstance(dev, modelAndServices.Distribution):
@@ -1228,6 +1232,18 @@ class RestGeneration(Resource):
             abort_error("BAD_REQUEST", "{} (Given command {} is incorrect)".format(errobj, args))
 
         return make_response(json.dumps({"message": args["command"]}), 200, headers_json)
+
+
+@app.route('/stream')
+def stream():
+    def generate():
+        with open('job.log') as f:
+            while True:
+                yield f.read()
+                sleep(1)
+
+    return app.response_class(generate(), mimetype='text/plain')
+
 
 
 api.add_resource(RestSnapshotsList, '/rest/snapshot')

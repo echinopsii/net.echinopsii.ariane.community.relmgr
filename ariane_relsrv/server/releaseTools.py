@@ -75,13 +75,12 @@ class ReleaseTools(object):
             for m in dist.list_component:
                 LOGGER.debug("ReleaseTools.build_component_tag_list: {" + m.name + "," + m.version + "}")
                 mpath = os.path.join(project_path, m.get_directory_name())
-
-                last_tag = GitTagHandler.get_last_tag(path=mpath)
-                LOGGER.debug("ReleaseTools.build_component_tag_list - last_tag: " + str(last_tag))
                 mversion = m.version
 
                 if "SNAPSHOT" not in mversion:
-                    if mversion > last_tag:
+                    if not GitTagHandler.is_git_tagged(mversion, path=mpath):
+                        LOGGER.info("ReleaseTools.build_component_tag_list: add  {" + m.name + "," + m.version +
+                                     "} to components to tag list")
                         GitManager.COMPONENTS_TO_TAG.append(m.name)
                     else:
                         GitManager.COMPONENTS_EXCEPTIONS.append(m.name)
@@ -93,19 +92,22 @@ class ReleaseTools(object):
         LOGGER.debug("ReleaseTools.update_version: {" + str(version) + ", " + str(position) + ", " +
                      str(operation) + "}")
 
-        version_suffix = None
-        if version.split("-").__len__() > 1:
-            version_suffix = version.split("-")[1]
-            version = version.split("-")[0]
+        if "-SNAPSHOT" in version:
+            version = version.split("-SNAPSHOT")[0]
+        else:
+            version_suffix = None
+            if version.split("-").__len__() > 1:
+                version_suffix = version.split("-")[1]
+                version = version.split("-")[0]
 
-        if position == "minor":
-            v = version.split('.')
-            if operation == "inc":
-                v[-1] = str(int(v[-1]) + 1)  # Increments minor number of the version
-            version = '.'.join(v)
+            if position == "minor":
+                v = version.split('.')
+                if operation == "inc":
+                    v[-1] = str(int(v[-1]) + 1)  # Increments minor number of the version
+                version = '.'.join(v)
 
-        if version_suffix is not None:
-            version = version + "-" + version_suffix
+            if version_suffix is not None:
+                version = version + "-" + version_suffix
 
         return version
 
@@ -181,6 +183,13 @@ class DatabaseManager(object):
             cd = DatabaseManager.create_distrib_copy(d)
             if cd is None:
                 return 1, None  # "Distribution copy already exists in database"
+            cd.version = ReleaseTools.update_version(cd.version)
+            cd.save()
+            components = ariane.component_service.get_all(cd)
+            for co in components:
+                co.version = ReleaseTools.update_version(co.version)
+                co.save()
+
             return 0, cd
 
     @staticmethod
@@ -428,7 +437,7 @@ class GitManager(object):
                 LOGGER.error("error_on_add("+m.name+");")
                 errs += "error_on_add("+m.name+"); "
             else:
-                LOGGER.info(m.name+"("+m.version+") added")
+                LOGGER.info(m.name+" ("+m.version+") added")
                 pipe = subprocess.Popen(commit, shell=True, stdout=subprocess.PIPE)
                 git_cmd_out = pipe.communicate()[0]
                 # Handle 'git tag' errors or warnings. (Warning if 'nothing to tag' is returned by the command)
@@ -515,11 +524,11 @@ class GitManager(object):
             for m in mod_plugs:
                 if isplugin:
                     if m.name not in GitManager.PLUGINS_TO_TAG:
-                        LOGGER.warn(m.name+"("+m.version+") not in plugins to tag")
+                        LOGGER.warn(m.name+" (" + m.version + ") not in plugins to tag")
                         continue
                 else:
-                    if m.name not in GitManager.COMPONENTS_TO_TAG:
-                        LOGGER.warn(m.name+"("+m.version+") not in components to tag")
+                    if mode == "Release" and m.name not in GitManager.COMPONENTS_TO_TAG:
+                        LOGGER.warn(m.name + " (" + m.version + ") not in components to tag")
                         continue
                     mpath = os.path.join(project_path, m.get_directory_name())
                     rets = GitManager.commit_element(m, mpath, commit, comment, mode)
@@ -738,13 +747,6 @@ class BuildManager(object):
             else:
                 version_cmd = version + ".SNAPSHOT"
 
-        if from_tags:
-            timeout = RELMGR_CONFIG.build_timeout["REMOTE"]
-        else:
-            timeout = RELMGR_CONFIG.build_timeout["LOCAL"]
-
-            LOGGER.info("Timeout set to " + str(timeout) + "s")
-
         # Remove existing zip target directory (recreated by distribmgr)
         path_zip = BuildManager.path_zip
         if os.path.exists(path_zip):
@@ -757,16 +759,17 @@ class BuildManager(object):
 
         cmd = "./distribManager.py " + cmd_slack + " distpkgr " + version_cmd + " " + dep_type
         LOGGER.info("Call : " + cmd)
+        build_done = False
         child = subprocess.Popen(cmd,
                                  # + " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname,
                                  shell=True,
                                  cwd=project_path + "/ariane.community.distrib")
         try:
-            child.communicate(timeout=timeout)[0]
+            child.communicate()[0]
         except subprocess.TimeoutExpired:
             os.killpg(os.getpgid(child.pid), signal.SIGTERM)
             child.communicate()
-        build_done = False
+
         rc = child.returncode
         if rc == 0:
             for (dp, dn, fn) in os.walk(path_zip):
@@ -783,11 +786,9 @@ class BuildManager(object):
 
     @staticmethod
     def do_mvn_clean_install():
-        timeout = RELMGR_CONFIG.build_timeout["REMOTE"]
         child = subprocess.Popen("mvn clean install -DskipTests", shell=True, cwd=project_path)
-
         try:
-            child.communicate(timeout=timeout)[0]
+            child.communicate()[0]
         except subprocess.TimeoutExpired:
             os.killpg(os.getpgid(child.pid), signal.SIGTERM)
             child.communicate()
