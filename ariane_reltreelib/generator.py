@@ -26,6 +26,7 @@ from collections import OrderedDict
 import subprocess
 
 from jinja2 import Environment, TemplateNotFound, BaseLoader
+from ariane_reltreelib.arianeDefinitions import ArianeDefinitions
 
 from ariane_reltreelib.dao import modelAndServices
 import ariane_reltreelib
@@ -88,28 +89,30 @@ class Generator(object):
         self.plugin_dict = {}
         self.distrib_dict = {}
 
-    def get_distrib(self, version, dep_type="mno"):
+    def get_distrib(self, version, dep_type=ArianeDefinitions.DISTRIB_DEP_TYPE_MONOLITH):
         # if version not in self.distrib_dict.keys():
-        self.distrib_dict[version] = self.ariane.get_unique(self.ariane.distribution_service,
-                                                            {"version": version, "dep_type": dep_type})
+        self.distrib_dict[version] = self.ariane.get_unique(self.ariane.distribution_service, {
+            ArianeDefinitions.DISTRIB_VERSION: version,
+            ArianeDefinitions.DISTRIB_DEP_TYPE: dep_type
+        })
         return self.distrib_dict[version]
 
-    def get_components_list(self, version, dep_type="mno"):
+    def get_components_list(self, version, dep_type=ArianeDefinitions.DISTRIB_DEP_TYPE_MONOLITH):
         if version not in self.components_dict.keys():
             self.components_dict[version] = self.ariane.component_service.get_all(
                 self.get_distrib(version, dep_type=dep_type)
             )
         return [m for m in self.components_dict[version]]
 
-    def get_plugins_list(self, version, dep_type="mno"):
+    def get_plugins_list(self, version, dep_type=ArianeDefinitions.DISTRIB_DEP_TYPE_MONOLITH):
         if version not in self.plugin_dict.keys():
             self.plugin_dict[version] = self.ariane.plugin_service.get_all(self.get_distrib(version, dep_type=dep_type))
         return [p for p in self.plugin_dict[version]]
 
     @staticmethod
     def __refactor_path(arg_path):
-        if not str(arg_path).endswith('/'):
-            arg_path += '/'
+        if not str(arg_path).endswith(os.sep):
+            arg_path += os.sep
         return arg_path
 
     @staticmethod
@@ -121,28 +124,28 @@ class Generator(object):
         vmax = '.'.join(v)
         return vmin, vmax
 
-    def generate_all_distribution(self, version, dep_type="mno"):
+    def generate_all_distribution(self, version, dep_type=ArianeDefinitions.DISTRIB_DEP_TYPE_MONOLITH):
         self.generate_distribution_files(version, dep_type)
         self.generate_component_files(version, dep_type)
         self.generate_plugin_files(version, dep_type)
 
-    def generate_core_files(self, version, dep_type="mno"):
+    def generate_core_files(self, version, dep_type=ArianeDefinitions.DISTRIB_DEP_TYPE_MONOLITH):
         self.generate_distribution_files(version, dep_type)
         self.generate_component_files(version, dep_type)
 
-    def generate_distribution_files(self, version, dep_type="mno"):
+    def generate_distribution_files(self, version, dep_type=ArianeDefinitions.DISTRIB_DEP_TYPE_MONOLITH):
         LOGGER.warning("Generator.generate_distribution_files: {" + version + ", " + dep_type + "}")
         distrib = self.get_distrib(version, dep_type=dep_type)
         dist_files = self.ariane.get_files(distrib)
         for df in dist_files:
-            if df.type == "pom_dist":
+            if df.type == ArianeDefinitions.FILE_TYPE_DIST_POM:
                 self.generate_pom_dist(version, dep_type, df)
-            elif df.type == "json_dist":
+            elif df.type == ArianeDefinitions.FILE_TYPE_DIST_JSON:
                 self.generate_json_dist(version, dep_type, df)
-            elif df.type == "json_git_repos":
+            elif df.type == ArianeDefinitions.FILE_TYPE_DIST_GIT_REPOS:
                 self.generate_json_git_repos(version, dep_type, df)
 
-    def generate_distrib_plugin_files(self, version, dep_type="mno"):
+    def generate_distrib_plugin_files(self, version, dep_type=ArianeDefinitions.DISTRIB_DEP_TYPE_MONOLITH):
         distrib = self.get_distrib(version, dep_type=dep_type)
         dist_files = self.ariane.get_files(distrib)
         for df in dist_files:
@@ -154,7 +157,7 @@ class Generator(object):
     # TODO: RECURSIVITY ?
     def generate_component_files(self, version, dep_type):
         components = self.get_components_list(version, dep_type=dep_type)
-        is_snapshot_version = "SNAPSHOT" in version
+        is_snapshot_version = ArianeDefinitions.SNAPSHOT_VERSION in version
         flag_clean_env = True
 
         for comp in components:
@@ -167,21 +170,21 @@ class Generator(object):
             mod_files = self.ariane.get_files(comp)
             for f in mod_files:
                 LOGGER.debug("Generator.generate_component_files - " + f.name)
-                if "SNAPSHOT" in f.name and not is_snapshot_version:
+                if ArianeDefinitions.SNAPSHOT_VERSION in f.name and not is_snapshot_version:
                     continue
-                elif f.type == "plan":
+                elif f.type == ArianeDefinitions.FILE_TYPE_VIRGO_PLAN:
                     self.generate_plan(comp, f)
-                elif f.type == "json_build":
+                elif f.type == ArianeDefinitions.FILE_TYPE_BUILD_JSON:
                     self.generate_lib_json(comp, f)
-                elif f.type == "vsh":
+                elif f.type == ArianeDefinitions.FILE_TYPE_VIRGO_SCRIPT:
                     self.generate_vsh_installer(version, components, f)
-                elif f.type == "plantpl":
+                elif f.type == ArianeDefinitions.FILE_TYPE_VIRGO_PLAN_TPL:
                     if is_snapshot_version:
                         if flag_clean_env:
                             self.__clean_environment_files(self.dir_output + f.path)
                             flag_clean_env = False
                         self.generate_plan_tpl(version, dep_type, f)
-                elif f.type == "pom":
+                elif f.type == ArianeDefinitions.FILE_TYPE_MVN_POM:
                     gr_id, art_id = self.__generate_pom_comp_plug(comp, f)
 
                     for sub in comp.list_module:
@@ -194,7 +197,7 @@ class Generator(object):
         :param version:
         :return:
         """
-        is_dev = "SNAPSHOT" in version
+        is_dev = ArianeDefinitions.SNAPSHOT_VERSION in version
         plugins = self.get_plugins_list(version, dep_type=dep_type)
 
         for plug in plugins:
@@ -206,13 +209,13 @@ class Generator(object):
             self.ariane.plugin_service.update_arianenode_lists(plug)
             plug_files = self.ariane.get_files(plug)
             for f in plug_files:
-                if f.type == "plan":
+                if f.type == ArianeDefinitions.FILE_TYPE_VIRGO_PLAN:
                     self.generate_plan(plug, f)
-                elif f.type == "json_build":
+                elif f.type == ArianeDefinitions.FILE_TYPE_BUILD_JSON:
                     self.generate_lib_json(plug, f)
-                elif f.type == "vsh":
+                elif f.type == ArianeDefinitions.FILE_TYPE_VIRGO_SCRIPT:
                     self.generate_vsh_plugin(plug, f)
-                elif f.type == "pom":
+                elif f.type == ArianeDefinitions.FILE_TYPE_MVN_POM:
                     gr_id, art_id = self.__generate_pom_comp_plug(plug, f)
                     for sub in plug.list_module:
                         s_gr_id, s_art_id = self.__generate_pom_module(sub, gr_id, art_id)
@@ -232,10 +235,10 @@ class Generator(object):
             elif type(comp_plug) is modelAndServices.Plugin:
                 self.ariane.plugin_service.get_relations(comp_plug)
 
-            mf = self.ariane.get_one_file(comp_plug, "pom")
+            mf = self.ariane.get_one_file(comp_plug, ArianeDefinitions.FILE_TYPE_MVN_POM)
             if not isinstance(mf, modelAndServices.FileNode):
                 return
-            if mf.type == "pom":
+            if mf.type == ArianeDefinitions.FILE_TYPE_MVN_POM:
                 gr_id, art_id = self.__generate_pom_comp_plug(comp_plug, mf)
 
                 for sub in comp_plug.list_module:
@@ -244,10 +247,17 @@ class Generator(object):
                         self.__generate_pom_subparent(sub, s_gr_id, s_art_id)
 
     def __generate_pom_module(self, sub, gr_id, art_id):
-        fpom = self.ariane.get_one_file(sub, 'pom')
-        template = self.jinja_env.get_template(fpom.path + 'pom.jnj')
+        fpom = self.ariane.get_one_file(sub, ArianeDefinitions.FILE_TYPE_MVN_POM)
+        template = self.jinja_env.get_template(
+            fpom.path + ArianeDefinitions.FILE_TYPE_MVN_POM + ArianeDefinitions.FILE_SUFFIX_JINJA
+        )
 
-        args = {"version": sub.version, "groupId": gr_id, "artifactId": art_id, "name": sub.name}
+        args = {
+            ArianeDefinitions.MODULE_VERSION: sub.version,
+            ArianeDefinitions.MODULE_GROUPID: gr_id,
+            ArianeDefinitions.MODULE_ARTIFACTID: art_id,
+            ArianeDefinitions.MODULE_NAME: sub.name
+        }
 
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
             target.write(template.render(args))
@@ -265,17 +275,22 @@ class Generator(object):
                 self.__generate_pom_subparent(s, s_gr_id, s_art_id)
 
     def __generate_pom_comp_plug(self, comp_plug, fpom):
-        template = self.jinja_env.get_template(fpom.path + 'pom.jnj')
+        template = self.jinja_env.get_template(
+            fpom.path + ArianeDefinitions.FILE_TYPE_MVN_POM + ArianeDefinitions.FILE_SUFFIX_JINJA
+        )
 
         group_id = comp_plug.pom_attr + comp_plug.get_directory_name()
         group_id = str(group_id).replace('.'+comp_plug.name, '')
         artifact_id = group_id + "." + comp_plug.name
         version = comp_plug.version
-        packaging = "pom"
+        packaging = ArianeDefinitions.FILE_TYPE_MVN_POM
         comp_plug.list_module = sorted(comp_plug.list_module, key=lambda module: module.order)
-        args = {"groupId": group_id, "artifactId": artifact_id, "version": version,
-                "packaging": packaging, "components": comp_plug.list_module,
-                "dependencies": comp_plug.list_component_dependency}
+        args = {
+            ArianeDefinitions.DISTRIB_GROUPID: group_id, ArianeDefinitions.DISTRIB_ARTIFACTID: artifact_id,
+            ArianeDefinitions.DISTRIB_VERSION: version, ArianeDefinitions.DISTRIB_PACKAGING: packaging,
+            ArianeDefinitions.DISTRIB_COMPONENTS: comp_plug.list_module,
+            ArianeDefinitions.DISTRIB_DEPENDENCIES: comp_plug.list_component_dependency
+        }
 
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
             target.write(template.render(args))
@@ -290,8 +305,10 @@ class Generator(object):
             if m.build != Component.BUILD_MVN and m.build != Component.BUILD_MVN_PYTHON3:
                 components.remove(m)
         components = sorted(components, key=lambda mod: mod.order)
-        template = self.jinja_env.get_template(f_pom.path + 'pom_distrib.jnj')
-        args = {"components": components, "version": version}
+        template = self.jinja_env.get_template(
+            f_pom.path + ArianeDefinitions.FILE_PREFIX_JINJA_DISTRIB_POM + ArianeDefinitions.FILE_SUFFIX_JINJA
+        )
+        args = {ArianeDefinitions.DISTRIB_COMPONENTS: components, ArianeDefinitions.DISTRIB_VERSION: version}
 
         LOGGER.debug("Generator.generate_pom_dist - " + f_pom.name)
         with open(self.dir_output+f_pom.path+f_pom.name, 'w') as target:
@@ -302,7 +319,7 @@ class Generator(object):
         if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output+fplan.path):
             return
         snapshot = False
-        if "SNAPSHOT" in comp_plug.version:
+        if ArianeDefinitions.SNAPSHOT_VERSION in comp_plug.version:
             snapshot = True
 
         if isinstance(comp_plug, modelAndServices.Component):
@@ -331,16 +348,22 @@ class Generator(object):
         vmin, vmax = modelAndServices.ArianeRelation.make_vmin_vmax(comp_plug.version)
         if snapshot:
             if comp_plug.version.split("-").__len__() > 2:
-                m_version = comp_plug.version.split("-")[0] + "-" + comp_plug.version.split("-")[2]
+                cp_version = comp_plug.version.split("-")[0] + "-" + comp_plug.version.split("-")[2]
             else:
-                m_version = comp_plug.version
-            m_version = str(m_version).replace("-", ".")
+                cp_version = comp_plug.version
+            cp_version = str(cp_version).replace("-", ".")
         else:
             if comp_plug.version.split("-").__len__() > 1:
-                m_version = comp_plug.version.split("-")[0]
+                cp_version = comp_plug.version.split("-")[0]
             else:
-                m_version = comp_plug.version
-        args = {"version": m_version, "component": comp_plug, "vmin": vmin, "vmax": vmax, "submodules": modules}
+                cp_version = comp_plug.version
+        args = {
+            ArianeDefinitions.COMPONENT_VERSION: cp_version,
+            ArianeDefinitions.COMPONENT: comp_plug,
+            ArianeDefinitions.COMPONENT_DEPENDENCY_VMIN: vmin,
+            ArianeDefinitions.COMPONENT_DEPENDENCY_VMAX: vmax,
+            ArianeDefinitions.COMPONENT_SUBMODULES: modules
+        }
 
         with open(self.dir_output+fplan.path+fplan.name, 'w') as target:
                 target.write(template.render(args))
@@ -353,7 +376,7 @@ class Generator(object):
 
         for e in elements:
             key = e.get_directory_name()
-            if "SNAPSHOT" in e.version:
+            if ArianeDefinitions.SNAPSHOT_VERSION in e.version:
                 l = ["master.SNAPSHOT"]
             else:
                 l = [e.version]
@@ -371,7 +394,7 @@ class Generator(object):
         LOGGER.debug("Generator.generate_json_dist - " + str(elements))
         dictio = {}
         snapshot = False
-        if "SNAPSHOT" in version:
+        if ArianeDefinitions.SNAPSHOT_VERSION in version:
             snapshot = True
 
         for e in elements:
@@ -397,9 +420,9 @@ class Generator(object):
             plugins = self.ariane.plugin_service.get_all(d)
             if plugins is not None:
                 for p in plugins:
-                    if "SNAPSHOT" in p.version:
+                    if ArianeDefinitions.SNAPSHOT_VERSION in p.version:
                         p.version = "master.SNAPSHOT"
-                    if "SNAPSHOT" in d.version:
+                    if ArianeDefinitions.SNAPSHOT_VERSION in d.version:
                         d.version = "master.SNAPSHOT"
 
                 p_name = "ariane.community.plugin." + p.name
@@ -526,20 +549,26 @@ class Generator(object):
         components_list = []
         for component in components:
             v = component.version
-            if "-SNAPSHOT" in v:
+            if ArianeDefinitions.SNAPSHOT_VERSION in v:
                 if v.split("-").__len__() > 2:
                     v = v.split("-")[0] + "-" + v.split("-")[2]
                 v = str(v).replace('-', '.')
             elif v.split("-").__len__() > 1:
                 v = v.split("-")[0]
-            components_list.append({"name": component.name, "version": v, "type": component.type})
+            components_list.append({
+                ArianeDefinitions.COMPONENT_NAME: component.name,
+                ArianeDefinitions.COMPONENT_VERSION: v,
+                ArianeDefinitions.COMPONENT_TYPE: component.type
+            })
 
         for component in components_list.copy():
-            if component["type"] == Component.TYPE_ENV:
+            if component[ArianeDefinitions.COMPONENT_TYPE] == Component.TYPE_ENV:
                 components_list.remove(component)
 
-        template = self.jinja_env.get_template(fvsh.path+'installer_vsh.jnj')
-        args = {"components": components_list}
+        template = self.jinja_env.get_template(
+            fvsh.path + ArianeDefinitions.FILE_PREFIX_JINJA_DISTRIB_VSCRIPT + ArianeDefinitions.FILE_SUFFIX_JINJA
+        )
+        args = {ArianeDefinitions.DISTRIB_COMPONENTS: components_list}
 
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
             target.write(template.render(args))
@@ -548,17 +577,24 @@ class Generator(object):
         if GitTagHandler.is_git_tagged(p.version, path=self.dir_output+fvsh.path):
             return
         v = p.version
-        if "-SNAPSHOT" in p.version:
+        if ArianeDefinitions.SNAPSHOT_VERSION in p.version:
             v = str(v).replace('-', '.')
-        template = self.jinja_env.get_template(fvsh.path+'plugin_vsh.jnj')
-        args = {"plugin": {"name": p.name, "version": v}}
+        template = self.jinja_env.get_template(
+            fvsh.path + ArianeDefinitions.FILE_PREFIX_JINJA_PLUGIN_VSCRIPT + ArianeDefinitions.FILE_SUFFIX_JINJA
+        )
+        args = {
+            ArianeDefinitions.PLUGIN: {
+                ArianeDefinitions.PLUGIN_NAME: p.name,
+                ArianeDefinitions.PLUGIN_VERSION: v
+            }
+        }
 
-        with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
+        with open(self.dir_output + fvsh.path + fvsh.name, 'w') as target:
             target.write(template.render(args))
 
     def generate_plan_tpl(self, version, dep_type, fplantpl):
         # Only for DEV generation
-        if "-SNAPSHOT" not in version:
+        if ArianeDefinitions.SNAPSHOT_VERSION not in version:
             return
         components = self.get_components_list(version, dep_type=dep_type)
         component = None
@@ -568,29 +604,34 @@ class Generator(object):
                 break
         if component is None:
             return
-        if "-SNAPSHOT" not in component.version:
+        if ArianeDefinitions.SNAPSHOT_VERSION not in component.version:
             return
-        version_tag = component.version[:-len("-SNAPSHOT")]
+        version_tag = component.version[:-len("-"+ArianeDefinitions.SNAPSHOT_VERSION)]
         if GitTagHandler.is_git_tagged(version_tag, path=self.dir_output+component.get_directory_name()):
             return
 
-        tplname = fplantpl.name.split("_")[0] + "." + dep_type + ".plan.tpl.jnj"
+        tplname = fplantpl.name.split("_")[0] + "." + dep_type + ArianeDefinitions.FILE_SUFFIX_PLAN + \
+            ArianeDefinitions.FILE_SUFFIX_TPL + ArianeDefinitions.FILE_SUFFIX_JINJA
         LOGGER.debug("Generator.generate_plan_tpl - tplname: " + str(tplname))
         if os.path.isfile(self.dir_output + fplantpl.path + tplname):
             template = self.jinja_env.get_template(fplantpl.path+tplname)
         else:
-            tplname = fplantpl.name.split("_")[0]+ ".plan.tpl.jnj"
+            tplname = fplantpl.name.split("_")[0] + ArianeDefinitions.FILE_SUFFIX_PLAN + \
+                ArianeDefinitions.FILE_SUFFIX_TPL + ArianeDefinitions.FILE_SUFFIX_JINJA
             LOGGER.debug("Generator.generate_plan_tpl - tplname: " + str(tplname))
             template = self.jinja_env.get_template(fplantpl.path+tplname)
 
-        m_version = component.version
+        co_version = component.version
         if component.version.split("-").__len__() > 2:
             t_version = component.version.split("-")[0] + "-" + component.version.split("-")[2]
             version_point = str(t_version).replace("-", ".")
         else:
-            version_point = str(m_version).replace("-", ".")
+            version_point = str(co_version).replace("-", ".")
 
-        args = {"version": m_version, "version_point": version_point}
+        args = {
+            ArianeDefinitions.COMPONENT_VERSION: co_version,
+            ArianeDefinitions.COMPONENT_VERSION_POINT: version_point
+        }
 
         with open(self.dir_output+fplantpl.path+fplantpl.name, 'w') as target:
             target.write(template.render(args))
@@ -600,7 +641,8 @@ class Generator(object):
         if os.path.exists(envpath):
             envfiles = []
             for (df, dp, fn) in os.walk(envpath):
-                envfiles = [f for f in fn if f.endswith('.plan.tpl')]
+                envfiles = [f for f in fn if f.endswith(ArianeDefinitions.FILE_SUFFIX_PLAN +
+                                                        ArianeDefinitions.FILE_SUFFIX_TPL)]
                 break
             for ef in envfiles:
                 fpath = os.path.join(envpath, ef)
@@ -610,11 +652,11 @@ class Generator(object):
     def compare_files(self, file_type, filename1, filename2):
         with open(filename1, 'r') as file1:
             with open(filename2, 'r') as file2:
-                if file_type == "json":
+                if file_type == ArianeDefinitions.FILE_TYPE_JSON:
                     return self.compare_json(file1, file2)
-                elif file_type == "c_json":
+                elif file_type == ArianeDefinitions.FILE_TYPE_CJSON:
                     return self.compare_complex_json(file1, file2)
-                elif file_type == "xml":
+                elif file_type == ArianeDefinitions.FILE_TYPE_XML:
                     return self.compare_xml(file1, file2)
                 else:
                     pass

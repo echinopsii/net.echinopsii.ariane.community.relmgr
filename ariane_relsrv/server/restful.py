@@ -864,6 +864,7 @@ class RestDistributionManager(Resource):
 
     def post(self):
         args = self.reqparse.parse_args()
+        LOGGER.debug("RestDistributionManager.post: " + str(args))
         action = None
         distrib = None
 
@@ -872,7 +873,7 @@ class RestDistributionManager(Resource):
         else:
             action = args["action"]
 
-        if "distrib" in args and args["distrib"] is not None:
+        if "distrib" in args and args["distrib"] is not None and args["distrib"]:
             arg_d = json.loads(args["distrib"])
             distrib = ariane.get_unique(ariane.distribution_service, arg_d)
             if not isinstance(distrib, modelAndServices.Distribution):

@@ -634,9 +634,8 @@ angular.module('ArianeUI')
             $scope.btnActive.reset.showConfirm = false;
         };
         $scope.clickExport = function(){
-            var distrib = serviceUI.getBaseObj().node;
             $scope.btnActive.export = false;
-            serviceAjax.distribManager("exportDB", distrib).
+            serviceAjax.distribManager("exportDB").
                 success(function(data){
                    // serviceUI.setNotifyLog("info", "View", "New database file was correctly exported to the server")
                 })

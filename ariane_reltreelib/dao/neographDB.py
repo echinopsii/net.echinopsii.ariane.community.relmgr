@@ -21,6 +21,7 @@ import logging
 
 from py2neo import Node, Relationship
 import os
+from ariane_reltreelib.arianeDefinitions import ArianeDefinitions
 
 __author__ = 'stanrenia'
 
@@ -38,7 +39,7 @@ class NeoGraph(object):
     def import_from_file(filepath):
         if NeoGraph.neo4j_bin_path is not None:
             if os.path.isfile(filepath):
-                os.system(NeoGraph.neo4j_bin_path+"/bin/neo4j-shell -file " + filepath)
+                os.system(NeoGraph.neo4j_bin_path + ArianeDefinitions.CMD_NEOJ_IMPORT_FILE + filepath)
                 return 0
 
     @staticmethod
@@ -60,7 +61,7 @@ class NeoGraph(object):
 
         :return: number of occurences. Returns 0 if nothing was found. Returns None if args is '' (empty string)
         """
-        if args == "Node":
+        if args == ArianeDefinitions.GRAPH_OBJ_TYPE_NODE:
             value = self.graph.cypher.execute("MATCH (n) RETURN COUNT(n)")
         elif args != "":
             value = self.graph.cypher.execute("MATCH (n) RETURN COUNT(DISTINCT n."+str(args)+")")
@@ -90,15 +91,23 @@ class NeoGraph(object):
         start = relation.start_node
         end = relation.end_node
         rel = relation
-        relation_dict = {"start": start, "start_properties": start.properties,
-                         "start_label": self.get_node_label(start), "end": end, "end_properties": end.properties,
-                         "end_label": self.get_node_label(end), "relation": relation.type,
-                         "rel_properties": relation.properties, "rel_node": rel}
+        relation_dict = {
+            ArianeDefinitions.GRAPH_REL_START: start,
+            ArianeDefinitions.GRAPH_REL_START_PROPS: start.properties,
+            ArianeDefinitions.GRAPH_REL_START_LABEL: self.get_node_label(start),
+            ArianeDefinitions.GRAPH_REL_END: end,
+            ArianeDefinitions.GRAPH_REL_END_PROPS: end.properties,
+            ArianeDefinitions.GRAPH_REL_END_LABEL: self.get_node_label(end),
+            ArianeDefinitions.GRAPH_REL: relation.type,
+            ArianeDefinitions.GRAPH_REL_PROPS: relation.properties,
+            ArianeDefinitions.GRAPH_REL_NODE: rel
+        }
         return relation_dict
 
     def get_max_nid(self):
         max_nid = 0
-        recordlist = self.graph.cypher.execute("MATCH (n) RETURN max(n.nID) as nID")
+        recordlist = self.graph.cypher.execute("MATCH (n) RETURN max(n." + ArianeDefinitions.GRAPH_NODE_ID +
+                                               ") as " + ArianeDefinitions.GRAPH_NODE_ID)
         for record in recordlist:
             max_nid = record.nID
             if max_nid is None:
@@ -122,20 +131,21 @@ class NeoGraph(object):
         :return: py2neo.Node object with label and properties updated.
         """
         node = None
-        if args["nID"] == 0:
+        if args[ArianeDefinitions.GRAPH_NODE_ID] == 0:
             node = Node.cast(args)
             node.labels.add(label)
         else:
             # Cypher syntax here does not require ':' after 'n', like 'n:Label'. We don't want to indicate the Label,
             #  so we use 'match (n {properties}) return n'
-            lrecord = self.graph.cypher.execute("MATCH (n {nID:"+str(args["nID"])+"}) RETURN n")
+            lrecord = self.graph.cypher.execute("MATCH (n {" + ArianeDefinitions.GRAPH_NODE_ID +
+                                                ":" + str(args[ArianeDefinitions.GRAPH_NODE_ID]) + "}) RETURN n")
             for record in lrecord:
                 node = record.n
         return node
 
     def create_node(self, node_label, node_dict):
         cur_nid = self.get_max_nid() + 1
-        node_dict["nID"] = cur_nid
+        node_dict[ArianeDefinitions.GRAPH_NODE_ID] = cur_nid
         node = Node.cast(node_dict)
         node.labels.add(node_label)
         self.graph.create(node)
@@ -148,10 +158,10 @@ class NeoGraph(object):
         :param args: The node to save. node is an ArianeNode subclass (Distribution, Component, Module, Plugin)
         :return: "created" or "updated" or None.
         """
-        node = args["node"]
+        node = args[ArianeDefinitions.GRAPH_NODE]
         if node.bound:
             for key in args.keys():
-                if key is not "node":
+                if key is not ArianeDefinitions.GRAPH_NODE:
                     node.properties[key] = args[key]
             node.push()
         return node
@@ -166,30 +176,33 @@ class NeoGraph(object):
 
     @staticmethod
     def save_relation(args):
-        if ("start_nID" in args.keys()) and ("relation" in args.keys()) and ("end_nID" in args.keys()) and\
-           ("properties" in args.keys()):
-            if (args["start_nID"] > 0) and (args["end_nID"] > 0) and (args["relation"] != ""):
-                rel = args["rel_node"]
-                prop = args["properties"]
+        if (ArianeDefinitions.GRAPH_REL_START_NID in args.keys()) and (ArianeDefinitions.GRAPH_REL in args.keys()) and \
+                (ArianeDefinitions.GRAPH_REL_END_NID in args.keys()) and \
+                (ArianeDefinitions.GRAPH_PROPERTIES in args.keys()):
+            if (args[ArianeDefinitions.GRAPH_REL_START_NID] > 0) and \
+                    (args[ArianeDefinitions.GRAPH_REL_END_NID] > 0) and \
+                    (args[ArianeDefinitions.GRAPH_REL] != ""):
+                rel = args[ArianeDefinitions.GRAPH_REL_NODE]
+                prop = args[ArianeDefinitions.GRAPH_PROPERTIES]
                 for key in prop.keys():
                     rel.properties[key] = prop[key]
                 rel.push()
 
     def create_relation(self, args):
         LOGGER.debug("NeoGraph.create_relation - " + str(args))
-        node = args["node"]
-        linked_node = args["linked_node"]
-        relation = args["relation"]
+        node = args[ArianeDefinitions.GRAPH_NODE]
+        linked_node = args[ArianeDefinitions.GRAPH_LINKED_NODE]
+        relation = args[ArianeDefinitions.GRAPH_REL]
         nid = None
-        if linked_node.properties["nID"] == 0:
-            linked_node.properties["nID"] = self.get_max_nid() + 1
-            nid = linked_node.properties["nID"]
-        if node.properties["nID"] == 0:
-            node.properties["nID"] = self.get_max_nid() + 1
-            nid = node.properties["nID"]
+        if linked_node.properties[ArianeDefinitions.GRAPH_NODE_ID] == 0:
+            linked_node.properties[ArianeDefinitions.GRAPH_NODE_ID] = self.get_max_nid() + 1
+            nid = linked_node.properties[ArianeDefinitions.GRAPH_NODE_ID]
+        if node.properties[ArianeDefinitions.GRAPH_NODE_ID] == 0:
+            node.properties[ArianeDefinitions.GRAPH_NODE_ID] = self.get_max_nid() + 1
+            nid = node.properties[ArianeDefinitions.GRAPH_NODE_ID]
 
-        if "properties" in args.keys():
-            properties = args["properties"]  # another dict
+        if ArianeDefinitions.GRAPH_PROPERTIES in args.keys():
+            properties = args[ArianeDefinitions.GRAPH_PROPERTIES]  # another dict
             rel = Relationship.cast(node, (relation, properties), linked_node)
             self.graph.create(rel)
         else:
@@ -200,9 +213,11 @@ class NeoGraph(object):
 
     def get_relation_between(self, start_id, end_id=0, label=""):
         if end_id != 0:
-            match = "MATCH (n {nID:"+str(start_id)+"})-[r]->(m {nID:"+str(end_id)+"}) RETURN r"
+            match = "MATCH (n {" + ArianeDefinitions.GRAPH_NODE_ID + ":" + str(start_id) + \
+                    "})-[r]->(m {" + ArianeDefinitions.GRAPH_NODE_ID + ":" + str(end_id) + "}) RETURN r"
         elif label != "":
-            match = "MATCH (n {nID:"+str(start_id)+"})-[r]->(m:"+str(label)+") RETURN r"
+            match = "MATCH (n {" + ArianeDefinitions.GRAPH_NODE_ID + ":" + str(start_id) + "})-[r]->(m:" + str(label) +\
+                    ") RETURN r"
         else:
             return None
 
@@ -214,8 +229,8 @@ class NeoGraph(object):
 
     def get_relations(self, args):
         listrel = []
-        for rel in args["relation"]:
-            listrecord = self.graph.match(args["node"], rel, bidirectional=True)
+        for rel in args[ArianeDefinitions.GRAPH_REL]:
+            listrecord = self.graph.match(args[ArianeDefinitions.GRAPH_NODE], rel, bidirectional=True)
             for record in listrecord:
                 listrel.append(record)
         if listrel.__len__() == 0:
@@ -226,7 +241,8 @@ class NeoGraph(object):
     def get_by_nid(self, nid):
         rec = None
         if isinstance(nid, int) and nid > 0:
-            listrecord = self.graph.cypher.execute("MATCH (n {nID:"+str(nid)+"}) RETURN n")
+            listrecord = self.graph.cypher.execute("MATCH (n {" + ArianeDefinitions.GRAPH_NODE_ID +
+                                                   ":" + str(nid) + "}) RETURN n")
             for record in listrecord:
                 rec = record.n
         return rec
@@ -241,13 +257,13 @@ class NeoGraph(object):
                  If args contains every keys, return all nodes with this label related to this node and this relation.
         """
         LOGGER.debug("NeoGraph.get_all - " + str(args))
-        node = args["node"]
-        if ("label" in args.keys()) and (node is None):
-                listrecord = self.graph.cypher.execute("MATCH (n:"+args['label']+") RETURN n")
-                listnode = [record.n for record in listrecord]
+        node = args[ArianeDefinitions.GRAPH_NODE]
+        if (ArianeDefinitions.GRAPH_LABEL in args.keys()) and (node is None):
+            listrecord = self.graph.cypher.execute("MATCH (n:"+args[ArianeDefinitions.GRAPH_LABEL]+") RETURN n")
+            listnode = [record.n for record in listrecord]
         else:
-            reverse = args["reverse"]
-            relation = args["relation"]
+            reverse = args[ArianeDefinitions.GRAPH_REVERSE]
+            relation = args[ArianeDefinitions.GRAPH_REL]
             if reverse is False:
                 listrecord = self.graph.match(node, relation)
                 listnode = [n.end_node for n in listrecord]
@@ -255,20 +271,21 @@ class NeoGraph(object):
                 listrecord = self.graph.match(node, relation, bidirectional=True)
                 listnode = [n.start_node for n in listrecord]
 
-            if "label" in args.keys():
-                listnode = [n for n in listnode if self.get_node_label(n) == args['label']]
+            if ArianeDefinitions.GRAPH_LABEL in args.keys():
+                listnode = [n for n in listnode if self.get_node_label(n) == args[ArianeDefinitions.GRAPH_LABEL]]
         return listnode
 
     def find(self, args):
         list_found = []
-        if args["args_type"] == "dict":
-            args.pop("args_type")
-            label = args["label"]
-            args.pop("label")
+        if args[ArianeDefinitions.GRAPH_ARGS_TYPE] == "dict":
+            args.pop(ArianeDefinitions.GRAPH_ARGS_TYPE)
+            label = args[ArianeDefinitions.GRAPH_LABEL]
+            args.pop(ArianeDefinitions.GRAPH_LABEL)
             properties = ""
             for key in args.keys():
-                if key == "nID":
-                    properties = "nID: "+str(args.get("nID"))+","
+                if key == ArianeDefinitions.GRAPH_NODE_ID:
+                    properties = ArianeDefinitions.GRAPH_NODE_ID + ": " + \
+                        str(args.get(ArianeDefinitions.GRAPH_NODE_ID)) + ","
                     break
                 else:
                     properties += ""+str(key)+": '"+str(args.get(key))+"',"
@@ -289,8 +306,9 @@ class NeoGraph(object):
     def find_without_label(self, args):
         properties = ""
         for key in args.keys():
-            if key == "nID":
-                properties = "nID: "+str(args.get("nID"))+","
+            if key == ArianeDefinitions.GRAPH_NODE_ID:
+                properties = ArianeDefinitions.GRAPH_NODE_ID + ": " + \
+                    str(args.get(ArianeDefinitions.GRAPH_NODE_ID)) + ","
             else:
                 properties += ""+str(key)+": '"+str(args.get(key))+"',"
         properties = properties[:-1]
@@ -300,8 +318,8 @@ class NeoGraph(object):
         for record in listrecord:
             list_found.append(record.n)
         if len(list_found) == 0:
-            if "nID" in args.keys():
-                other_try = self.get_by_nid(args["nID"])
+            if ArianeDefinitions.GRAPH_NODE_ID in args.keys():
+                other_try = self.get_by_nid(args[ArianeDefinitions.GRAPH_NODE_ID])
                 if other_try is not None:
                     list_found.append(other_try)
                 else:
@@ -318,15 +336,15 @@ class NeoGraph(object):
                 If no node matches, return None
                 If multiple nodes matches, return 0
         """
-        label = args["label"]
-        args.pop("label")
+        label = args[ArianeDefinitions.GRAPH_LABEL]
+        args.pop(ArianeDefinitions.GRAPH_LABEL)
         properties = ""
         match = ""
         unique_node = None
         counter = 0
         for key in args.keys():
-            if key == "nID":
-                properties = "nID:"+str(args.get(key))+""
+            if key == ArianeDefinitions.GRAPH_NODE_ID:
+                properties = ArianeDefinitions.GRAPH_NODE_ID + ":" + str(args.get(key)) + ""
                 match = "MATCH (n:"+label+" {"+properties+"}) RETURN n"
                 break
             else:
@@ -349,10 +367,13 @@ class NeoGraph(object):
         list_record = []
 
         if end_id != 0:
-            list_record = self.graph.cypher.execute("MATCH (s {nID:"+str(start_id)+"}), (e {nID:"+str(end_id)+" }),"
+            list_record = self.graph.cypher.execute("MATCH (s {" + ArianeDefinitions.GRAPH_NODE_ID +
+                                                    ":" + str(start_id) + "}), (e {" + ArianeDefinitions.GRAPH_NODE_ID +
+                                                    ":" + str(end_id) + " }),"
                                                     "p = shortestPath((s)-[*..10]-(e)) RETURN p")
         elif label != "":
-            list_record = self.graph.cypher.execute("MATCH (s {nID:"+str(start_id)+"}), (e:"+str(label)+"),"
+            list_record = self.graph.cypher.execute("MATCH (s {" + ArianeDefinitions.GRAPH_NODE_ID +
+                                                    ":" + str(start_id) + "}), (e:" + str(label) + "),"
                                                     "p = shortestPath((s)-[*..10]-(e)) RETURN p")
         path = None
         for rec in list_record:
