@@ -741,6 +741,7 @@ class ComponentService(object):
             return DeliveryTree.get_relations_helper(self, args, self.node_model, ArianeRelation.component_relations)
         return DeliveryTree.get_relations_helper(self, args, self.node_model, rels)
 
+    # TODO : remove ?
     def make_files(self, component):
         """
         make all files contained in component : .json, .plan, pom.xml
@@ -753,21 +754,32 @@ class ComponentService(object):
         self.__make_file_pom(component)
         self.__make_file_vsh(component)
 
+    # TODO : add parent distrib dep_type
     @staticmethod
     def __make_file_build(component):
         fname = component.get_directory_name() + '-' + DeliveryTree.get_name_version_snapshot(component.version) + \
             ArianeDefinitions.FILE_SUFFIX_JSON
-        fpath = component.get_directory_name()+"/distrib/db/resources/builds/"
+        fpath = component.get_directory_name() + ArianeDefinitions.FILE_CORE_PATH_BUILD_JSON
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             component.add_file(FileNode(fname, ArianeDefinitions.FILE_TYPE_BUILD_JSON, component.version, fpath))
 
+    # TODO : add parent distrib dep_type
     @staticmethod
     def __make_file_plan(component):
-        fname = "net.echinopsii." + component.get_directory_name() + '_' + \
-                DeliveryTree.get_name_version_snapshot(component.version) + ArianeDefinitions.FILE_SUFFIX_PLAN
-        fpath = component.get_directory_name()+"/distrib/db/resources/virgo/repository/ariane-core/"
+        fname = ArianeDefinitions.ECHINOPSII_ARTIFACT_PREFIX + component.get_directory_name() + '_' + \
+            DeliveryTree.get_name_version_snapshot(component.version) + ArianeDefinitions.FILE_SUFFIX_PLAN
+        fpath = component.get_directory_name() + ArianeDefinitions.FILE_CORE_PATH_AC_VIRGO_PLAN
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             component.add_file(FileNode(fname, ArianeDefinitions.FILE_TYPE_VIRGO_PLAN, component.version, fpath))
+
+    # TODO : add parent distrib dep_type
+    @staticmethod
+    def __make_file_feature(component):
+        fname = ArianeDefinitions.ECHINOPSII_ARTIFACT_PREFIX + component.get_directory_name() + '-features-' + \
+            DeliveryTree.get_name_version_snapshot(component.version) + ArianeDefinitions.FILE_SUFFIX_XML
+        fpath = component.get_directory_name() + ArianeDefinitions.FILE_CORE_PATH_KARAF_FEATURE
+        if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
+            component.add_file(FileNode(fname, ArianeDefinitions.FILE_TYPE_KARAF_FEATURE, component.version, fpath))
 
     @staticmethod
     def __make_file_pom(component):
@@ -779,7 +791,7 @@ class ComponentService(object):
     @staticmethod
     def __make_file_vsh(component):
         fname = 'deploy-components' + ArianeDefinitions.FILE_SUFFIX_VSH
-        fpath = component.get_directory_name() + "/distrib/installer/resources/virgoscripts/"
+        fpath = component.get_directory_name() + ArianeDefinitions.FILE_CORE_PATH_VIRGO_SCRIPT
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             component.add_file(FileNode(fname, ArianeDefinitions.FILE_TYPE_VIRGO_SCRIPT, component.version, fpath))
 
@@ -972,17 +984,26 @@ class PluginService(object):
     def __make_file_build(plugin):
         fname = plugin.get_directory_name() + '-' + DeliveryTree.get_name_version_snapshot(plugin.version) + \
             ArianeDefinitions.FILE_SUFFIX_JSON
-        fpath = plugin.get_directory_name()+"/distrib/db/resources/builds/"
+        fpath = plugin.get_directory_name() + ArianeDefinitions.FILE_CORE_PATH_BUILD_JSON
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             plugin.add_file(FileNode(fname, ArianeDefinitions.FILE_TYPE_BUILD_JSON, plugin.version, fpath))
 
     @staticmethod
     def __make_file_plan(plugin):
-        fname = "net.echinopsii." + plugin.get_directory_name() + '_' + \
+        fname = ArianeDefinitions.ECHINOPSII_ARTIFACT_PREFIX + plugin.get_directory_name() + '_' + \
             DeliveryTree.get_name_version_snapshot(plugin.version) + ArianeDefinitions.FILE_SUFFIX_PLAN
-        fpath = plugin.get_directory_name()+"/distrib/db/resources/virgo/repository/ariane-plugins/"
+        fpath = plugin.get_directory_name() + ArianeDefinitions.FILE_CORE_PATH_AP_VIRGO_PLAN
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             plugin.add_file(FileNode(fname, ArianeDefinitions.FILE_TYPE_VIRGO_PLAN, plugin.version, fpath))
+
+    # TODO : add parent distrib dep_type
+    @staticmethod
+    def __make_file_feature(plugin):
+        fname = ArianeDefinitions.ECHINOPSII_ARTIFACT_PREFIX + plugin.get_directory_name() + '-features-' + \
+            DeliveryTree.get_name_version_snapshot(plugin.version) + ArianeDefinitions.FILE_SUFFIX_XML
+        fpath = plugin.get_directory_name() + ArianeDefinitions.FILE_CORE_PATH_KARAF_FEATURE
+        if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
+            plugin.add_file(FileNode(fname, ArianeDefinitions.FILE_TYPE_KARAF_FEATURE, plugin.version, fpath))
 
     @staticmethod
     def __make_file_pom(plugin):
@@ -994,7 +1015,7 @@ class PluginService(object):
     @staticmethod
     def __make_file_vsh(plugin):
         fname = 'deploy-plugin.' + plugin.name + ArianeDefinitions.FILE_SUFFIX_VSH
-        fpath = plugin.get_directory_name() + "/distrib/installer/resources/virgoscripts/"
+        fpath = plugin.get_directory_name() + ArianeDefinitions.FILE_CORE_PATH_VIRGO_SCRIPT
         if os.path.isfile(ArianeDefinitions.PROJECT_ABS_PATH + fpath + fname):
             plugin.add_file(FileNode(fname, ArianeDefinitions.FILE_TYPE_VIRGO_SCRIPT, plugin.version, fpath))
 
@@ -1218,7 +1239,7 @@ class ArianeNode(object):
         self.id = node_id
         self.version = version
         self.name = name
-        self.pom_attr = "net.echinopsii."
+        self.pom_attr = ArianeDefinitions.ECHINOPSII_ARTIFACT_PREFIX
         self.list_files = []
         self._len_list_files = 0
         self.list_relation = []
@@ -2211,7 +2232,8 @@ class FileNode(ArianeNode):
             ArianeDefinitions.FILE_TYPE_BUILD_JSON, ArianeDefinitions.FILE_TYPE_DIST_JSON,
             ArianeDefinitions.FILE_TYPE_DIST_PLUGIN_JSON, ArianeDefinitions.FILE_TYPE_DIST_POM,
             ArianeDefinitions.FILE_TYPE_PLUGINS_JSON, ArianeDefinitions.FILE_TYPE_VIRGO_SCRIPT,
-            ArianeDefinitions.FILE_TYPE_DIST_GIT_REPOS, ArianeDefinitions.FILE_TYPE_VIRGO_PLAN_TPL
+            ArianeDefinitions.FILE_TYPE_DIST_GIT_REPOS, ArianeDefinitions.FILE_TYPE_VIRGO_PLAN_TPL,
+            ArianeDefinitions.FILE_TYPE_KARAF_FEATURE
         ]
         self.list_relation = []
         super().__init__(node_id, name, version, {
@@ -2352,6 +2374,13 @@ class FileNode(ArianeNode):
                     self.name = prefix + '_' + version + sufix
                 else:
                     self.name = prefix + '_' + dep_type + "." + version + sufix
+            elif self.type == ArianeDefinitions.FILE_TYPE_KARAF_FEATURE:
+                prefix = self.name.split('-')[0] + '-features-'
+                suffix = ArianeDefinitions.FILE_SUFFIX_XML
+                if dep_type is None or dep_type not in self.name:
+                    self.name = prefix + version + suffix
+                else:
+                    self.name = prefix + dep_type + "." + version + suffix
 
     @staticmethod
     def update_environment_filename(name, version, dist_version=None, dep_type=None):
@@ -2409,7 +2438,7 @@ class FileNode(ArianeNode):
         return self.type in [ArianeDefinitions.FILE_TYPE_BUILD_JSON, ArianeDefinitions.FILE_TYPE_DIST_JSON,
                              ArianeDefinitions.FILE_TYPE_DIST_PLUGIN_JSON, ArianeDefinitions.FILE_TYPE_DIST_POM,
                              ArianeDefinitions.FILE_TYPE_DIST_GIT_REPOS, ArianeDefinitions.FILE_TYPE_VIRGO_PLAN,
-                             ArianeDefinitions.FILE_TYPE_VIRGO_PLAN_TPL]
+                             ArianeDefinitions.FILE_TYPE_VIRGO_PLAN_TPL, ArianeDefinitions.FILE_TYPE_KARAF_FEATURE]
 
     def get_properties(self, gettype=False):
         prop = self.get_dir()

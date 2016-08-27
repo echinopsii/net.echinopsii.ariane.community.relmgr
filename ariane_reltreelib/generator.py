@@ -172,18 +172,8 @@ class Generator(object):
                 LOGGER.debug("Generator.generate_component_files - " + f.name)
                 if ArianeDefinitions.SNAPSHOT_VERSION in f.name and not is_snapshot_version:
                     continue
-                elif f.type == ArianeDefinitions.FILE_TYPE_VIRGO_PLAN:
-                    self.generate_plan(comp, f)
                 elif f.type == ArianeDefinitions.FILE_TYPE_BUILD_JSON:
                     self.generate_lib_json(comp, f)
-                elif f.type == ArianeDefinitions.FILE_TYPE_VIRGO_SCRIPT:
-                    self.generate_vsh_installer(version, components, f)
-                elif f.type == ArianeDefinitions.FILE_TYPE_VIRGO_PLAN_TPL:
-                    if is_snapshot_version:
-                        if flag_clean_env:
-                            self.__clean_environment_files(self.dir_output + f.path)
-                            flag_clean_env = False
-                        self.generate_plan_tpl(version, dep_type, f)
                 elif f.type == ArianeDefinitions.FILE_TYPE_MVN_POM:
                     gr_id, art_id = self.__generate_pom_comp_plug(comp, f)
 
@@ -191,6 +181,18 @@ class Generator(object):
                         s_gr_id, s_art_id = self.__generate_pom_module(sub, gr_id, art_id)
                         if sub.is_parent():
                             self.__generate_pom_subparent(sub, s_gr_id, s_art_id)
+                elif f.type == ArianeDefinitions.FILE_TYPE_KARAF_FEATURE:
+                    self.generate_feature(comp, f)
+                elif f.type == ArianeDefinitions.FILE_TYPE_VIRGO_SCRIPT:
+                    self.generate_vsh_installer(version, components, f)
+                elif f.type == ArianeDefinitions.FILE_TYPE_VIRGO_PLAN:
+                    self.generate_plan(comp, f)
+                elif f.type == ArianeDefinitions.FILE_TYPE_VIRGO_PLAN_TPL:
+                    if is_snapshot_version:
+                        if flag_clean_env:
+                            self.__clean_environment_files(self.dir_output + f.path)
+                            flag_clean_env = False
+                        self.generate_plan_tpl(version, dep_type, f)
 
     def generate_plugin_files(self, version, dep_type="mno"):
         """ Generate all files for each plugin in the given distribution.
@@ -215,6 +217,8 @@ class Generator(object):
                     self.generate_lib_json(plug, f)
                 elif f.type == ArianeDefinitions.FILE_TYPE_VIRGO_SCRIPT:
                     self.generate_vsh_plugin(plug, f)
+                elif f.type == ArianeDefinitions.FILE_TYPE_KARAF_FEATURE:
+                    self.generate_feature(plug, f)
                 elif f.type == ArianeDefinitions.FILE_TYPE_MVN_POM:
                     gr_id, art_id = self.__generate_pom_comp_plug(plug, f)
                     for sub in plug.list_module:
@@ -314,6 +318,42 @@ class Generator(object):
         with open(self.dir_output+f_pom.path+f_pom.name, 'w') as target:
             target.write(template.render(args))
 
+    def generate_feature(self, comp_plug, f_feature):
+        if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output + f_feature.path):
+            return
+
+        if isinstance(comp_plug, modelAndServices.Component):
+            d = comp_plug.get_parent_distrib()
+            if os.path.isfile(self.dir_output + f_feature.path + "feature_" + comp_plug.name + "_" +
+                              d.dep_type + "_template.jnj"):
+                template = self.jinja_env.get_template(f_feature.path + "feature_" + comp_plug.name + "_" + d.dep_type +
+                                                       "_template.jnj")
+            else:
+                template = self.jinja_env.get_template(f_feature.path + "feature_" + comp_plug.name + "_template.jnj")
+        else:
+            template = self.jinja_env.get_template(f_feature.path + "feature_" + comp_plug.name + "_template.jnj")
+
+        modules = [s for s in comp_plug.list_module]
+        for s in modules:
+            self.ariane.module_service.update_arianenode_lists(s)
+        for s in modules.copy():
+            if s.is_parent():
+                modules.extend(s.list_module)
+                modules.remove(s)
+        for s in modules.copy():
+            if not s.deployable:
+                modules.remove(s)
+        modules = sorted(modules, key=lambda module: module.order)
+        cp_version = comp_plug.version
+        args = {
+            ArianeDefinitions.COMPONENT_VERSION: cp_version,
+            ArianeDefinitions.COMPONENT: comp_plug,
+            ArianeDefinitions.COMPONENT_SUBMODULES: modules
+        }
+
+        with open(self.dir_output+f_feature.path+f_feature.name, 'w') as target:
+            target.write(template.render(args))
+
     # TODO: RECURSIVITY ?
     def generate_plan(self, comp_plug, fplan):
         if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output+fplan.path):
@@ -332,15 +372,14 @@ class Generator(object):
                 template = self.jinja_env.get_template(fplan.path + "plan_" + comp_plug.name + "_template.jnj")
         else:
             template = self.jinja_env.get_template(fplan.path + "plan_" + comp_plug.name + "_template.jnj")
-        modules = [s for s in comp_plug.list_module]
 
+        modules = [s for s in comp_plug.list_module]
         for s in modules:
             self.ariane.module_service.update_arianenode_lists(s)
         for s in modules.copy():
             if s.is_parent():
                 modules.extend(s.list_module)
                 modules.remove(s)
-        # Remove each module which is not deployable.
         for s in modules.copy():
             if not s.deployable:
                 modules.remove(s)
@@ -525,18 +564,19 @@ class Generator(object):
             if s.deployable and (ext == Module.EXTENSION_JAR or ext == Module.EXTENSION_WAR):
                 # url = groupId.replace('.','/') + artifactId + version + '/'
                 url = "net/echinopsii/" + str(comp_plug.get_directory_name()).replace('.', '/') + "/"
-                url += "net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"/" + \
-                       comp_plug.version+"/net.echinopsii."+comp_plug.get_directory_name() + \
-                       "."+s.name+"-"+comp_plug.version + "." + ext
+                url += ArianeDefinitions.ECHINOPSII_ARTIFACT_PREFIX+comp_plug.get_directory_name()+"."+s.name+"/" + \
+                    comp_plug.version+ "/" + ArianeDefinitions.ECHINOPSII_ARTIFACT_PREFIX + \
+                    comp_plug.get_directory_name() + "." + s.name + "-" + comp_plug.version + "." + ext
                 list_lib.append(url)
             elif s.is_parent():
                 for s_sub in s.list_module:
                     ext = s_sub.extension
                     if s_sub.deployable and (ext == Module.EXTENSION_JAR or ext == Module.EXTENSION_WAR):
                         url = "net/echinopsii/" + str(comp_plug.get_directory_name()).replace('.', '/') + "/"+s.name+"/"
-                        url += "net.echinopsii."+comp_plug.get_directory_name()+"."+s.name+"."+s_sub.name+"/" + \
-                               comp_plug.version+"/net.echinopsii."+comp_plug.get_directory_name()+"."+s.name + \
-                               "."+s_sub.name+"-"+comp_plug.version + "." + ext
+                        url += ArianeDefinitions.ECHINOPSII_ARTIFACT_PREFIX + \
+                            comp_plug.get_directory_name()+"."+s.name+"."+s_sub.name+"/" + \
+                            comp_plug.version+"/net.echinopsii."+comp_plug.get_directory_name()+"."+s.name + \
+                            "."+s_sub.name+"-"+comp_plug.version + "." + ext
                         list_lib.append(url)
 
             with open(self.dir_output+fjson.path+fjson.name, 'w') as target:

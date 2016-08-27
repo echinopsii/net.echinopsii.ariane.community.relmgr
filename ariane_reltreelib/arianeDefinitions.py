@@ -17,10 +17,16 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import os
+
 __author__ = 'mffrench'
 
 class ArianeDefinitions(object):
     PROJECT_ABS_PATH = ""
+
+    CMD_NEOJ_IMPORT_FILE = "/bin/neo4j-shell -file "
+
+    ECHINOPSII_ARTIFACT_PREFIX = "net.echinopsii."
 
     GRAPH_ARGS_TYPE = "args_type"
     GRAPH_LABEL = "label"
@@ -47,10 +53,6 @@ class ArianeDefinitions(object):
     GRAPH_REL_NODE = "rel_node"
     GRAPH_REL_TYPE_CONTAINS = "CONTAINS"
     GRAPH_REVERSE = "reverse"
-
-    CMD_NEOJ_IMPORT_FILE = "/bin/neo4j-shell -file "
-
-    SNAPSHOT_VERSION = "SNAPSHOT"
 
     DISTRIB = "distrib"
     DISTRIB_NAME = "name"
@@ -118,12 +120,23 @@ class ArianeDefinitions(object):
     FILE_PREFIX_JINJA_DISTRIB_POM = "pom_distrib"
     FILE_PREFIX_JINJA_PLUGIN_VSCRIPT = "plugin_vsh"
 
+    FILE_SUFFIX_CFG = ".cfg"
     FILE_SUFFIX_JINJA = ".jnj"
     FILE_SUFFIX_JSON = ".json"
     FILE_SUFFIX_PLAN = ".plan"
     FILE_SUFFIX_TPL = ".tpl"
     FILE_SUFFIX_VSH = ".vsh"
     FILE_SUFFIX_XML = ".xml"
+
+    FILE_CORE_PATH_BUILD_JSON = os.sep + "distrib" + os.sep + "db" + os.sep + "resources" + os.sep + "builds" + os.sep
+    FILE_CORE_PATH_AC_VIRGO_PLAN = os.sep + "distrib" + os.sep + "db" + os.sep + "resources" + os.sep + "virgo" + \
+        os.sep + "repository" + os.sep + "ariane-core" + os.sep
+    FILE_CORE_PATH_AP_VIRGO_PLAN = os.sep + "distrib" + os.sep + "db" + os.sep + "resources" + os.sep + "virgo" + \
+        os.sep + "repository" + os.sep + "ariane-plugins" + os.sep
+    FILE_CORE_PATH_KARAF_FEATURE = os.sep + "distrib" + os.sep + "db" + os.sep + "resources" + os.sep + "karaf" + \
+        os.sep + "feature" + os.sep
+    FILE_CORE_PATH_VIRGO_SCRIPT = os.sep + "distrib" + os.sep + "installer" + os.sep + "resources" + \
+        os.sep + "virgoscripts" + os.sep
 
     FILE_TYPE_BUILD_JSON = "json_build"
     FILE_TYPE_DIST_JSON = "json_dist"
@@ -152,6 +165,8 @@ class ArianeDefinitions(object):
     MAVEN_PACKAGING_WAR = "war"
     MAVEN_PACKAGING_JAR = "jar"
     MAVEN_PACKAGING_BND = "bundle"
+
+    SNAPSHOT_VERSION = "SNAPSHOT"
 
     @staticmethod
     def set_project_abs_path(project_abs_path):
