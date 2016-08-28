@@ -263,7 +263,7 @@ class RestFileNodeList(Resource):
                 if key not in ["filenode", "nID"] and args[key] is None:
                     abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
                                 fmodel.get_properties().keys()))
-            # TODO : rework file unicity based on its parent (not global)
+            # TODO : rework file unicity based on its parent (not gol
             # file_exists = ariane.find_without_label({"name": args["name"], "version": args["version"],
             #                                         "type": args["type"], "path": args["path"]})
             # if file_exists is None:

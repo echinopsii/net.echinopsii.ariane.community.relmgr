@@ -181,8 +181,9 @@ class DatabaseManager(object):
         if dev == d:
             LOGGER.info("Creating a copy of this distribution in order to work on it")
             cd = DatabaseManager.create_distrib_copy(d)
-            if cd is None:
-                return 1, None  # "Distribution copy already exists in database"
+            LOGGER.info(str(cd))
+            if cd is None or cd == -1:
+                return 1, "Distribution copy already exists in database"
             cd.version = ReleaseTools.update_version(cd.version)
             cd.save()
             components = ariane.component_service.get_all(cd)
