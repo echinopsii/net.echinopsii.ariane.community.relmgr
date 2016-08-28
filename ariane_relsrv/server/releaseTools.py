@@ -566,10 +566,10 @@ class GitManager(object):
         LOGGER.info("Start files checkout ...")
         # First Checkout 'ariane.community.distrib' files: most of these files are versioned so we need to
         # remove them.
-        dirpath = os.path.join(project_path, ReleaseTools.get_distrib_path(dist))
-        subprocess.call("git clean -f", shell=True, cwd=dirpath)
-        subprocess.call("git checkout .", shell=True, cwd=dirpath)
-        LOGGER.info("distrib clean and checkout")
+        # dirpath = os.path.join(project_path, ReleaseTools.get_distrib_path(dist))
+        # subprocess.call("git clean -f", shell=True, cwd=dirpath)
+        # subprocess.call("git checkout .", shell=True, cwd=dirpath)
+        # LOGGER.info("distrib clean and checkout")
         # Second, Checkout all other components/Plugins files. There are 2 verisoned files (.plan et .json build)
         # so we remove them. For the not versioned files we use 'git checkout'. Plugin checkout is optionnal
         components = ariane.component_service.get_all(dist)

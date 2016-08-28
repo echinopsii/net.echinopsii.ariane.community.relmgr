@@ -279,6 +279,8 @@ angular.module('ArianeUI')
                     })
                     .error(function(data){
                         $scope.btnActive.dev = false;
+                        $scope.pageStates.relD = "tobuild";
+                        loadReleases();
                         serviceUI.setPage("view");
                         serviceUI.actionBroadcast("changePage");
                         serviceUI.setNotifyLog("error", "View", "Unable to enter into DEV Edition mode.\nCause: "+data.message);
@@ -352,6 +354,8 @@ angular.module('ArianeUI')
                                             $scope.mode = "Release";
                                             $scope.btnActive.export = true;
                                             // serviceUI.setNotifyLog("info", "ReleaseC_DEV", "New DEV Distribution was successfully done");
+                                            $scope.pageStates.relD = "tobuild";
+                                            loadReleases();
                                             serviceUI.setPage('view');
                                             serviceUI.actionBroadcast('changePage');
                                         })
@@ -402,6 +406,8 @@ angular.module('ArianeUI')
                             }
                             else{ // choice == "ReleaseOnly"
                                 $scope.btnActive.export = true;
+                                $scope.pageStates.relD = "tobuild";
+                                loadReleases();
                                 serviceUI.setPage("view");
                                 serviceUI.actionBroadcast("changePage");
                                 // serviceUI.setNotifyLog("info", "ReleaseD", "Release process is over. Returns to main page");
@@ -524,7 +530,7 @@ angular.module('ArianeUI')
                 .success(function(data){
                     $scope.download.zip = [];
                     $scope.download.zip.push(data.zip);
-                    if (release == "relB")
+                    // if (release == "relB")
                         // serviceUI.setNotifyLog("info", "ReleaseB", "Build of zip done!");
                     serviceUI.setState({obj: "default", state: "done"});
                     $scope.confirmValRoll.disableVal = false;
@@ -569,13 +575,16 @@ angular.module('ArianeUI')
                     serviceAjax.distribManager("removeDEVcopy", distrib)
                         .success(function(data){
                             $scope.mode = "Release";
-                            loadReleases();
                             // serviceUI.setNotifyLog("info", "ReleaseC_DEV", "New DEV Distribution was successfully done");
+                            $scope.pageStates.relD = "tobuild";
+                            loadReleases();
                             serviceUI.setPage('view');
                             serviceUI.actionBroadcast('changePage');
                         })
                         .error(function(data){
                             serviceUI.setNotifyLog("error", "ReleaseC_DEV", "An unexpected error occured");
+                            $scope.pageStates.relD = "tobuild";
+                            loadReleases();
                             serviceUI.setPage('view');
                             serviceUI.actionBroadcast('changePage');
                         });
@@ -634,8 +643,9 @@ angular.module('ArianeUI')
             $scope.btnActive.reset.showConfirm = false;
         };
         $scope.clickExport = function(){
+            var distrib = serviceUI.getBaseObj().node;
             $scope.btnActive.export = false;
-            serviceAjax.distribManager("exportDB").
+            serviceAjax.distribManager("exportDB", distrib).
                 success(function(data){
                    // serviceUI.setNotifyLog("info", "View", "New database file was correctly exported to the server")
                 })
@@ -651,7 +661,7 @@ angular.module('ArianeUI')
         };
         function toggleBtnRefresh(){
             if(!$scope.btnActive.refresh){
-                // serviceUI.setNotifyLog("info", "View", "Distribution list has been refreshed");
+                serviceUI.setNotifyLog("info", "View", "Distribution list has been refreshed");
                 $scope.btnActive.refresh = true;
             }
         }

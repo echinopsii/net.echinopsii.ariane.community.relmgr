@@ -36,8 +36,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <button class="btn btnGreen" type="submit" ng-show="pageStates.relD != 'tovalid'" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relD')">VALIDATE</button>
     <button class="btn btnRed" type="submit" ng-show="pageStates.relD != 'tovalid'" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('ROLLBACK', 'relD')">ROLLBACK</button>
 
-    <button class="btn btnGreen" type="submit" ng-show="pageStates.relD == 'tovalid'" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relD');setCmdD('ReleaseOnly');clickConfirmValidRoll('YES')">RELEASE only</button>
-    <button class="btn btnGreen" type="submit" ng-show="pageStates.relD == 'tovalid'" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relD');setCmdD('ReleaseDev');clickConfirmValidRoll('YES')">RELEASE then DEV</button>
+    <!--<button class="btn btnGreen" type="submit" ng-show="pageStates.relD == 'tovalid'" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relD');setCmdD('ReleaseOnly');clickConfirmValidRoll('YES')">RELEASE only</button>-->
+    <button class="btn btnGreen" type="submit" ng-show="pageStates.relD == 'tovalid'" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('VALIDATE', 'relD');setCmdD('ReleaseDev');clickConfirmValidRoll('YES')">NEXT SNAPSHOT</button>
     <button class="btn btnRed" type="submit" ng-show="pageStates.relD == 'tovalid'" ng-disabled="confirmValRoll.disableVal" ng-click="clickValidRoll('ROLLBACK', 'relD')">ROLLBACK</button>
 
     <div>

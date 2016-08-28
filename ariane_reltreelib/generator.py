@@ -326,12 +326,15 @@ class Generator(object):
             d = comp_plug.get_parent_distrib()
             if os.path.isfile(self.dir_output + f_feature.path + "feature_" + comp_plug.name + "_" +
                               d.dep_type + "_template.jnj"):
-                template = self.jinja_env.get_template(f_feature.path + "feature_" + comp_plug.name + "_" + d.dep_type +
-                                                       "_template.jnj")
+                template_path = f_feature.path + "feature_" + comp_plug.name + "_" + d.dep_type + "_template.jnj"
+                template = self.jinja_env.get_template(template_path)
             else:
-                template = self.jinja_env.get_template(f_feature.path + "feature_" + comp_plug.name + "_template.jnj")
+                template_path = f_feature.path + "feature_" + comp_plug.name + "_template.jnj"
+                template = self.jinja_env.get_template(template_path)
         else:
-            template = self.jinja_env.get_template(f_feature.path + "feature_" + comp_plug.name + "_template.jnj")
+            template_path = f_feature.path + "feature_" + comp_plug.name + "_template.jnj"
+            template = self.jinja_env.get_template(template_path)
+        LOGGER.info("Generator.generate_feature - Jinja Template: " + template_path)
 
         modules = [s for s in comp_plug.list_module]
         for s in modules:
@@ -344,14 +347,18 @@ class Generator(object):
             if not s.deployable:
                 modules.remove(s)
         modules = sorted(modules, key=lambda module: module.order)
+        LOGGER.info("Generator.generate_feature - Modules:" + str(modules))
         cp_version = comp_plug.version
         args = {
             ArianeDefinitions.COMPONENT_VERSION: cp_version,
             ArianeDefinitions.COMPONENT: comp_plug,
             ArianeDefinitions.COMPONENT_SUBMODULES: modules
         }
+        LOGGER.info("Generator.generate_feature - Final Args: " + str(args))
 
-        with open(self.dir_output+f_feature.path+f_feature.name, 'w') as target:
+        feature_final_path = self.dir_output + f_feature.path + f_feature.name
+        LOGGER.info("Generator.generate_feature - Feature Final Path: " + feature_final_path)
+        with open(feature_final_path, 'w') as target:
             target.write(template.render(args))
 
     # TODO: RECURSIVITY ?

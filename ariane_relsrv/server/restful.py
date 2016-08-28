@@ -263,26 +263,27 @@ class RestFileNodeList(Resource):
                 if key not in ["filenode", "nID"] and args[key] is None:
                     abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
                                 fmodel.get_properties().keys()))
-            file_exists = ariane.find_without_label({"name": args["name"], "version": args["version"],
-                                                     "type": args["type"], "path": args["path"]})
-            if file_exists is None:
-                parent = json.loads(args["parent"])
-                parent = ariane.find_without_label({"nID": parent["nID"]})
-                if issubclass(parent.__class__, modelAndServices.ArianeNode):
-                    args.pop("parent")
-                    primary_key = ['name', 'version', 'type', 'path']
-                    if ariane.check_args_init(primary_key, args.copy()):
-                        args["nID"] = 0
-                        f = modelAndServices.FileNode.create(args)
-                        parent.add_file(f)
-                        parent.save()
-                        return make_response(json.dumps({"filenode": f.get_properties(gettype=True)}),
-                                             201, headers_json)
-                    else:
-                        abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
-                                    fmodel.get_properties().keys()))
-            else:
-                abort_error("BAD_REQUEST", "FileNode {} already exists".format(args))
+            # TODO : rework file unicity based on its parent (not global)
+            # file_exists = ariane.find_without_label({"name": args["name"], "version": args["version"],
+            #                                         "type": args["type"], "path": args["path"]})
+            # if file_exists is None:
+            parent = json.loads(args["parent"])
+            parent = ariane.find_without_label({"nID": parent["nID"]})
+            if issubclass(parent.__class__, modelAndServices.ArianeNode):
+                args.pop("parent")
+                primary_key = ['name', 'version', 'type', 'path']
+                if ariane.check_args_init(primary_key, args.copy()):
+                    args["nID"] = 0
+                    f = modelAndServices.FileNode.create(args)
+                    parent.add_file(f)
+                    parent.save()
+                    return make_response(json.dumps({"filenode": f.get_properties(gettype=True)}),
+                                         201, headers_json)
+                else:
+                    abort_error("BAD_REQUEST", "Parameters are missing. You must provide: {}".format(
+                                fmodel.get_properties().keys()))
+            # else:
+            #    abort_error("BAD_REQUEST", "FileNode {} already exists".format(args))
 
 
 class RestPlugin(Resource):
