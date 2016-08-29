@@ -22,6 +22,7 @@
 
 angular.module('ArianeUI')
     .controller('LogCtrl', function ($scope, serviceUI) {
+
         $scope.log = {list: [{type: "", message: "", mode: "", status: "", show: false}]};
         $scope.$on('updateLog', function(){
             var log = serviceUI.getLog();

@@ -50,7 +50,7 @@ body {
 	padding: 10px;
 	border-radius: 4px;
 	border: 1px solid #ccc;
-    height: 780px;
+    height: 800px;
     overflow-y: scroll;
 	box-sizing: border-box;
     -moz-box-sizing: border-box;
@@ -58,19 +58,20 @@ body {
     background: #fff;
 }
 .logSection {
-    margin-top: 10px;
-    margin-left: 17px;
-    width: 1800px;
-    color: #00f400;
+    margin-top: 2px;
     border-radius: 4px;
     border: 1px solid #ccc;
-    background-color: #0e0303;
-}
-.logList {
-    height: 18vh;
+    height: 17vh;
+    width: 170vh;
     overflow-y: scroll;
 }
 
+pre {
+    color: #f4bf7e;
+    background-color: #2b2b2c;
+    white-space: pre-wrap;
+    overflow-x: hidden;
+}
 
 /*--- TYPO ---*/
 .title {

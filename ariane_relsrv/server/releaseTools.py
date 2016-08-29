@@ -25,6 +25,7 @@ __author__ = 'stan renia'
 import os
 import subprocess
 import shutil
+import time
 import json
 import re
 from datetime import date
@@ -761,15 +762,12 @@ class BuildManager(object):
         cmd = "./distribManager.py " + cmd_slack + " distpkgr " + version_cmd + " " + dep_type
         LOGGER.info("Call : " + cmd)
         build_done = False
-        child = subprocess.Popen(cmd,
-                                 # + " > "+project_path+"/ariane.community.relmgr/ariane_relsrv/server/"+ftmp_fname,
-                                 shell=True,
-                                 cwd=project_path + "/ariane.community.distrib")
-        try:
-            child.communicate()[0]
-        except subprocess.TimeoutExpired:
-            os.killpg(os.getpgid(child.pid), signal.SIGTERM)
-            child.communicate()
+        child = subprocess.Popen(cmd, shell=True, cwd=project_path + "/ariane.community.distrib")
+
+        LOGGER.info("Distribution build ({" + version_cmd + ", " + dep_type + "}) in progress... ")
+        while child.poll() is None:
+            time.sleep(10)
+            LOGGER.info("Distribution build ({" + version_cmd + ", " + dep_type + "}) in progress... ")
 
         rc = child.returncode
         if rc == 0:

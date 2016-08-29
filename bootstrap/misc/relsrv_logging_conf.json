@@ -10,7 +10,7 @@
   "handlers": {
     "console": {
       "class": "logging.StreamHandler",
-      "level": "INFO",
+      "level": "DEBUG",
       "formatter": "simple",
       "stream": "ext://sys.stdout"
     },
@@ -44,6 +44,21 @@
   },
 
   "loggers": {
+    "werkzeug": {
+      "level": "WARN",
+      "handlers": ["debug_file_handler", "info_file_handler", "error_file_handler"],
+      "propagate": "no"
+    },
+    "socketio": {
+      "level": "WARN",
+      "handlers": ["debug_file_handler", "info_file_handler", "error_file_handler"],
+      "propagate": "no"
+    },
+    "engineio": {
+      "level": "WARN",
+      "handlers": ["debug_file_handler", "info_file_handler", "error_file_handler"],
+      "propagate": "no"
+    },
     "server": {
       "level": "DEBUG",
       "handlers": ["debug_file_handler", "info_file_handler", "error_file_handler"],
@@ -63,6 +78,6 @@
 
   "root": {
     "level": "DEBUG",
-    "handlers": ["console"]
+    "handlers": ["console", "debug_file_handler", "info_file_handler", "error_file_handler"]
   }
 }

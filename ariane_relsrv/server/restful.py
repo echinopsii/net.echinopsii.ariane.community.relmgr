@@ -17,19 +17,26 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
 import json
 import logging
-from time import sleep
+
+from gevent import monkey
+
+monkey.patch_all()
+
+from threading import Thread
 from flask import Flask, make_response, render_template, send_from_directory
+from flask.ext.socketio import SocketIO, emit # , join_room, disconnect
 from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import modelAndServices
 from ariane_relsrv.server.usersMgr import User
 from ariane_relsrv.server.releaseTools import DatabaseManager, GitManager, InitReleaseTools, BuildManager, \
     FileGenManager, ReleaseTools
+from ariane_relsrv.server.logsStreams import LogsStreamer
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app, async_mode='threading')
 api = Api(app)
 
 LOGGER = logging.getLogger(__name__)
@@ -38,10 +45,16 @@ RELMGR_CONFIG = None
 ariane = None
 project_path = None
 relmgr_path = None
+debug_log_streamer = None
+
+
+def bg_error_log_streamer():
+    LOGGER.info("Starting logger streamer !")
+    LogsStreamer.generate_debug(socketio)
 
 
 def start_relmgr(myglobals):
-    global RELMGR_CONFIG, ariane, LOGGER, project_path, relmgr_path
+    global RELMGR_CONFIG, ariane, LOGGER, project_path, relmgr_path, debug_log_streamer
 
     RELMGR_CONFIG = myglobals["conf"]
     ariane = myglobals["delivery_tree"]
@@ -49,11 +62,16 @@ def start_relmgr(myglobals):
     relmgr_path = myglobals["relmgr_path"]
     User.users_file = RELMGR_CONFIG.users_file
     InitReleaseTools.set_globals(myglobals)
+
+    if debug_log_streamer is None:
+        debug_log_streamer = Thread(target=bg_error_log_streamer)
+        debug_log_streamer.start()
+
     if RELMGR_CONFIG.testing:
-        # app.config["TESTING"] = True
-        app.run(host=RELMGR_CONFIG.relmgr_host, port=RELMGR_CONFIG.relmgr_port, debug=True)
+        socketio.run(app, host=RELMGR_CONFIG.relmgr_host, port=RELMGR_CONFIG.relmgr_port, debug=True)
     else:
-        app.run(host=RELMGR_CONFIG.relmgr_host, port=RELMGR_CONFIG.relmgr_port)
+        socketio.run(app, host=RELMGR_CONFIG.relmgr_host, port=RELMGR_CONFIG.relmgr_port)
+
 
 # import this after config declarations
 from ariane_relsrv.server import auth as rel_mgr_auth
@@ -76,6 +94,26 @@ def clear_args(args):
     for key in keys:
         if args[key] is None:
             args.pop(key)
+
+
+@app.route('/streaming')
+def streaming():
+    return render_template('streaming.html')
+
+
+@socketio.on('my event', namespace='/streaming/logs')
+def my_event(msg):
+    LOGGER.debug(msg['data'])
+
+
+@socketio.on('connect', namespace='/streaming/logs')
+def test_connect():
+    emit('my response', {'data': 'Connected', 'count': 0})
+
+
+@socketio.on('disconnect', namespace='/streaming/logs')
+def test_disconnect():
+    LOGGER.debug('Client disconnected')
 
 
 @app.after_request
@@ -1086,7 +1124,8 @@ class RestCheckout(Resource):
             if err != 0:
                 abort_error("BAD_REQUEST", str(errmsg))
             else:
-                return make_response(json.dumps({"message": "git checkout and pull done. " + errmsg}), 200, headers_json)
+                return make_response(json.dumps({"message": "git checkout and pull done. " + errmsg}), 200,
+                                     headers_json)
 
         elif mode == "tags":
             err, message = GitManager.rollback_checkout_tags(dep_type, isdistrib, isplugin)
@@ -1234,19 +1273,6 @@ class RestGeneration(Resource):
             abort_error("BAD_REQUEST", "{} (Given command {} is incorrect)".format(errobj, args))
 
         return make_response(json.dumps({"message": args["command"]}), 200, headers_json)
-
-
-@app.route('/stream')
-def stream():
-    def generate():
-        with open('job.log') as f:
-            while True:
-                yield f.read()
-                sleep(1)
-
-    return app.response_class(generate(), mimetype='text/plain')
-
-
 
 api.add_resource(RestSnapshotsList, '/rest/snapshot')
 api.add_resource(RestDistributionList, '/rest/distrib')
