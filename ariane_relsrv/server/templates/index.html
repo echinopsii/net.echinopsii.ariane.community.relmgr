@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <link rel="stylesheet" type="text/css" href="../static/style/index.css">
     
     <!-- Fonts -->
-    <link rel="stylesheet" href="../static/style/font-awesome.min.css">
+    <link rel="stylesheet" href="../static/libs/fontawesome/font-awesome-4.6.3/css/font-awesome.min.css">
 
 	<script type="text/javascript">
 		var CONFIG = {};
@@ -48,20 +48,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	<div class="container-fluid" ng-controller="DisplayColBaseCtrl">
 		
 		<div class="row title">
-			<h1><img src="../static/img/avatar-ariane.png" style="width:50px; padding-bottom: 5px" /> Ariane Release Factory</h1>
+			<h1>
+				<img src="../static/img/avatar-ariane.png" style="width:50px; padding-bottom: 5px" /> Ariane Release Factory
+
+				<i class="fa fa-circle-o-notch fa-spin" style="color: #e97312"></i>
+			</h1>
 		</div>
-		<div class="row">
-	        <span>
-				<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-click="clickExport()">
-					<i class="fa fa-arrow-circle-o-up"></i> Export
-				</button>
-				<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-click="toggleResetDB()">
-					<i class="fa fa-database"></i> Reset Graph DB
-				</button>
-				<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-click="clickRefresh()">
-					<i class="fa fa-refresh"></i> Refresh
-				</button>
-			</span>
+		<div class="row" style="margin-top: 5px; margin-bottom: 5px; padding: 1px; border-bottom: solid 1px #de5e0b;">
+			<div class="col-xs-12 col-md-4 col colBase">
+				<i class="fa fa-gears fa-2x"></i>
+				<span style="display:inline-block; vertical-align:8px;">
+					<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-click="clickExport()">
+						<i class="fa fa-arrow-circle-o-up"></i> Export
+					</button>
+					<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-click="toggleResetDB()">
+						<i class="fa fa-database"></i> Reset Graph DB
+					</button>
+					<button class="btn btn-sm btnAction" ng-if="page=='view'" ng-click="clickRefresh()">
+						<i class="fa fa-refresh"></i> Refresh
+					</button>
+				</span>
+				<i class="fa fa-gears fa-2x fa-flip-horizontal"></i>
+			</div>
 		</div>
 		<div class="row">
 			<span ng-show="btnActive.reset.showConfirm">
@@ -77,7 +85,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			    <div class="colWrapper">   
 			        <div class="colHeader">
 			            <span>
-				            <h3>Distribution</h3>
+				            <i class="fa fa-gift fa-2x"></i><h3>Distribution</h3>
 			            </span>
 			        </div>
 			        <div class="colBody">
@@ -101,7 +109,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 							<ul class="blockList">
 								{% raw %}
 								<li ng-repeat="snap in snapshots" ng-class="snap.selected ? 'active' : ''" ng-click="clickDist(snap)">
-									<label>[{{ snap.version }}] {{ snap.name }} {{ snap.dep_type }}</label>
+									<label>[{{ snap.version }}] {{ snap.name }}.{{ snap.dep_type }}</label>
 								</li>
 								{% endraw %}
 							</ul>
@@ -116,7 +124,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 							<ul class="blockList" ng-if="page=='view'">
 								{% raw %}
 								<li ng-repeat="dist in dists" ng-class="dist.selected ? 'active' : ''" ng-click="clickDist(dist)" ng-if="page=='view'">
-									<label>[{{ dist.version }}] {{ dist.name }} {{ dist.dep_type }}</label>
+									<label>[{{ dist.version }}] {{ dist.name }}.{{ dist.dep_type }}</label>
 								</li>
 								{% endraw %}
 							</ul>
@@ -132,7 +140,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			    <div class="colWrapper">
 			        <div class="colHeader">
 			            <span>
-			            <h3>Composition</h3>
+			            <i class="fa fa-tasks fa-2x"></i><h3>Composition</h3>
 			            </span>
 			        </div>
 			        <div class="colBody" ng-controller="DisplayColNodesCtrl">
@@ -197,7 +205,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 									</span>
 								</div>
 								<ul class="ModSubList" ng-if="isModuleParent(module)" ng-show="isModSubToggle(module)">
-									<li ng-repeat="sub in module.list_module" ng-include="'field_renderer.html'"></li>
+									<li ng-repeat="sub in module.list_module" ng-include="'field_renderer.html'" ></li>
 								</ul>
 			                </li>
 			                {% endraw %}

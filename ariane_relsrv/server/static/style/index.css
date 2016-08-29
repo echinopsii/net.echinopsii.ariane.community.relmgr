@@ -46,20 +46,28 @@ body {
 }
 .col .colWrapper { 
 	margin-top: 20px;
+    margin-bottom: 10px;
 	padding: 10px;
 	border-radius: 4px;
 	border: 1px solid #ccc;
+    height: 780px;
+    overflow-y: scroll;
 	box-sizing: border-box;
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
     background: #fff;
 }
 .logSection {
+    margin-top: 10px;
+    margin-left: 17px;
+    width: 1800px;
     color: #00f400;
+    border-radius: 4px;
+    border: 1px solid #ccc;
     background-color: #0e0303;
 }
 .logList {
-    height: 20vh;
+    height: 18vh;
     overflow-y: scroll;
 }
 
@@ -67,6 +75,7 @@ body {
 /*--- TYPO ---*/
 .title {
 	text-align: center;
+    border-bottom: solid 3px #de5e0b;
 }
 .title h1 {
 	margin: 10px 0;
@@ -100,20 +109,21 @@ ul li {
 
 ul.blockList li{
 	color: #fff;
-	margin-bottom: 1px;
-	background-color: #1e1d1c;
+	margin-bottom: 5px;
+	background-color: #301804;
 }
 ul.blockList li:hover {
 	cursor: pointer;
 }
 ul.blockList li.active {
-    background-color: #de5e0b;
-    color: #333;
+    border-bottom: solid 4px #de5e0b;
+    color: #fff;
 }
 
 ul.blockList div.active {
-    background-color: #de5e0b;
-    color: #333;
+    border-left: solid 2px #de5e0b;
+    padding: 5px;
+    color: #fff;
 }
 
 .CommonList {
