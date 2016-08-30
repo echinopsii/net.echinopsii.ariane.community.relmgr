@@ -20,13 +20,8 @@
 import json
 import logging
 
-from gevent import monkey
-
-monkey.patch_all()
-
-from threading import Thread
 from flask import Flask, make_response, render_template, send_from_directory
-from flask.ext.socketio import SocketIO, emit # , join_room, disconnect
+from flask.ext.socketio import SocketIO
 from flask_restful import reqparse, abort, Api, Resource
 from ariane_reltreelib.dao import modelAndServices
 from ariane_relsrv.server.usersMgr import User
@@ -34,9 +29,13 @@ from ariane_relsrv.server.releaseTools import DatabaseManager, GitManager, InitR
     FileGenManager, ReleaseTools
 from ariane_relsrv.server.logsStreams import LogsStreamer
 
+async_mode = 'threading'
+# async_mode = 'gevent'
+# async_mode = 'eventlet'
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, async_mode='threading')
+# app.use_x_sendfile = True
+socketio = SocketIO(app, async_mode=async_mode)
 api = Api(app)
 
 LOGGER = logging.getLogger(__name__)
@@ -45,16 +44,16 @@ RELMGR_CONFIG = None
 ariane = None
 project_path = None
 relmgr_path = None
-debug_log_streamer = None
+info_log_streamer = None
 
 
-def bg_error_log_streamer():
-    LOGGER.info("Starting logger streamer !")
-    LogsStreamer.generate_debug(socketio)
+def bg_info_log_streamer():
+    LOGGER.info("starting logger streamer !")
+    LogsStreamer.generate_info(socketio)
 
 
 def start_relmgr(myglobals):
-    global RELMGR_CONFIG, ariane, LOGGER, project_path, relmgr_path, debug_log_streamer
+    global RELMGR_CONFIG, ariane, LOGGER, project_path, relmgr_path
 
     RELMGR_CONFIG = myglobals["conf"]
     ariane = myglobals["delivery_tree"]
@@ -62,10 +61,6 @@ def start_relmgr(myglobals):
     relmgr_path = myglobals["relmgr_path"]
     User.users_file = RELMGR_CONFIG.users_file
     InitReleaseTools.set_globals(myglobals)
-
-    if debug_log_streamer is None:
-        debug_log_streamer = Thread(target=bg_error_log_streamer)
-        debug_log_streamer.start()
 
     if RELMGR_CONFIG.testing:
         socketio.run(app, host=RELMGR_CONFIG.relmgr_host, port=RELMGR_CONFIG.relmgr_port, debug=True)
@@ -96,9 +91,10 @@ def clear_args(args):
             args.pop(key)
 
 
+# noinspection PyUnresolvedReferences
 @app.route('/streaming')
 def streaming():
-    return render_template('streaming.html')
+    return render_template('streaming.html', async_mode=socketio.async_mode)
 
 
 @socketio.on('my event', namespace='/streaming/logs')
@@ -107,13 +103,20 @@ def my_event(msg):
 
 
 @socketio.on('connect', namespace='/streaming/logs')
-def test_connect():
-    emit('my response', {'data': 'Connected', 'count': 0})
+def start_streaming_on_connect():
+    global info_log_streamer
+    LOGGER.info('Log streaming client connected')
+    if info_log_streamer is None:
+        info_log_streamer = socketio.start_background_task(target=bg_info_log_streamer)
+    # emit('my response', {'data': 'Connected', 'count': 0})
 
 
 @socketio.on('disconnect', namespace='/streaming/logs')
-def test_disconnect():
-    LOGGER.debug('Client disconnected')
+def stop_streaming_on_disconnect():
+    # global info_log_streamer
+    # LogsStreamer.is_streaming = False
+    # info_log_streamer = None
+    LOGGER.debug('Log streaming client disconnected')
 
 
 @app.after_request
@@ -963,11 +966,12 @@ class RestDistributionManager(Resource):
             return make_response(json.dumps({"distrib": dev.get_properties(gettype=True)}), 200, headers_json)
 
         elif action == "removeDEVcopy":
+            LOGGER.info("RestDistributionManager.post - remove working copy in progress ...")
             err = DatabaseManager.remove_genuine_distrib()
             if err < 0:
                 abort_error("INTERNAL_ERROR", "UNABLE TO REMOVE THE DATABASE DISTRIBTUTION COPY")
-            LOGGER.info("The current distribution copy in database was removed")
-            ReleaseTools.export_new_distrib()
+            LOGGER.info("RestDistributionManager.post - remove working copy in progress ... done")
+            ReleaseTools.export_db()
             return make_response(json.dumps({}), 200, headers_json)
 
         elif action == "getConfig":
@@ -976,7 +980,7 @@ class RestDistributionManager(Resource):
             return make_response(json.dumps({"run_mode": run_mode, "relmgr_url": relmgr_url}), 200, headers_json)
 
         elif action == "exportDB":
-            err = ReleaseTools.export_new_distrib(True)
+            err = ReleaseTools.export_db(True)
             if err:
                 abort_error("BAD_REQUEST", "Could not have exported the new database")
             return make_response(json.dumps({}), 200, headers_json)
@@ -1093,7 +1097,7 @@ class RestCheckout(Resource):
                 abort_error("BAD_REQUEST", "Given Distribution version ({}) does not exists".format(version))
             # Delete copy distrib and rename Initial distrib
             if mode == "files":
-                LOGGER.info("Removing the working copy...")
+                LOGGER.info("RestCheckout.post - removing the working copy...")
                 ret_rmcompy = DatabaseManager.remove_distrib_copy(dist)
                 if ret_rmcompy == 1:
                     abort_error("BAD_REQUEST",
@@ -1101,10 +1105,10 @@ class RestCheckout(Resource):
                 elif ret_rmcompy == -1:
                     abort_error("BAD_REQUEST", "Given distribution {} is not the copy, "
                                                "Can not reinitialize the Database".format(dist))
-                LOGGER.info("Working copy was removed")
+                LOGGER.info("RestCheckout.post - working copy removed")
 
             elif mode == "files_DEV":
-                LOGGER.info("Reseting the working copy...")
+                LOGGER.info("RestCheckout.post - working copy reset in progress...")
                 ret = DatabaseManager.reset_dev_distrib(dep_type)
                 if ret == 1:
                     abort_error("BAD_REQUEST", "DEV Distribution was not found")
@@ -1114,8 +1118,8 @@ class RestCheckout(Resource):
                     abort_error("BAD_REQUEST", "No copy was found. Can not reset the DEV Distribution")
                 elif ret == 4:
                     abort_error("BAD_REQUEST", "Multiple copies were found in database")
-                LOGGER.info("Working copy was reseted")
-            LOGGER.info("git checkout done. Database reinitialized")
+                LOGGER.info("RestCheckout.post - working copy reset ... Done.")
+            LOGGER.info("RestCheckout.post - database reinitialized")
             return make_response(json.dumps({"message": "git checkout done. Database reinitialized."}),
                                  200, headers_json)
 
@@ -1171,6 +1175,7 @@ class RestGetDelZip(Resource):
         if err == 1:
             abort_error('BAD_REQUEST', "Zip file Path and Name does not match any existing zip file")
         else:
+            LOGGER.info("RestGetDelZip.post - zipfile : " + path_zip + zipfile)
             return send_from_directory(path_zip, zipfile, as_attachment=True, mimetype="application/zip")
 
     def delete(self):
@@ -1232,7 +1237,7 @@ class RestBuildZip(Resource):
                                      200, headers_json)
 
         elif str(action).lower() == "mvncleaninstall":
-            err = BuildManager.do_mvn_clean_install()
+            err = BuildManager.compile()
             if err == 1:
                 abort_error("INTERNAL_ERROR", "Error while running 'mvn clean install'")
             else:

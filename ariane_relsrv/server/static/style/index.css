@@ -33,6 +33,21 @@ body {
 	width: 100%;
 }
 
+.mainMenuView {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    padding: 1px;
+    border-bottom: solid 1px #de5e0b;
+    height: 50px;
+}
+
+.mainMenuRelease {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    padding: 1px;
+    height: 50px;
+}
+
 /*--- STRUCTURE ---*/
 .colHeader {
     padding: 5px 0;
@@ -173,7 +188,7 @@ ul.blockList div.active {
 }
 
 .divFileDiff{
-    height: 60vh;
+    height: 58vh;
     overflow-y: scroll;
 }
 

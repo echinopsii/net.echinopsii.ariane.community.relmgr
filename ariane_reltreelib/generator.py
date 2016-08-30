@@ -265,7 +265,7 @@ class Generator(object):
 
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
             target.write(template.render(args))
-
+        LOGGER.info("Generator.__generate_pom_module - Maven pom (" + fpom.path+fpom.name + ") generated !")
         group_id = art_id
         artifact_id = art_id + '.' + sub.name
 
@@ -298,7 +298,7 @@ class Generator(object):
 
         with open(self.dir_output+fpom.path+fpom.name, 'w') as target:
             target.write(template.render(args))
-
+        LOGGER.info("Generator.__generate_pom_comp_plug - Maven pom (" + fpom.path+fpom.name + ") generated !")
         return group_id, artifact_id
 
     def generate_pom_dist(self, version, dep_type, f_pom):
@@ -317,6 +317,7 @@ class Generator(object):
         LOGGER.debug("Generator.generate_pom_dist - " + f_pom.name)
         with open(self.dir_output+f_pom.path+f_pom.name, 'w') as target:
             target.write(template.render(args))
+        LOGGER.info("Generator.generate_pom_dist - Maven pom (" + f_pom.path+f_pom.name + ") generated !")
 
     def generate_feature(self, comp_plug, f_feature):
         if GitTagHandler.is_git_tagged(comp_plug.version, path=self.dir_output + f_feature.path):
@@ -334,7 +335,7 @@ class Generator(object):
         else:
             template_path = f_feature.path + "feature_" + comp_plug.name + "_template.jnj"
             template = self.jinja_env.get_template(template_path)
-        LOGGER.info("Generator.generate_feature - Jinja Template: " + template_path)
+        LOGGER.debug("Generator.generate_feature - Jinja Template: " + template_path)
 
         modules = [s for s in comp_plug.list_module]
         for s in modules:
@@ -347,19 +348,20 @@ class Generator(object):
             if not s.deployable:
                 modules.remove(s)
         modules = sorted(modules, key=lambda module: module.order)
-        LOGGER.info("Generator.generate_feature - Modules:" + str(modules))
+        LOGGER.debug("Generator.generate_feature - Modules:" + str(modules))
         cp_version = comp_plug.version
         args = {
             ArianeDefinitions.COMPONENT_VERSION: cp_version,
             ArianeDefinitions.COMPONENT: comp_plug,
             ArianeDefinitions.COMPONENT_SUBMODULES: modules
         }
-        LOGGER.info("Generator.generate_feature - Final Args: " + str(args))
+        LOGGER.debug("Generator.generate_feature - Final Args: " + str(args))
 
         feature_final_path = self.dir_output + f_feature.path + f_feature.name
-        LOGGER.info("Generator.generate_feature - Feature Final Path: " + feature_final_path)
+        LOGGER.debug("Generator.generate_feature - Feature Final Path: " + feature_final_path)
         with open(feature_final_path, 'w') as target:
             target.write(template.render(args))
+        LOGGER.info("Generator.generate_feature - Karaf feature (" + f_feature.path + f_feature.name + ") generated !")
 
     # TODO: RECURSIVITY ?
     def generate_plan(self, comp_plug, fplan):
@@ -413,6 +415,7 @@ class Generator(object):
 
         with open(self.dir_output+fplan.path+fplan.name, 'w') as target:
                 target.write(template.render(args))
+        LOGGER.info("Generator.generate_plan - Virgo plan (" + fplan.path + fplan.name + ") generated !")
 
     def generate_json_plugin_dist(self, version, dep_type, fjson):
         if GitTagHandler.is_git_tagged(version, path=self.dir_output+fjson.path):
@@ -619,6 +622,7 @@ class Generator(object):
 
         with open(self.dir_output+fvsh.path+fvsh.name, 'w') as target:
             target.write(template.render(args))
+        LOGGER.info("Generator.generate_vsh_installer - Virgo Script (" + fvsh.path + fvsh.name + ") generated !")
 
     def generate_vsh_plugin(self, p, fvsh):
         if GitTagHandler.is_git_tagged(p.version, path=self.dir_output+fvsh.path):
@@ -638,6 +642,7 @@ class Generator(object):
 
         with open(self.dir_output + fvsh.path + fvsh.name, 'w') as target:
             target.write(template.render(args))
+        LOGGER.info("Generator.generate_vsh_plugin - Virgo Script (" + fvsh.path + fvsh.name + ") generated !")
 
     def generate_plan_tpl(self, version, dep_type, fplantpl):
         # Only for DEV generation
@@ -682,6 +687,7 @@ class Generator(object):
 
         with open(self.dir_output+fplantpl.path+fplantpl.name, 'w') as target:
             target.write(template.render(args))
+        LOGGER.info("Generator.generate_plan_tpl - Virgo template plan (" + fplantpl.path + fplantpl.name + ") generated !")
 
     @staticmethod
     def __clean_environment_files(envpath):

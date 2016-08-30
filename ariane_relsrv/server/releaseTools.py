@@ -74,13 +74,13 @@ class ReleaseTools(object):
         if dist.editable == "true":
             ariane.distribution_service.update_arianenode_lists(dist)
             for m in dist.list_component:
-                LOGGER.debug("ReleaseTools.build_component_tag_list: {" + m.name + "," + m.version + "}")
+                LOGGER.debug("ReleaseTools.build_component_tag_list = {" + m.name + "," + m.version + "}")
                 mpath = os.path.join(project_path, m.get_directory_name())
                 mversion = m.version
 
                 if "SNAPSHOT" not in mversion:
                     if not GitTagHandler.is_git_tagged(mversion, path=mpath):
-                        LOGGER.info("ReleaseTools.build_component_tag_list: add  {" + m.name + "," + m.version +
+                        LOGGER.info("ReleaseTools.build_component_tag_list - add  {" + m.name + "," + m.version +
                                      "} to components to tag list")
                         GitManager.COMPONENTS_TO_TAG.append(m.name)
                     else:
@@ -114,7 +114,7 @@ class ReleaseTools(object):
 
     # noinspection PyTypeChecker
     @staticmethod
-    def export_new_distrib(erase_genuine_file=False):
+    def export_db(erase_genuine_file=False):
         """
         :param erase_genuine_file: if True, erase the 'all.cypher' file located in
         ariane.community.relmgr/bootstrap/dependency_db/
@@ -129,40 +129,68 @@ class ReleaseTools(object):
         todaydate = date.today().strftime("%d%m%y")
         path = RELMGR_CONFIG.db_export_path
         backp = os.getcwd()
-        LOGGER.info("Trying to copy and create the new 'all.cypher' file into " + path)
-        if os.path.exists(path):
-            os.chdir(path)
-            fname = "all.cypher"
-            if os.path.isfile(fname):
-                fname = "all_"+todaydate+".cypher"
-                if os.path.isfile(fname):
-                    same_files = []
-                    for (dp, dn, fn) in os.walk("."):
-                        same_files = [f for f in fn if todaydate in f]
-                        same_files = sorted(same_files, reverse=True)
-                        break
-                    if len(same_files) == 1:
-                        fname = same_files[0].split('.')
-                        fname = fname[0] + '_1.cypher'
-                    else:
-                        tmp = same_files[0].split('_')
-                        tmp = tmp[-1].split('.')
-                        tmp = str(int(tmp[0])+1)
-                        fname = "all_"+todaydate+"_"+tmp+".cypher"
-                shutil.copy("all.cypher", fname)
+        LOGGER.info("ReleaseTools.export_db - DB export init ...")
 
-            os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(path, "all.cypher"))
-            if erase_genuine_file:
-                os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -c dump > " + os.path.join(
-                    relmgr_path, "bootstrap", "dependency_db", "all.cypher"
-                ))
-            os.chdir(backp)
-            LOGGER.info("IN "+path+": file 'all.cypher' was copied to '"+fname+"'. New all.cypher was "
-                                                                               "created from the new Distribution")
-            return 0
+        if erase_genuine_file:
+            export_target = os.path.join(relmgr_path, "bootstrap", "dependency_db", "all.cypher")
+            LOGGER.info("ReleaseTools.export_db - DB export to " + export_target + " in progress ...")
+            child = subprocess.Popen(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -c dump > " +
+                                     export_target, shell=True)
+            while child.poll() is None:
+                time.sleep(10)
+                LOGGER.info("ReleaseTools.export_db - DB export to " + export_target + " in progress ...")
+
+            rc = child.returncode
+            if rc == 0:
+                LOGGER.info("ReleaseTools.export_db - DB export to " + export_target + " ... DONE !")
+                return 0
+            else:
+                LOGGER.error("ReleaseTools.export_db - DB export to " + export_target + " ... FAILED !")
+                return 1
         else:
-            LOGGER.warn("COULD NOT CREATED THE NEW .cypher: path= '"+path+"' DOES NOT EXIST")
-            return 1
+            if os.path.exists(path):
+                os.chdir(path)
+                f_name = "all.cypher"
+                if os.path.isfile(f_name):
+                    f_name = "all_"+todaydate+".cypher"
+                    if os.path.isfile(f_name):
+                        same_files = []
+                        for (dp, dn, fn) in os.walk("."):
+                            same_files = [f for f in fn if todaydate in f]
+                            same_files = sorted(same_files, reverse=True)
+                            break
+                        if len(same_files) == 1:
+                            f_name = same_files[0].split('.')
+                            f_name = f_name[0] + '_1.cypher'
+                        else:
+                            tmp = same_files[0].split('_')
+                            tmp = tmp[-1].split('.')
+                            tmp = str(int(tmp[0])+1)
+                            f_name = "all_"+todaydate+"_"+tmp+".cypher"
+                    shutil.copy("all.cypher", f_name)
+                    LOGGER.info("ReleaseTools.export_db - previous export has been stored in file " +
+                                path + os.sep + f_name)
+                os.chdir(backp)
+
+                export_target = os.path.join(path, "all.cypher")
+                LOGGER.info("ReleaseTools.export_db - DB export to " + export_target + " in progress ...")
+                child = subprocess.Popen(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -c dump > " +
+                                         export_target, shell=True)
+                while child.poll() is None:
+                    time.sleep(10)
+                    LOGGER.info("ReleaseTools.export_db - DB export to " + export_target + " in progress ...")
+
+                rc = child.returncode
+                if rc == 0:
+                    LOGGER.info("ReleaseTools.export_db - DB export to " + export_target + " ... DONE !")
+                    return 0
+                else:
+                    LOGGER.error("ReleaseTools.export_db - DB export to " + export_target + " ... FAILED !")
+                    return 1
+            else:
+                LOGGER.warn("ReleaseTools.export_db -  could not build new .cypher: path= '" + path +
+                            "' does not exists !")
+                return 1
 
     @staticmethod
     def get_ui_running_mode():
@@ -180,17 +208,20 @@ class DatabaseManager(object):
     def make_release_distrib(d):
         dev = ariane.distribution_service.get_dev_distrib(dep_type=d.dep_type)
         if dev == d:
-            LOGGER.info("Creating a copy of this distribution in order to work on it")
+            LOGGER.info("DatabaseManager.make_release_distrib - build new working copy from selected snapshot (" +
+                        d.version + "," + d.dep_type + ") ...")
             cd = DatabaseManager.create_distrib_copy(d)
-            LOGGER.info(str(cd))
             if cd is None or cd == -1:
                 return 1, "Distribution copy already exists in database"
             cd.version = ReleaseTools.update_version(cd.version)
             cd.save()
             components = ariane.component_service.get_all(cd)
             for co in components:
+                old_version = co.version
                 co.version = ReleaseTools.update_version(co.version)
                 co.save()
+                LOGGER.info("DatabaseManager.make_release_distrib - " + co.name + " version updated from " +
+                            old_version + " to " + co.version + "...")
 
             return 0, cd
 
@@ -366,16 +397,18 @@ class DatabaseManager(object):
          to proceed, such as 'create_dev_distrib()', 'remove_genuine_distrib()' and 'create_distrib_copy()'
         :return: 'newdevcp' : the copy of the DEV distrib which was created. Next edition will be affected to this copy
         """
-        LOGGER.info("Creating the new DEV Distribution...")
+        LOGGER.info("DatabaseManager.make_dev_distrib - build new DEV distribution... in progress.")
         newdev = DatabaseManager.create_dev_distrib(dep_type)
         if not isinstance(newdev, modelAndServices.Distribution):
             if newdev == 1:
                 return 1  # "Server can not find the actual DEV Distribution"
             elif newdev in [2, 3]:
                 return 2  # "A component of the actual DEV Distribution is already in a '-SNAPSHOT' version"
-        LOGGER.info("DEV Distribution created in database. Now removing the copy...")
+        LOGGER.info("DatabaseManager.make_dev_distrib - build new DEV distribution... DONE.")
+        LOGGER.info("DatabaseManager.make_dev_distrib - clean old distrib working copy... in progress.")
         DatabaseManager.remove_genuine_distrib()
-        LOGGER.info("Old Distribution copy was removed. Start copying the new DEV distribution...")
+        LOGGER.info("DatabaseManager.make_dev_distrib - clean old distrib working copy... DONE.")
+        LOGGER.info("DatabaseManager.make_dev_distrib - building new working copy... in progress.")
         newdevcp = DatabaseManager.create_distrib_copy(newdev)
         if not isinstance(newdev, modelAndServices.Distribution):
             if newdevcp == -1:
@@ -384,9 +417,8 @@ class DatabaseManager(object):
                 return 3
             # "Error occurred while copying the New DEV Distribution into the database"
             return 4
-
-        LOGGER.info("New DEV Distribution copy was created. Now working on this copy")
-        ReleaseTools.export_new_distrib()
+        LOGGER.info("DatabaseManager.make_dev_distrib - building new working copy... DONE.")
+        ReleaseTools.export_db()
         return newdevcp
 
     @staticmethod
@@ -415,10 +447,25 @@ class DatabaseManager(object):
 
         if os.path.isfile(fpath):
             ariane.delete_all()
-            os.system(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -file " + fpath)
-            LOGGER.info("Successful database reset")
-            return 0, ""
+            LOGGER.info("DatabaseManager.reset_database - database reset ... in progress.")
+            LOGGER.debug(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -file " + fpath)
+
+            child = subprocess.Popen(RELMGR_CONFIG.neo4j_path+"/bin/neo4j-shell -file " + fpath,
+                                     shell=True)
+
+            while child.poll() is None:
+                time.sleep(10)
+                LOGGER.info("DatabaseManager.reset_database - database reset ... in progress.")
+
+            rc = child.returncode
+            if rc == 0:
+                LOGGER.info("DatabaseManager.reset_database - database reset ... DONE.")
+                return 0, ""
+            else:
+                LOGGER.error("DatabaseManager.reset_database - database reset ... FAILED.")
+                return 1, fpath  # "Error while importing '"+fpath+"', file was not found "
         else:
+            LOGGER.error("DatabaseManager.reset_database - database reset ... FAILED.")
             return 1, fpath  # "Error while importing '"+fpath+"', file was not found "
 
 
@@ -439,7 +486,7 @@ class GitManager(object):
                 LOGGER.error("error_on_add("+m.name+");")
                 errs += "error_on_add("+m.name+"); "
             else:
-                LOGGER.info(m.name+" ("+m.version+") added")
+                LOGGER.info("GitManager.commit_element - " + m.name+" ("+m.version+") added")
                 pipe = subprocess.Popen(commit, shell=True, stdout=subprocess.PIPE)
                 git_cmd_out = pipe.communicate()[0]
                 # Handle 'git tag' errors or warnings. (Warning if 'nothing to tag' is returned by the command)
@@ -450,30 +497,30 @@ class GitManager(object):
                 for line in git_cmd_out:
                     if "nothing" in line:
                         warns += "warning_on_tag("+m.name+" "+m.version+"): "+line+"; "
-                        LOGGER.warn("warning_on_tag("+m.name+" "+m.version+"): "+line+"; ")
+                        LOGGER.warn("GitManager.commit_element - warning_on_tag("+m.name+" "+m.version+"): "+line+"; ")
                         break
                     if "error" in line:
-                        LOGGER.error("error_on_commit(" + m.name + "): " + comment + "" + line + "; ")
+                        LOGGER.error("GitManager.commit_element - error_on_commit(" + m.name + "): " + comment + "" + line + "; ")
                         errs += "error_on_commit(" + m.name + "): " + comment + "" + line + "; "
                         break
                 if errs == "":
                     if subprocess.call("git push ", shell=True) != 0:
-                        LOGGER.error("error_on_push("+m.name+"): " + m.version + ";")
+                        LOGGER.error("GitManager.commit_element - error_on_push("+m.name+"): " + m.version + ";")
                         errs += "error_on_push("+m.name+"): " + m.version + "; "
                     else:
-                        LOGGER.info(m.name+"("+m.version+") pushed")
+                        LOGGER.info("GitManager.commit_element - " + m.name+"("+m.version+") pushed")
                         if mode == "Release":
-                            LOGGER.info(m.name+"("+m.version+") commited")
+                            LOGGER.info("GitManager.commit_element - " + m.name+"("+m.version+") commited")
                             if subprocess.call("git tag " + m.version, shell=True) != 0:
-                                LOGGER.error("error_on_tag("+m.name+" "+m.version+"); ")
+                                LOGGER.error("GitManager.commit_element - error_on_tag("+m.name+" "+m.version+"); ")
                                 errs += "error_on_tag("+m.name+" "+m.version+"); "
                             else:
-                                LOGGER.info(m.name+"("+m.version+") tagged")
+                                LOGGER.info("GitManager.commit_element - " + m.name+"("+m.version+") tagged")
                                 if subprocess.call("git push origin " + m.version, shell=True) != 0:
-                                    LOGGER.error("error_on_push_origin("+m.name+"): " + m.version + ";")
+                                    LOGGER.error("GitManager.commit_element - error_on_push_origin("+m.name+"): " + m.version + ";")
                                     errs += "error_on_push_origin("+m.name+"): " + m.version + "; "
                                 else:
-                                    LOGGER.info(m.name+"("+m.version+") origin pushed")
+                                    LOGGER.info("GitManager.commit_element - " + m.name+"("+m.version+") origin pushed")
         else:
             rets["path_errs"] = mpath
         rets["errs"] = errs
@@ -502,7 +549,7 @@ class GitManager(object):
         if not isinstance(dist, modelAndServices.Distribution):
             return 1, "", ""  # "Server can not find the current Distribution to commit"
 
-        LOGGER.info("Start " + mode + " Distribution(" + dist.version + ") commit-tag-push ...")
+        LOGGER.info("GitManager.commit_distrib - start " + mode + " Distribution(" + dist.version + ") commit-tag-push ...")
         errs = ""
         warns = ""
         path_errs = []
@@ -549,10 +596,10 @@ class GitManager(object):
             if isdistrib:
                 message = "'distrib' component from" + mode + "Distribution ("+dist.version+") Commit-Tag-Push done"
             elif isplugin:
-                message = "Plugins from  " + mode + " Distribution ("+dist.version+") Commit-Tag-Push done"
+                message = "plugins from  " + mode + " Distribution ("+dist.version+") Commit-Tag-Push done"
             else:
-                message = "Components from  " + mode + " Distribution ("+dist.version+") Commit-Tag-Push done"
-        LOGGER.info(message)
+                message = "components from  " + mode + " Distribution ("+dist.version+") Commit-Tag-Push done"
+        LOGGER.info("GitManager.commit_distrib - " + message)
         return 0, message, warns
 
     # noinspection PyTypeChecker
@@ -565,7 +612,7 @@ class GitManager(object):
         if not isinstance(dist, modelAndServices.Distribution):
             return 1
 
-        LOGGER.info("Start files checkout ...")
+        LOGGER.info("GitManager.checkout_distrib - clean repositories...")
         # First Checkout 'ariane.community.distrib' files: most of these files are versioned so we need to
         # remove them.
         # dirpath = os.path.join(project_path, ReleaseTools.get_distrib_path(dist))
@@ -583,17 +630,18 @@ class GitManager(object):
             dirpath = os.path.join(project_path, m.get_directory_name() + '/')
             subprocess.call("git clean -f", shell=True, cwd=dirpath)
             subprocess.call("git checkout .", shell=True, cwd=dirpath)
-            LOGGER.info(m.name + " clean and checkout")
+            LOGGER.info("GitManager.checkout_distrib - " + m.name + " is now clean.")
         return 0
 
     # noinspection PyTypeChecker
     @staticmethod
     def pull_checkout_distrib(dist, isplugin=False):
         if project_path is None:
-            LOGGER.error("Initialization problem (pull_checkout_distrib:project_path is None)!")
+            LOGGER.error("GitManager.pull_checkout_distrib - Initialization problem "
+                         "(pull_checkout_distrib:project_path is None)!")
             return 1
 
-        LOGGER.info("Start repositories git checkout and git pull")
+        LOGGER.info("GitManager.pull_checkout_distrib - check if repositories are up-to-date...")
         components = ariane.component_service.get_all(dist)
         plugins = ariane.plugin_service.get_all(dist)
 
@@ -604,23 +652,24 @@ class GitManager(object):
                 branches = subprocess.check_output(['git', 'branch'], cwd=p)
                 if comp.branch not in str(branches):
                     if subprocess.call('git branch -v -a', shell=True, cwd=p) != 0:
-                        errs += "error while getting other remote git branches {}-".format(p)
+                        errs += "error while getting other remote git branches {} \n".format(p)
                     if subprocess.call(
                             'git checkout -b ' + comp.branch + ' remotes/origin/' + comp.branch,
                             shell=True, cwd=p) != 0:
-                        errs += "error while checkout remote branch {}-".format(comp.branch)
+                        errs += "error while checkout remote branch {} \n".format(comp.branch)
                     branches = subprocess.check_output(['git', 'branch'], cwd=p)
                 if ("* " + comp.branch) not in str(branches):
                     if subprocess.call('git checkout ' + comp.branch, shell=True, cwd=p):
-                        errs += "error while checkout on branch {}-".format(comp.branch)
+                        errs += "error while checkout on branch {} \n".format(comp.branch)
 
                 status = subprocess.check_output(['git', 'status'], cwd=p)
                 if 'Changes not staged for commit' in str(status) or 'Untracked files:' in str(status):
-                    errs += "current git local repository has diff {}-".format(p)
+                    errs += "current git local repository has diff {} \n".format(p)
                 # if subprocess.call('git checkout ./', shell=True, cwd=p) != 0:
                 #     errs += "error while git checkout {}-".format(p)
                 if subprocess.call('git pull', shell=True, cwd=p) != 0:
                     errs += "error while git pull {}-".format(p)
+                LOGGER.info("GitManager.pull_checkout_distrib - " + comp.name + " is up-to-date")
 
         if isplugin:
             for plug in plugins:
@@ -635,10 +684,11 @@ class GitManager(object):
                         errs += "error while git pull {}-".format(p)
 
         if errs != "":
-            LOGGER.warn("Git Checkout done but errors occured for some repositories: "+errs)
+            LOGGER.warn("GitManager.pull_checkout_distrib - checks done but errors occured for some repositories: " +
+                        errs)
             return 1, errs
         else:
-            LOGGER.info("Git Checkout done")
+            LOGGER.info("GitManager.pull_checkout_distrib - ... done !")
             return 0, errs
 
     # noinspection PyTypeChecker
@@ -653,7 +703,7 @@ class GitManager(object):
         # if git log -1 --pretty=%B | grep "last commit ticket + last commit comment" == 0
         #    git reset --hard HEAD~1
         backpath = os.getcwd()
-        LOGGER.info("Start Tags reset")
+        LOGGER.info("GitManager.rollback_checkout_tags - rollback last git ops in progress... ")
         dist = ariane.distribution_service.get_dev_distrib(dep_type=dep_type)
         if not isinstance(dist, modelAndServices.Distribution):
             return 1, ""  # "Server can not find the current Distribution to commit"
@@ -677,7 +727,8 @@ class GitManager(object):
                     else:
                         if subprocess.call("git log -1 --pretty=%B | grep '" + re.escape(GitManager.commit_comment) +
                                            "'", shell=True) != 0:
-                            LOGGER.info("No need to reset last commit in distrib repository")
+                            LOGGER.info("GitManager.rollback_checkout_tags - "
+                                        "no need to reset last commit in distrib repository")
                         else:
                             if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
                                 errs += "error_on_reset:distrib( " + dist.version + "); "
@@ -685,7 +736,8 @@ class GitManager(object):
                                 if subprocess.call("git push --force origin master", shell=True) != 0:
                                     errs += "error_on_reset_commit: distrib(" + dist.version + "); "
                                 else:
-                                    LOGGER.info("Last commit was reset in distrib repository")
+                                    LOGGER.info("GitManager.rollback_checkout_tags - "
+                                                "rollback git ops on distrib repository ... DONE.")
 
         for m in mod_plugs:
             if isplugin:
@@ -706,7 +758,8 @@ class GitManager(object):
                             if subprocess.call("git log -1 --pretty=%B | grep '" +
                                                re.escape(GitManager.commit_comment) + "'",
                                                shell=True) != 0:
-                                LOGGER.info("No need to reset last commit in "+m.name+" repository")
+                                LOGGER.info("GitManager.rollback_checkout_tags - "
+                                            "no need to reset last commit in " + m.name +" repository")
                             else:
                                 if subprocess.call("git reset --hard HEAD~1", shell=True) != 0:
                                     errs += "error_on_reset: "+m.name+"(" + m.version + "); "
@@ -715,19 +768,21 @@ class GitManager(object):
                                         errs += "error_on_reset_commit: " + m.name + "(" + m.branch + "/" + \
                                                 m.version + "); "
                                     else:
-                                        LOGGER.info("Last commit was reset in " + m.name + " repository")
+                                        LOGGER.info("GitManager.rollback_checkout_tags - "
+                                                    "rollback git ops on " + m.name + " repository ... DONE.")
                 else:
                     path_errs.append(mpath)
 
         os.chdir(backpath)
         if len(path_errs) > 0:
-            errs += " Error: Following paths does not exist {} ; ".format(path_errs)
+            errs += "GitManager.rollback_checkout_tags - error: Following paths does not exist {} ; ".format(path_errs)
         if len(errs) > 0:
-            message = "Errors occured. Please correct them manually.\n" + errs
+            message = "GitManager.rollback_checkout_tags - errors occured. Please correct them manually.\n" + errs
+            LOGGER.error(message)
             return 2, message
         else:
-            message = "Tags reset done."
-        LOGGER.info(message)
+            message = "GitManager.rollback_checkout_tags - rollback last git ops ... DONE. "
+            LOGGER.info(message)
         return 0, message
 
 
@@ -739,7 +794,7 @@ class BuildManager(object):
     def build_distrib(version, from_tags, dep_type):
         # Command is either 'distpkgr master.SNAPSHOT'
         # or 'distpkgr {version}.SNAPSHOT' where {version} is version's value (i.e version= '0.6.4')
-        LOGGER.info("Start Zip Build")
+        LOGGER.info("BuildManager.build_distrib - build distrib (" + version + "," + dep_type + ") begins...")
         if "SNAPSHOT" in version:
             # version = "master.SNAPSHOT"
             version_cmd = version
@@ -757,17 +812,19 @@ class BuildManager(object):
         cmd_slack = ""
         if RELMGR_CONFIG.url_slack != "":
             cmd_slack = "-s " + RELMGR_CONFIG.url_slack
-            LOGGER.info("Building info will be transmitted to Slack on: " + RELMGR_CONFIG.url_slack)
+            LOGGER.info("BuildManager.build_distrib - notifications will be pushed on Slack (" +
+                        RELMGR_CONFIG.url_slack + ")")
 
         cmd = "./distribManager.py " + cmd_slack + " distpkgr " + version_cmd + " " + dep_type
-        LOGGER.info("Call : " + cmd)
+        LOGGER.debug("BuildManager.build_distrib - " + cmd)
         build_done = False
         child = subprocess.Popen(cmd, shell=True, cwd=project_path + "/ariane.community.distrib")
 
-        LOGGER.info("Distribution build ({" + version_cmd + ", " + dep_type + "}) in progress... ")
+        LOGGER.debug("BuildManager.build_distrib - call (" + version_cmd + ", " + dep_type + ") in progress... ")
         while child.poll() is None:
             time.sleep(10)
-            LOGGER.info("Distribution build ({" + version_cmd + ", " + dep_type + "}) in progress... ")
+            LOGGER.info("BuildManager.build_distrib - build distrib (" + version + "," + dep_type +
+                        ") in progress...")
 
         rc = child.returncode
         if rc == 0:
@@ -778,28 +835,29 @@ class BuildManager(object):
                     break
 
         if build_done:
-            LOGGER.info("Build success")
+            LOGGER.info("BuildManager.build_distrib - build distrib (" + version + "," + dep_type + ") ... DONE !")
             return 0
         else:
+            LOGGER.error("BuildManager.build_distrib - build distrib (" + version + "," + dep_type + ") ... FAILED !")
             return 1  # "Error while building"
 
     @staticmethod
-    def do_mvn_clean_install():
+    def compile():
         child = subprocess.Popen("mvn clean install -DskipTests", shell=True, cwd=project_path)
-        try:
-            child.communicate()[0]
-        except subprocess.TimeoutExpired:
-            os.killpg(os.getpgid(child.pid), signal.SIGTERM)
-            child.communicate()
+        LOGGER.debug("BuildManager.compile - call maven compil in progress... ")
+        while child.poll() is None:
+            time.sleep(10)
+            LOGGER.info("BuildManager.compile - in progress...")
 
         mvn_done = False
         rc = child.returncode
         if rc == 0:
             mvn_done = True
         if mvn_done:
-            LOGGER.info("mvn clean install succeeded")
+            LOGGER.info("BuildManager.compile - ... DONE !")
             return 0
         else:
+            LOGGER.info("BuildManager.compile - ... FAILED !")
             return 1  # "Error while running 'mvn clean install'"
 
     @staticmethod
